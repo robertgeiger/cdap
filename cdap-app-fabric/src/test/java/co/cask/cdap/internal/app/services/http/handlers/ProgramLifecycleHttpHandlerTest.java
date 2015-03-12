@@ -29,11 +29,15 @@ import co.cask.cdap.WordCountApp;
 import co.cask.cdap.WorkflowAppWithErrorRuns;
 import co.cask.cdap.WorkflowAppWithFork;
 import co.cask.cdap.WorkflowAppWithScopedParameters;
+import co.cask.cdap.api.TxRunnable;
+import co.cask.cdap.api.data.DatasetContext;
+import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.workflow.WorkflowActionNode;
 import co.cask.cdap.api.workflow.WorkflowActionSpecification;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.queue.QueueName;
+import co.cask.cdap.common.stream.notification.ProgramStateChangeNotification;
 import co.cask.cdap.config.PreferencesStore;
 import co.cask.cdap.data2.queue.ConsumerConfig;
 import co.cask.cdap.data2.queue.DequeueStrategy;
@@ -46,7 +50,13 @@ import co.cask.cdap.internal.app.ScheduleSpecificationCodec;
 import co.cask.cdap.internal.app.WorkflowActionSpecificationCodec;
 import co.cask.cdap.internal.app.runtime.ProgramOptionConstants;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
+import co.cask.cdap.notifications.feeds.NotificationFeedException;
+import co.cask.cdap.notifications.feeds.NotificationFeedNotFoundException;
+import co.cask.cdap.notifications.service.NotificationContext;
+import co.cask.cdap.notifications.service.NotificationHandler;
+import co.cask.cdap.notifications.service.TxRetryPolicy;
 import co.cask.cdap.proto.ApplicationDetail;
+import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.Instances;
 import co.cask.cdap.proto.ProgramRecord;
 import co.cask.cdap.proto.ProgramRunStatus;
@@ -72,6 +82,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
+import org.apache.twill.common.Cancellable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -1131,9 +1142,40 @@ public class ProgramLifecycleHttpHandlerTest extends AppFabricTestBase {
     TimeUnit.SECONDS.sleep(2); //wait till any running jobs just before suspend call completes.
   }
 
+  private void subscribeToNotifications(String namespaceId) {
+
+    String feedName = namespaceId + "_app-lifecycle";
+    Id.NotificationFeed feed =  new Id.NotificationFeed.Builder()
+      .setNamespaceId(namespaceId)
+      .setCategory(Constants.Notification.APP_LIFECYCLE)
+      .setName(feedName)
+      .build();
+
+    try {
+      Cancellable cancellable = getNotificationService()
+        .subscribe(feed, new NotificationHandler<ProgramStateChangeNotification>() {
+          @Override
+          public Type getNotificationType() {
+            return ProgramStateChangeNotification.class;
+          }
+
+          @Override
+          public void received(final ProgramStateChangeNotification notification,
+                               NotificationContext notificationContext) {
+            System.out.println("Received " + notification);
+          }
+        });
+    } catch (Throwable t) {
+      System.out.println("Exception in thread");
+    }
+  }
+
   @Category(XSlowTests.class)
   @Test
   public void testWorkflowRuns() throws Exception {
+
+    subscribeToNotifications(TEST_NAMESPACE2);
+
     HttpResponse response = deploy(WorkflowAppWithErrorRuns.class, Constants.Gateway.API_VERSION_3_TOKEN,
                                    TEST_NAMESPACE2);
     Assert.assertEquals(200, response.getStatusLine().getStatusCode());

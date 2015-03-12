@@ -34,11 +34,11 @@ import co.cask.cdap.api.worker.WorkerSpecification;
 import co.cask.cdap.app.ApplicationSpecification;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.program.Programs;
-import co.cask.cdap.app.runtime.ProgramController;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.archive.ArchiveBundler;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.common.stream.notification.ProgramStateChangeNotification;
 import co.cask.cdap.data2.datafabric.dataset.DatasetsUtil;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
@@ -48,6 +48,8 @@ import co.cask.cdap.internal.app.ForwardingFlowSpecification;
 import co.cask.cdap.internal.app.program.ProgramBundle;
 import co.cask.cdap.internal.app.runtime.adapter.AdapterStatus;
 import co.cask.cdap.internal.procedure.DefaultProcedureSpecification;
+import co.cask.cdap.notifications.feeds.NotificationFeedException;
+import co.cask.cdap.notifications.service.NotificationService;
 import co.cask.cdap.proto.AdapterSpecification;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -94,6 +96,7 @@ public class DefaultStore implements Store {
   private final LocationFactory locationFactory;
   private final CConfiguration configuration;
   private final DatasetFramework dsFramework;
+  private final NotificationService notificationService;
 
   private Transactional<AppMds, AppMetadataStore> txnl;
 
@@ -101,11 +104,13 @@ public class DefaultStore implements Store {
   public DefaultStore(CConfiguration conf,
                       LocationFactory locationFactory,
                       TransactionExecutorFactory txExecutorFactory,
-                      DatasetFramework framework) {
+                      DatasetFramework framework,
+                      NotificationService notificationService) {
 
     this.locationFactory = locationFactory;
     this.configuration = conf;
     this.dsFramework = framework;
+    this.notificationService = notificationService;
 
     txnl = Transactional.of(txExecutorFactory, new Supplier<AppMds>() {
       @Override
@@ -167,6 +172,7 @@ public class DefaultStore implements Store {
         return null;
       }
     });
+    publishProgramStateChangeNotification(id, ProgramRunStatus.RUNNING);
   }
 
   @Override
@@ -180,9 +186,25 @@ public class DefaultStore implements Store {
         return null;
       }
     });
-
-
     // todo: delete old history data
+    publishProgramStateChangeNotification(id, runStatus);
+  }
+
+  private void publishProgramStateChangeNotification(Id.Program program, ProgramRunStatus status) {
+    String feedName = program.getNamespaceId() + "_app-lifecycle";
+    Id.NotificationFeed programStateChangeFeed =  new Id.NotificationFeed.Builder()
+      .setNamespaceId(program.getNamespaceId())
+      .setCategory(Constants.Notification.APP_LIFECYCLE)
+      .setName(feedName)
+      .build();
+
+    try {
+      notificationService.publish(programStateChangeFeed, new ProgramStateChangeNotification(program, status)).get();
+    } catch (NotificationFeedException e) {
+      LOG.warn("Error with notification feed {}", feedName, e);
+    } catch (Throwable t) {
+      LOG.warn("Could not publish notification on feed {}", feedName, t);
+    }
   }
 
   @Override

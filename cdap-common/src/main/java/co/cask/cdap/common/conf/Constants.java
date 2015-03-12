@@ -642,7 +642,7 @@ public final class Constants {
    */
   public static final class Notification {
     public static final String TRANSPORT_SYSTEM = "notification.transport.system";
-
+    public static final String APP_LIFECYCLE = "app_lifecycle";
     /**
      * Notifications in Streams constants.
      */

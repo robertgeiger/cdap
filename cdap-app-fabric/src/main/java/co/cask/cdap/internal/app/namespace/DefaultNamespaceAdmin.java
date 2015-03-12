@@ -28,6 +28,8 @@ import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
+import co.cask.cdap.notifications.feeds.NotificationFeedException;
+import co.cask.cdap.notifications.feeds.NotificationFeedManager;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceConfig;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -35,7 +37,6 @@ import co.cask.cdap.proto.ProgramType;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +58,13 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
   private final ProgramRuntimeService runtimeService;
   private final QueueAdmin queueAdmin;
   private final StreamAdmin streamAdmin;
+  private final NotificationFeedManager notificationFeedManager;
 
   @Inject
   public DefaultNamespaceAdmin(StoreFactory storeFactory, PreferencesStore preferencesStore,
                                DashboardStore dashboardStore, DatasetFramework dsFramework,
-                               ProgramRuntimeService runtimeService, QueueAdmin queueAdmin, StreamAdmin streamAdmin) {
+                               ProgramRuntimeService runtimeService, QueueAdmin queueAdmin, StreamAdmin streamAdmin,
+                               NotificationFeedManager notificationFeedManager) {
     this.queueAdmin = queueAdmin;
     this.streamAdmin = streamAdmin;
     this.store = storeFactory.create();
@@ -69,6 +72,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
     this.dashboardStore = dashboardStore;
     this.dsFramework = dsFramework;
     this.runtimeService = runtimeService;
+    this.notificationFeedManager = notificationFeedManager;
   }
 
   /**
@@ -158,6 +162,17 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
     }
 
     store.createNamespace(metadata);
+    String feedName = metadata.getName() + "_app-lifecycle";
+    Id.NotificationFeed feed = new Id.NotificationFeed.Builder()
+      .setNamespaceId(metadata.getName())
+      .setCategory(Constants.Notification.APP_LIFECYCLE)
+      .setName(feedName).build();
+
+    try {
+      notificationFeedManager.createFeed(feed);
+    } catch (NotificationFeedException e) {
+      LOG.error("Unable to create the notification feed {} {}", feedName, e);
+    }
   }
 
   /**

@@ -28,6 +28,7 @@ import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutor;
 import co.cask.cdap.internal.app.services.AppFabricServer;
 import co.cask.cdap.metrics.query.MetricsQueryService;
+import co.cask.cdap.notifications.service.NotificationService;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.test.internal.guice.AppFabricTestModule;
 import co.cask.tephra.TransactionManager;
@@ -120,6 +121,7 @@ public abstract class AppFabricTestBase {
   private static TransactionSystemClient txClient;
   private static StreamService streamService;
   private static ServiceStore serviceStore;
+  private static NotificationService notificationService;
 
   private static final String adapterFolder = "adapter";
 
@@ -164,6 +166,8 @@ public abstract class AppFabricTestBase {
     serviceStore = injector.getInstance(ServiceStore.class);
     serviceStore.startAndWait();
 
+    notificationService = injector.getInstance(NotificationService.class);
+    notificationService.startAndWait();
     createNamespaces();
   }
 
@@ -177,6 +181,11 @@ public abstract class AppFabricTestBase {
     dsOpService.stopAndWait();
     txManager.stopAndWait();
     metricsCollectionService.stopAndWait();
+    notificationService.stopAndWait();
+  }
+
+  protected NotificationService getNotificationService() {
+    return notificationService;
   }
 
   protected static Injector getInjector() {
