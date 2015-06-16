@@ -65,6 +65,10 @@
       <id>continuuity-public</id>
       <url>https://repository.continuuity.com/content/repositories/public</url>
     </repository>
+    <repository>
+      <id>cloudera</id>
+      <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+    </repository>
   </repositories>
 
 
@@ -110,6 +114,8 @@
     <hadoop.version>2.3.0</hadoop.version>
     <hbase96.version>0.96.2-hadoop2</hbase96.version>
     <hbase98.version>0.98.6.1-hadoop2</hbase98.version>
+    <hbase10.version>1.0.1</hbase10.version>
+    <hbase10cdh.version>1.0.0-cdh5.4.2</hbase10cdh.version>
     <hive.version>0.13.0</hive.version>
     <hsql.version>2.2.4</hsql.version>
     <http.component.version>4.2.5</http.component.version>
@@ -131,7 +137,7 @@
     <snappy.version>1.1.1.7</snappy.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.7.5</slf4j.version>
-    <tephra.version>0.4.2</tephra.version>
+    <tephra.version>0.5.1-cdh-SNAPSHOT</tephra.version>
     <thrift.version>0.9.0</thrift.version>
     <twill.version>0.5.0-incubating</twill.version>
     <unboundid.version>2.3.6</unboundid.version>
@@ -207,6 +213,28 @@
       <dependency>
         <groupId>co.cask.tephra</groupId>
         <artifactId>tephra-hbase-compat-0.98</artifactId>
+        <version>${tephra.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.tephra</groupId>
+        <artifactId>tephra-hbase-compat-1.0</artifactId>
+        <version>${tephra.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.tephra</groupId>
+        <artifactId>tephra-hbase-compat-1.0-cdh</artifactId>
         <version>${tephra.version}</version>
         <exclusions>
           <exclusion>
@@ -680,12 +708,12 @@
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-common</artifactId>
-        <version>${hbase96.version}</version>
+        <version>${hbase98.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-client</artifactId>
-        <version>${hbase96.version}</version>
+        <version>${hbase98.version}</version>
         <exclusions>
           <exclusion>
             <groupId>io.netty</groupId>
@@ -696,12 +724,12 @@
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-protocol</artifactId>
-        <version>${hbase96.version}</version>
+        <version>${hbase98.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-server</artifactId>
-        <version>${hbase96.version}</version>
+        <version>${hbase98.version}</version>
         <exclusions>
           <exclusion>
             <groupId>org.mortbay.jetty</groupId>
@@ -1007,7 +1035,7 @@
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-testing-util</artifactId>
-        <version>${hbase96.version}</version>
+        <version>${hbase98.version}</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -2040,6 +2068,8 @@
         <module>cdap-data-fabric</module>
         <module>cdap-hbase-compat-0.96</module>
         <module>cdap-hbase-compat-0.98</module>
+        <module>cdap-hbase-compat-1.0</module>
+        <module>cdap-hbase-compat-1.0-cdh</module>
         <module>cdap-watchdog</module>
         <module>cdap-app-fabric</module>
         <module>cdap-security</module>

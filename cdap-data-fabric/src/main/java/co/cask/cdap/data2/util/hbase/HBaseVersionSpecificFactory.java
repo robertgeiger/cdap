@@ -16,6 +16,7 @@
 
 package co.cask.cdap.data2.util.hbase;
 
+import co.cask.tephra.util.HBaseVersion;
 import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
 import org.apache.twill.internal.utils.Instances;
@@ -40,6 +41,12 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
         case HBASE_98:
           instance = createInstance(getHBase98Classname());
           break;
+        case HBASE_10:
+          instance = createInstance(getHBase10Classname());
+          break;
+        case HBASE_10_CDH:
+          instance = createInstance(getHBase10CDHClassname());
+          break;
         case UNKNOWN:
           throw new ProvisionException("Unknown HBase version: " + HBaseVersion.getVersionString());
       }
@@ -56,4 +63,6 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
 
   protected abstract String getHBase96Classname();
   protected abstract String getHBase98Classname();
+  protected abstract String getHBase10Classname();
+  protected abstract String getHBase10CDHClassname();
 }

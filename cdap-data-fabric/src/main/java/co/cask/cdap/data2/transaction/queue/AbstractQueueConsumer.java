@@ -153,6 +153,11 @@ public abstract class AbstractQueueConsumer implements QueueConsumer, Transactio
   }
 
   @Override
+  public void updateTx(Transaction transaction) {
+    // transaction checkpoints are not yet supported
+  }
+
+  @Override
   public Collection<byte[]> getTxChanges() {
     // No conflicts guaranteed in dequeue logic.
     return ImmutableList.of();
