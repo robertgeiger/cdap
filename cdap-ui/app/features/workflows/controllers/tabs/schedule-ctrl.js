@@ -1,13 +1,17 @@
-
+'use strict';
 class ScheduleController {
   constructor($scope, myWorkFlowApi, $state) {
+    this.myWorkFlowApi = myWorkFlowApi;
+    this.$state = $state;
+    this.$scope = $scope;
+
     let params = {
-      appId: $state.params.appId,
-      workflowId: $state.params.programId,
-      scope: $scope
+      appId: this.$state.params.appId,
+      workflowId: this.$state.params.programId,
+      scope: this.$scope
     };
 
-    myWorkFlowApi.schedules(params)
+    this.myWorkFlowApi.schedules(params)
       .$promise
       .then( (res) => {
         this.schedules = res;
@@ -22,7 +26,7 @@ class ScheduleController {
             schedule.time.month = parse[3];
             schedule.time.week = parse[4];
 
-            myWorkFlowApi.schedulesPreviousRunTime(params)
+            this.myWorkFlowApi.schedulesPreviousRunTime(params)
               .$promise
               .then( timeResult => {
                 if (timeResult[0]) {
@@ -35,10 +39,10 @@ class ScheduleController {
             schedule.lastrun = 'NA';
           }
           schedule.isOpen = false;
-          myWorkFlowApi.pollScheduleStatus({
-            appId: $state.params.appId,
+          this.myWorkFlowApi.pollScheduleStatus({
+            appId: this.$state.params.appId,
             scheduleId: schedule.schedule.name,
-            scope: $scope
+            scope: this.$scope
           })
             .$promise
             .then( response => {
@@ -53,18 +57,18 @@ class ScheduleController {
   }
 
   suspendSchedule(obj) {
-    myWorkFlowApi.scheduleSuspend({
-      appId: $state.params.appId,
+    this.myWorkFlowApi.scheduleSuspend({
+      appId: this.$state.params.appId,
       scheduleId: obj.schedule.name,
-      scope: $scope
+      scope: this.$scope
     }, {});
   }
 
   resumeSchedule(obj) {
-    myWorkFlowApi.scheduleResume({
-      appId: $state.params.appId,
+    this.myWorkFlowApi.scheduleResume({
+      appId: this.$state.params.appId,
       scheduleId: obj.schedule.name,
-      scope: $scope
+      scope: this.$scope
     }, {});
   }
 }
