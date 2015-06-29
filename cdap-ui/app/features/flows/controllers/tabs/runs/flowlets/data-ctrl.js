@@ -1,10 +1,14 @@
-angular.module(PKG.name + '.feature.flows')
-  .controller('FlowletDetailDataController', function($state, $scope, MyDataSource, myHelpers, MyMetricsQueryHelper, myFlowsApi) {
-    var dataSrc = new MyDataSource($scope);
-    var flowletid = $scope.FlowletsController.activeFlowlet.name;
+'use strict';
+class FlowletDetailDataController {
+  constructor($state, $scope, MyDataSource, myHelpers, MyMetricsQueryHelper, myFlowsApi) {
+    this.$state = $state;
     this.datasets = [];
+    this.MyDataSource = MyDataSource;
+    this.MyMetricsQueryHelper = MyMetricsQueryHelper;
 
-    var params = {
+    let dataSrc = new MyDataSource($scope);
+    let flowletid = $scope.FlowletsController.activeFlowlet.name;
+    let params = {
       namespace: $state.params.namespace,
       appId: $state.params.appId,
       flowId: $state.params.programId,
@@ -13,52 +17,47 @@ angular.module(PKG.name + '.feature.flows')
 
     myFlowsApi.get(params)
       .$promise
-      .then(function (res) {
-        var obj = [];
-        var datasets = myHelpers.objectQuery(res, 'flowlets', flowletid, 'flowletSpec', 'dataSets');
+      .then(res => {
+        let obj = [];
+        let datasets = myHelpers.objectQuery(res, 'flowlets', flowletid, 'flowletSpec', 'dataSets');
+        angular.forEach( datasets, v => obj.push({ name: v }) );
+        this.datasets = obj;
+        this.pollDatasets();
+      });
+  }
+  pollDatasets() {
+    angular.forEach(this.datasets, dataset => {
+      let datasetTags = {
+        namespace: this.$state.params.namespace,
+        dataset: dataset.name,
+        app: this.$state.params.appId,
+        flow: this.$state.params.programId
+      };
+      let tagsToParams = this.MyMetricsQueryHelper.tagsToParams(datasetTags);
+      let dataSrc = new this.MyDataSource(this.$scope);
 
-        angular.forEach(datasets, function (v) {
-          obj.push({
-            name: v
-          });
+      dataSrc
+        .poll({
+          _cdapPath: `/metrics/query?${tagsToParams}&metric=system.dataset.store.reads`,
+          method: 'POST'
+        }, res => {
+          if (res.series[0]) {
+            dataset.reads = res.series[0].data[0].value;
+          }
         });
 
-        this.datasets = obj;
-
-        pollDatasets.bind(this)();
-
-      }.bind(this));
-
-    function pollDatasets() {
-      angular.forEach(this.datasets, function (dataset) {
-        var datasetTags = {
-          namespace: $state.params.namespace,
-          dataset: dataset.name,
-          app: $state.params.appId,
-          flow: $state.params.programId
-        };
-        dataSrc
-          .poll({
-            _cdapPath: '/metrics/query?' + MyMetricsQueryHelper.tagsToParams(datasetTags)
-                      + '&metric=system.dataset.store.reads',
-            method: 'POST'
-          }, function(res) {
-            if (res.series[0]) {
-              dataset.reads = res.series[0].data[0].value;
-            }
-          });
-
-        dataSrc
-          .poll({
-            _cdapPath: '/metrics/query?' + MyMetricsQueryHelper.tagsToParams(datasetTags)
-                      + '&metric=system.dataset.store.writes',
-            method: 'POST'
-          }, function(res) {
-            if (res.series[0]) {
-              dataset.writes = res.series[0].data[0].value;
-            }
-          });
-      });
-    }
-
-  });
+      dataSrc
+        .poll({
+          _cdapPath: `/metrics/query?${tagsToParams}&metric=system.dataset.store.writes`,
+          method: 'POST'
+        }, res => {
+          if (res.series[0]) {
+            dataset.writes = res.series[0].data[0].value;
+          }
+        });
+    });
+  }
+}
+FlowletDetailDataController.$inject = ['$state', '$scope', 'MyDataSource', 'myHelpers', 'MyMetricsQueryHelper', 'myFlowsApi'];
+angular.module(PKG.name + '.feature.flows')
+  .controller('FlowletDetailDataController', FlowletDetailDataController);

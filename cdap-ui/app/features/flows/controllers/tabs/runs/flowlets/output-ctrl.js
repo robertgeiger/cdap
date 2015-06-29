@@ -1,6 +1,6 @@
-angular.module(PKG.name + '.feature.flows')
-  .controller('FlowletDetailOutputController', function($state, $scope, MyDataSource, MyMetricsQueryHelper, myFlowsApi) {
-
+'use strict';
+class FlowletDetailOutputController {
+  constructor($state, $scope, MyDataSource, MyMetricsQueryHelper, myFlowsApi) {
     var dataSrc = new MyDataSource($scope);
     var flowletid = $scope.FlowletsController.activeFlowlet.name;
     var runid = $scope.RunsController.runs.selected.runid;
@@ -21,72 +21,65 @@ angular.module(PKG.name + '.feature.flows')
       flowlet: flowletid
     };
 
-    myFlowsApi.get(params)
+    myFlowsApi
+      .get(params)
       .$promise
-      .then(function (res) {
+      .then(res => {
 
         // OUTPUTS
-        angular.forEach(res.connections, function(v) {
+        angular.forEach(res.connections, v => {
           if (v.sourceName === flowletid) {
             this.outputs.push(v.targetName);
           }
-        }.bind(this));
+        });
 
         if (this.outputs.length > 0) {
+          let tagsToParams = MyMetricsQueryHelper.tagsToParams(flowletTags);
           // OUTPUT METRICS
           dataSrc
             .poll({
-              _cdapPath: '/metrics/query?' + MyMetricsQueryHelper.tagsToParams(flowletTags)
-                            + '&metric=system.process.events.out&start=now-60s&count=60',
+              _cdapPath: `/metrics/query?${tagsToParams}&metric=system.process.events.out&start=now-60s&count=60`,
               method: 'POST'
-            }, function(res) {
-              updateOutput.bind(this)(res);
-            }.bind(this));
+            }, res => this.updateOutput(res));
 
           // Total
           dataSrc
             .poll({
-              _cdapPath: '/metrics/query?' + MyMetricsQueryHelper.tagsToParams(flowletTags)
-                            + '&metric=system.process.events.out',
+              _cdapPath: `/metrics/query?${tagsToParams}&metric=system.process.events.out`,
               method: 'POST'
-            }, function(res) {
+            }, res => {
               if (res.series[0]) {
                 this.total = res.series[0].data[0].value;
               }
-            }.bind(this));
-
+            });
         }
+      });
+  }
 
-      }.bind(this));
-
-    function updateOutput(res) {
-      var v = [];
-
-      if (res.series[0]) {
-        angular.forEach(res.series[0].data, function(val) {
-          v.push({
-            time: val.time,
-            y: val.value
-          });
+  updateOutput(res) {
+    let v = [];
+    if (res.series[0]) {
+      angular.forEach( res.series[0].data, val => v.push({ time: val.time, y: val.value }) );
+    } else {
+      for (let i = 60; i > 0; i--) {
+        v.push({
+          time: Math.floor((new Date()).getTime()/1000 - (i)),
+          y: 0
         });
-      } else {
-        for (var i = 60; i > 0; i--) {
-          v.push({
-            time: Math.floor((new Date()).getTime()/1000 - (i)),
-            y: 0
-          });
-        }
       }
-
-      if (this.outputHistory) {
-        this.outputStream = v.slice(-1);
-      }
-
-      this.outputHistory = [{
-        label: 'output',
-        values: v
-      }];
-
     }
 
-  });
+    if (this.outputHistory) {
+      this.outputStream = v.slice(-1);
+    }
+
+    this.outputHistory = [{
+      label: 'output',
+      values: v
+    }];
+
+  }
+}
+FlowletDetailOutputController.$inject = ['$state', '$scope', 'MyDataSource', 'MyMetricsQueryHelper', 'myFlowsApi'];
+angular.module(PKG.name + '.feature.flows')
+  .controller('FlowletDetailOutputController', FlowletDetailOutputController);

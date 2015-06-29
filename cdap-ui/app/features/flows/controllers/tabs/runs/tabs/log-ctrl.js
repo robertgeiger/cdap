@@ -1,24 +1,27 @@
-angular.module(PKG.name + '.feature.flows')
-  .controller('FlowsRunDetailLogController', function($scope, $state, myFlowsApi) {
-
+'use strict';
+class FlowsRunDetailLogController {
+  constructor($scope, $state, myFlowsApi) {
     this.logs = [];
-    if (!$scope.RunsController.runs.length) {
+    this.runsCtrl = $scope.RunsController;
+    if (!this.runsCtrl.runs.length) {
       return;
     }
 
-    var params = {
+    let params = {
       namespace: $state.params.namespace,
       appId: $state.params.appId,
       flowId: $state.params.programId,
-      runId: $scope.RunsController.runs.selected.runid,
+      runId: this.runsCtrl.runs.selected.runid,
       max: 50,
       scope: $scope
     };
 
     myFlowsApi.logs(params)
       .$promise
-      .then(function (res) {
-        this.logs = res;
-      }.bind(this));
+      .then(res => this.logs = res);
+  }
+}
+FlowsRunDetailLogController.$inject = ['$scope', '$state', 'myFlowsApi'];
 
-  });
+angular.module(PKG.name + '.feature.flows')
+  .controller('FlowsRunDetailLogController', FlowsRunDetailLogController);

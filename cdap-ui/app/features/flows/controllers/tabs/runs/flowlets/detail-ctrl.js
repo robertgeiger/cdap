@@ -1,39 +1,38 @@
-angular.module(PKG.name + '.feature.flows')
-  .controller('FlowsFlowletDetailController', function($state, $scope, myHelpers, myFlowsApi) {
-
+'use strict';
+class FlowsFlowletDetailController {
+  constructor($state, $scope, myHelpers, myFlowsApi) {
     this.activeTab = 0;
-    var flowletid = $scope.FlowletsController.activeFlowlet.name;
+    this.myFlowsApi = myFlowsApi;
+    let flowletid = $scope.FlowletsController.activeFlowlet.name;
 
-    var params = {
+    this.params = {
       namespace: $state.params.namespace,
       appId: $state.params.appId,
       flowId: $state.params.programId,
       scope: $scope
     };
 
-    myFlowsApi.get(params)
+    this.myFlowsApi.get(this.params)
       .$promise
-      .then(function (res) {
-        this.description = myHelpers.objectQuery(res, 'flowlets', flowletid, 'flowletSpec', 'description');
-      }.bind(this));
+      .then(res => this.description = myHelpers.objectQuery(res, 'flowlets', flowletid, 'flowletSpec', 'description'));
 
-    params.flowletId = flowletid;
+    this.params.flowletId = flowletid;
 
-    myFlowsApi.getFlowletInstance(params)
+    this.myFlowsApi.getFlowletInstance(this.params)
       .$promise
-      .then(function (res){
+      .then(res => {
         this.provisionedInstances = res.instances;
         this.instance = res.instances;
-      }.bind(this));
+      });
 
-    myFlowsApi.pollFlowletInstance(params)
+    this.myFlowsApi.pollFlowletInstance(this.params)
       .$promise
-      .then(function (res) {
-        this.provisionedInstances = res.instances;
-      }.bind(this));
-
-    this.setInstance = function () {
-      myFlowsApi.setFlowletInstance(params, { 'instances': this.instance });
-    };
-
-  });
+      .then(res => this.provisionedInstances = res.instances);
+  }
+  setInstance() {
+    this.myFlowsApi.setFlowletInstance(this.params, { 'instances': this.instance });
+  }
+}
+FlowsFlowletDetailController.$inject = ['$state', '$scope', 'myHelpers', 'myFlowsApi'];
+angular.module(PKG.name + '.feature.flows')
+  .controller('FlowsFlowletDetailController', FlowsFlowletDetailController);
