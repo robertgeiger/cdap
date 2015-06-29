@@ -250,6 +250,11 @@ public abstract class BufferingTable extends AbstractTable implements MeteredDat
   }
 
   @Override
+  public void updateTx(Transaction transaction) {
+    // transaction checkpoints are not yet supported
+  }
+
+  @Override
   public Collection<byte[]> getTxChanges() {
     switch (conflictLevel) {
       case NONE:

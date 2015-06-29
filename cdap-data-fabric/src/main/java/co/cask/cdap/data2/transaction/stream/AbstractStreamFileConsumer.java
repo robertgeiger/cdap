@@ -320,6 +320,11 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
   }
 
   @Override
+  public final void updateTx(Transaction tx) {
+    // transaction checkpoints not yet supported
+  }
+
+  @Override
   public final Collection<byte[]> getTxChanges() {
     // Guaranteed no conflict in the consumer logic
     return ImmutableList.of();
