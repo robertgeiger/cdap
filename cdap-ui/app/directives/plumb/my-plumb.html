@@ -1,7 +1,8 @@
 <div class="my-js-plumb">
   <div id="plumb-container">
     <div ng-repeat="plugin in MyPlumbController.plugins" class="box" id="{{plugin.id}}">
-      {{plugin.name}}
+      <span class="fa fa-close" ng-click="MyPlumbController.removePlugin($index)"></span>
+      <span>{{plugin.name}}</span>
     </div>
   </div>
 </div>

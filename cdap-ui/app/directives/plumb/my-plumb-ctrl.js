@@ -43,6 +43,10 @@ angular.module(PKG.name + '.commons')
       });
     };
 
+    this.removePlugin = function(index) {
+      this.plugins.splice(index, 1);
+    };
+
     MyPlumbService.registerCallBack(this.addPlugin.bind(this));
 
     jsPlumb.ready(function() {
