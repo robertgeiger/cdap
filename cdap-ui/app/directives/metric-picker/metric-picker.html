@@ -2,14 +2,14 @@
   <div class="col-xs-12 col-sm-12">
     <div class="input-group">
       <div class="input-group-btn">
-        <button type="button" class="btn btn-default form-control mp-dropdown-toggle"
-          ng-model="metric.type"
-          bs-options="t for t in available.types"
-          data-container="body"
-          bs-select>
+        <a class="btn btn-default form-control mp-dropdown-toggle"
+           ng-model="metric.type"
+           bs-options="t for t in available.types"
+           data-container="body"
+           bs-select>
             <strong ng-bind="metric.type"></strong>
             <span class="caret"></span>
-        </button>
+        </a>
       </div>
       <input type="text" class="form-control mp-input-group-input"
         placeholder="Context"
@@ -48,6 +48,6 @@
 </div>
 </div>
 
-<button class="btn btn-primary" ng-click="addMetricName()" type="button" >
+<a class="btn btn-primary" ng-click="addMetricName()">
   <span class="fa fa-fw fa-plus"></span>
-</button>
+</a>

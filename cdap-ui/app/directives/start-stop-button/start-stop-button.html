@@ -28,9 +28,9 @@
     <span>{{status | caskCapitalizeFilter}}</span>
   </div>
 
-  <button class="btn btn-md btn-success dropdown-toggle" dropdown-toggle ng-if="status === 'STOPPED'">
+  <a class="btn btn-md btn-success dropdown-toggle" dropdown-toggle ng-if="status === 'STOPPED'">
     <span class="caret"></span>
-  </button>
+  </a>
 
   <ul class="dropdown-menu dropdown-menu-right" role="menu" ng-if="status === 'STOPPED'">
     <li>
@@ -47,11 +47,11 @@
     </li>
   </ul>
 
-  <button class="btn btn-md btn-success dropdown-toggle"
+  <a class="btn btn-md btn-success dropdown-toggle"
           dropdown-toggle ng-if="(['RUNNING', 'STARTED', 'SUSPENDED'].indexOf(status) !== -1) && isStoppable === 'false'"
           ng-disabled="status === 'RUNNING' && isRestartable === 'false'">
     <span class="caret"></span>
-  </button>
+  </a>
 
   <ul class="dropdown-menu dropdown-menu-right"
       role="menu"

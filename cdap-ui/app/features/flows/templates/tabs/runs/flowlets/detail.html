@@ -17,7 +17,7 @@
           <td><strong>Instances:</strong></td>
           <td class="text-center">{{ DetailCtrl.provisionedInstances }}</td>
           <td><input class="form-control" type="number" min="1" ng-model="DetailCtrl.instance"></td>
-          <td><button class="btn btn-primary btn-sm" ng-click="DetailCtrl.setInstance()" ng-disabled="DetailCtrl.instance === DetailCtrl.provisionedInstances">Set</button></td>
+          <td><a class="btn btn-primary btn-sm" ng-click="DetailCtrl.setInstance()" ng-disabled="DetailCtrl.instance === DetailCtrl.provisionedInstances">Set</a></td>
         </tr>
       </table>
     </div>

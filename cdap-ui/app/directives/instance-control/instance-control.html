@@ -10,7 +10,7 @@
       <td><strong>Instances:</strong></td>
       <td class="text-center">{{ instance.provisioned }}</td>
       <td><input class="form-control" type="number" ng-model="instance.requested"></td>
-      <td><button class="btn btn-primary btn-sm" ng-click="handleSet()" ng-disabled="instance.requested < 1">Set</button></td>
+      <td><a class="btn btn-primary btn-sm" ng-click="handleSet()" ng-disabled="instance.requested < 1">Set</a></td>
     </tr>
   </table>
 </div>

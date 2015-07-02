@@ -1,11 +1,10 @@
 <div class="btn-group nested-tabs pull-right">
-  <button class="btn btn-default"
-      ng-repeat="tab in RunsController.tabs"
-      ng-click="RunsController.selectTab(tab)"
-      ng-class="{'active': tab.title == RunsController.activeTab.title}"
-  >
+  <a class="btn btn-default"
+     ng-repeat="tab in RunsController.tabs"
+     ng-click="RunsController.selectTab(tab)"
+     ng-class="{'active': tab.title == RunsController.activeTab.title}">
     {{ tab.title }}
-  </button>
+  </a>
 </div>
 
 <my-program-status

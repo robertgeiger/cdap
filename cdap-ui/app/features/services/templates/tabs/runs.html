@@ -3,12 +3,11 @@
     <strong> View Run: </strong>
     <div class="btn-group dropdown-left"
           dropdown is-open="dropdown.isopen">
-      <button type="button"
-              class="btn btn-default dropdown-toggle"
-              dropdown-toggle ng-disabled="RunsController.runs.length === 0">
+      <a class="btn btn-default dropdown-toggle"
+         dropdown-toggle ng-disabled="RunsController.runs.length === 0">
         {{ RunsController.runs.selected.runid }}
         <span class="caret"></span>
-      </button>
+      </a>
       <ul class="dropdown-menu" role="menu">
         <li ng-repeat="run in RunsController.runs">
           <a ui-sref="services.detail.runs.run({runid: run.runid})">{{ run.runid }}</a>

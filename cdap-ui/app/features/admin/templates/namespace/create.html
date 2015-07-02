@@ -24,12 +24,11 @@
         <div class="alert alert-danger alert-dismissible"
              ng-show="error"
              role="alert">
-          <button type="button"
-                  class="close"
-                  ng-click="error=null"
-                  aria-label="Close">
+          <a class="close"
+             ng-click="error=null"
+             aria-label="Close">
             <span aria-hidden="true">&times;</span>
-          </button>
+          </a>
           <p><i class="fa fa-exclamation-circle"></i>  {{error}}</p>
         </div>
       </div>

@@ -28,21 +28,21 @@
 
   <div ng-show="preferences.length === 0">
     <div class="well well-sm text-center h4">
-      <button class="btn btn-default" ng-click="addPreference()">
+      <a class="btn btn-default" ng-click="addPreference()">
         <span class="fa fa-fw fa-plus"></span> Add an argument
-      </button>
+      </a>
     </div>
   </div>
 
   <div class="row">
     <div class="col-xs-12">
-      <button class="btn btn-primary" ng-click="addPreference()" ng-hide="preferences.length === 0">
+      <a class="btn btn-primary" ng-click="addPreference()" ng-hide="preferences.length === 0">
         <span class="fa fa-fw fa-plus"></span>
-      </button>
+      </a>
 
       <div class="pull-right">
-        <button class="btn btn-default" ng-click="$dismiss('close')">Cancel</button>
-        <button class="btn btn-success" ng-click="save()">OK</button>
+        <a class="btn btn-default" ng-click="$dismiss('close')">Cancel</a>
+        <a class="btn btn-success" ng-click="save()">OK</a>
       </div>
     </div>
   </div>

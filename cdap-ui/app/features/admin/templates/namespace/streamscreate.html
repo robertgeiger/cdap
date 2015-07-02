@@ -14,12 +14,11 @@
         <div class="alert alert-danger alert-dismissible"
              ng-show="error"
              role="alert">
-          <button type="button"
-                  class="close"
-                  ng-click="error=null"
-                  aria-label="Close">
+          <a class="close"
+             ng-click="error=null"
+             aria-label="Close">
             <span aria-hidden="true">&times;</span>
-          </button>
+          </a>
           <p><i class="fa fa-exclamation-circle"></i>  {{error}}</p>
         </div>
       </div>
@@ -27,14 +26,14 @@
   </form>
 </div>
 <div class="modal-footer">
-    <button class="btn btn-default" ng-click="closeModal()">Cancel</button>
-    <button class="btn btn-success"
-            ng-disabled="isSaving == true"
-            ng-click="createStream()"
-            ng-class="{disabled: streamId.length === 0}">
+    <a class="btn btn-default" ng-click="closeModal()">Cancel</a>
+    <a class="btn btn-success"
+       ng-disabled="isSaving == true"
+       ng-click="createStream()"
+       ng-class="{disabled: streamId.length === 0}">
       <div ng-if="isSaving == true" >
         <span class="fa fa-spin fa-refresh"></span>
       </div>
       <span>Create</span>
-    </button>
+    </a>
 </div>
