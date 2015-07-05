@@ -3,31 +3,46 @@
 my-side-panel {
   .side-panel {
     position: fixed;
-    left: 0;
+    bottom: 0;
     z-index: 10000;
-    top: 300px;
+    left: 0;
+    width: 100%;
+    background-color: #6f7c9d;
 
     .panel-item {
       text-align: center;
       line-height: 100%;
-      background-color: @cdap-bluegray;
       color: white;
-      padding: 10px;
+      padding: 10px 30px;
+      display: inline-block;
       cursor: pointer;
+      border-bottom: 2px solid transparent;
 
-      &:hover {
-        background-color: @cdap-orange;
+      &.source {
+        color: #49C630;
+        &:hover,&.active {
+          border-bottom: 2px solid #49C630;
+        }
+      }
+
+      &.sink {
+        color: #66FAF1;
+        &:hover,&.active {
+          border-bottom: 2px solid #66FAF1;
+        }
+      }
+
+      &.transform {
+        color: #66A3E1;
+        &:hover,&.active {
+          border-bottom: 2px solid #66A3E1;
+        }
       }
     }
   }
   .panel-container {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    height: 200px;
     box-shadow: 1px 1px 1px 1px black;
-    background-color: #6f7c9d;
-    opacity: 0.8;
+    background-color: #586073;
 
     .list-group-item {
       cursor:pointer;
@@ -35,8 +50,12 @@ my-side-panel {
       background: transparent;
       color: white;
 
+      i {
+        display: block;
+      }
+
       &:hover {
-        background-color: @cdap-orange;
+        color: @cdap-orange;
       }
     }
 

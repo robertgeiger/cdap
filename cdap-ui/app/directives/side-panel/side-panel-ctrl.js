@@ -1,7 +1,17 @@
 angular.module(PKG.name + '.commons')
   .controller('MySidePanel', function ($scope, myAdapterApi, MyPlumbService) {
     this.items = $scope.panelGroups;
+    this.openedPluginType = null;
     this.openPlugins = function (type) {
+
+      if (this.openedPluginType === type && this.showPlugin) {
+        this.showPlugin = false;
+        this.openedPluginType = null;
+        return;
+      }
+
+      this.openedPluginType = type;
+
       switch (type) {
         case 'source':
           myAdapterApi.fetchSources({
