@@ -3,71 +3,74 @@
 my-side-panel {
   .side-panel {
     position: fixed;
-    bottom: 0;
-    z-index: 10000;
     left: 0;
-    width: 100%;
+    top: 76px;
+    z-index: 10000;
+    width: 40px;
     background-color: #6f7c9d;
+    transition: width 0.5s;
+    transition-duration: 0.5s;
 
-    .panel-item {
-      text-align: center;
-      line-height: 100%;
+    .btn.btn-info.btn-block {
+      border-radius: 0;
+    }
+
+    &.expanded {
+      width: 100px;
+
+      .item {
+        .plugin-item, .item-heading {
+          .name, .description {
+            display: inline-block;
+            vertical-align: top;
+            max-width: 70px;
+            overflow-x: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+      }
+    }
+
+    .item {
+      padding: 10px 0;
+      background-color: #3C4355;
+      border-bottom: 1px solid;
       color: white;
-      padding: 10px 30px;
-      display: inline-block;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
 
+      .item-heading{
+        &.opened {
+          border-bottom: 2px solid;
+        }
+      }
+      .item-body {
+        padding: 0 6px;
+      }
+
+      .plugin-item, .item-heading {
+        &:first-child {
+          padding-top: 10px;
+        }
+
+        .name, .description {
+          display: none;
+        }
+      }
+
+      &:first-child {
+        border-top: 1px solid;
+      }
       &.source {
         color: #49C630;
-        &:hover,&.active {
-          border-bottom: 2px solid #49C630;
-        }
       }
 
       &.sink {
         color: #66FAF1;
-        &:hover,&.active {
-          border-bottom: 2px solid #66FAF1;
-        }
       }
 
       &.transform {
         color: #66A3E1;
-        &:hover,&.active {
-          border-bottom: 2px solid #66A3E1;
-        }
       }
-    }
-  }
-  .panel-container {
-    box-shadow: 1px 1px 1px 1px black;
-    background-color: #586073;
-
-    .list-group-item {
-      cursor:pointer;
-      border: 0;
-      background: transparent;
-      color: white;
-
-      i {
-        display: block;
-      }
-
-      &:hover {
-        color: @cdap-orange;
-      }
-    }
-
-    .plugin-container {
-      overflow: auto;
-      height: 200px;
-    }
-
-    .btn.btn-danger.btn-sm {
-      position: fixed;
-      top: 200px;
-      left: 50vw;
     }
   }
 }

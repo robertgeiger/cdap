@@ -1,24 +1,36 @@
-<div class="side-panel text-center">
-  <div ng-repeat="item in MySidePanel.items"
-       class="panel-item {{item}}"
-       ng-class="{'active': MySidePanel.openedPluginType === '{{item}}'}"
-       ng-click="MySidePanel.openPlugins(item)">
-    <span>{{item | caskCapitalizeFilter}}</span>
+<div class="side-panel text-center"
+      ng-class="{'expanded': MySidePanel.expanded === true}">
+  <div ng-if="MySidePanel.expanded === false"
+        class="btn btn-info btn-block"
+        ng-click="MySidePanel.expanded = true">
+    <span class="fa fa-angle-double-right"></span>
   </div>
-
-  <div class="panel-container am-slide-bottom"
-       data-animation="am-slide-down"
-       ng-if="MySidePanel.showPlugin">
-
-    <div class="plugin-container">
-      <div ng-repeat="plugin in MySidePanel.plugins"
-           class="list-group-item"
-           ng-click="MySidePanel.addPlugin(plugin, plugin.type)">
-        <strong class="fa fa-plug"></strong>
-        <strong>{{plugin.name}}</strong>
-        <i><small>{{plugin.description}}</small></i>
-      </div>
+  <div ng-if="MySidePanel.expanded === true"
+        class="btn btn-info btn-block"
+        ng-click="MySidePanel.expanded = false">
+    <span class="fa fa-angle-double-left"></span>
+  </div>
+  <div class="item {{item}}"
+       ng-repeat="item in MySidePanel.items"
+       ng-click="MySidePanel.openPlugins(item)">
+    <div class="item-heading"
+          ng-class="{'opened': MySidePanel.openedPluginType === item}">
+      <span class="icon-ETL{{item}}s"></span>
+      <span class="name">{{item | caskCapitalizeFilter}}</span>
     </div>
 
+    <div class="item-body"
+         ng-class="{'text-left': MySidePanel.expanded === true}"
+         ng-if="MySidePanel.openedPluginType === item">
+      <div ng-repeat="plugin in MySidePanel.plugins"
+            class="plugin-item"
+            tooltip="{{plugin.name}}"
+            tooltip-placement="right"
+            ng-click="MySidePanel.addPlugin(plugin, plugin.type)">
+      <strong class="fa {{plugin.icon}}"></strong>
+      <strong class="name">{{plugin.name}}</strong>
+      </div>
+    </div>
   </div>
+
 </div>
