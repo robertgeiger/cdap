@@ -12,9 +12,10 @@
   </div>
   <div class="item {{item}}"
        ng-repeat="item in MySidePanel.items"
+       ng-class="{'text-left': MySidePanel.expanded === true}"
        ng-click="MySidePanel.openPlugins(item)">
     <div class="item-heading"
-          ng-class="{'opened': MySidePanel.openedPluginType === item}">
+          ng-class="{'opened': MySidePanel.openedPluginType === item }">
       <span class="icon-ETL{{item}}s"></span>
       <span class="name">{{item | caskCapitalizeFilter}}</span>
     </div>
@@ -26,7 +27,7 @@
             class="plugin-item"
             tooltip="{{plugin.name}}"
             tooltip-placement="right"
-            ng-click="MySidePanel.addPlugin(plugin, plugin.type)">
+            ng-click="MySidePanel.addPlugin($event, plugin, plugin.type)">
       <strong class="fa {{plugin.icon}}"></strong>
       <strong class="name">{{plugin.name}}</strong>
       </div>

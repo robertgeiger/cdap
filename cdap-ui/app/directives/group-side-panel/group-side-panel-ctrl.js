@@ -38,7 +38,8 @@ angular.module(PKG.name + '.commons')
       }
     };
 
-    this.addPlugin = function(config, type) {
+    this.addPlugin = function(event, config, type) {
+      event.stopPropagation();
       MyPlumbService.updateConfig(config, type);
     };
 
