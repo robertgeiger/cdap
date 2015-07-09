@@ -1,0 +1,160 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+package co.cask.cdap.data.tools;
+
+import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.DatasetSpecification;
+import co.cask.cdap.api.dataset.lib.IndexedTable;
+import co.cask.cdap.data2.datafabric.dataset.DatasetsUtil;
+import co.cask.cdap.data2.dataset2.DatasetFramework;
+import co.cask.cdap.data2.dataset2.lib.partitioned.PartitionedFileSetDataset;
+import co.cask.cdap.data2.dataset2.lib.partitioned.PartitionedFileSetDefinition;
+import co.cask.cdap.data2.dataset2.lib.table.hbase.HBaseTableAdmin;
+import co.cask.cdap.data2.util.TableId;
+import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
+import co.cask.cdap.data2.util.hbase.ScanBuilder;
+import co.cask.cdap.proto.Id;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.inject.Inject;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.NavigableMap;
+
+/**
+ * Migrates the tables of a PartitionedFileSet.
+ */
+public class PartitionedFileSetTableMigrator {
+  private static final Logger LOG = LoggerFactory.getLogger(PartitionedFileSetTableMigrator.class);
+  private static final long MILLION = 1000 * 1000;
+  protected final HBaseTableUtil tableUtil;
+  protected final Configuration conf;
+  private final DatasetFramework dsFramework;
+
+  @Inject
+  protected PartitionedFileSetTableMigrator(HBaseTableUtil tableUtil, Configuration conf,
+                                            DatasetFramework dsFramework) {
+    this.tableUtil = tableUtil;
+    this.conf = conf;
+    this.dsFramework = dsFramework;
+  }
+
+  /**
+   * Given a specification of a PartitionedFileSet, creates an IndexedTable for the new embedded partitions Dataset
+   * and migrates the data from the old partitions table to the new partitions table.
+   *
+   * @param namespaceId the namespace that contains the PartitionedFileSet
+   * @param dsSpec the specification of the PartitionedFileSet that needs migrating
+   * @throws Exception
+   */
+  void upgrade(Id.Namespace namespaceId, DatasetSpecification dsSpec) throws Exception {
+    DatasetSpecification newPartitionsSpec = dsSpec.getSpecification(PartitionedFileSetDefinition.PARTITION_TABLE_NAME);
+    TableId oldPartitionsTableId = TableId.from(namespaceId, newPartitionsSpec.getName());
+    TableId indexTableId = TableId.from(namespaceId, newPartitionsSpec.getName() + ".i");
+    TableId dataTableId = TableId.from(namespaceId, newPartitionsSpec.getName() + ".d");
+
+
+    byte[] columnFamily = HBaseTableAdmin.getColumnFamily(newPartitionsSpec);
+
+    HBaseAdmin hBaseAdmin = new HBaseAdmin(conf);
+    if (!tableUtil.tableExists(hBaseAdmin, oldPartitionsTableId)) {
+      LOG.info("Old Partitions table does not exist: {}. Nothing to migrate from.", oldPartitionsTableId);
+      return;
+    }
+
+    DatasetsUtil.createIfNotExists(dsFramework, Id.DatasetInstance.from(namespaceId, newPartitionsSpec.getName()),
+                                   IndexedTable.class.getName(),
+                                   DatasetProperties.builder().addAll(newPartitionsSpec.getProperties()).build());
+
+    HTable oldTable = tableUtil.createHTable(conf, oldPartitionsTableId);
+    HTable newIndexTable = tableUtil.createHTable(conf, indexTableId);
+    HTable newDataTable = tableUtil.createHTable(conf, dataTableId);
+
+    LOG.info("Starting upgrade for table {}", Bytes.toString(oldTable.getTableName()));
+    try {
+      ScanBuilder scan = tableUtil.buildScan();
+      scan.setTimeRange(0, HConstants.LATEST_TIMESTAMP);
+      scan.setMaxVersions(1); // we only need to see one version of each row
+      try (ResultScanner resultScanner = oldTable.getScanner(scan.build())) {
+        Result result;
+        while ((result = resultScanner.next()) != null) {
+          Put put = new Put(result.getRow());
+
+
+          Long hBaseVersion = null;
+
+          for (Map.Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> familyMap :
+            result.getMap().entrySet()) {
+            for (Map.Entry<byte[], NavigableMap<Long, byte[]>> columnMap : familyMap.getValue().entrySet()) {
+              for (Map.Entry<Long, byte[]> columnEntry : columnMap.getValue().entrySet()) {
+                Long timeStamp = columnEntry.getKey();
+                byte[] colVal = columnEntry.getValue();
+                put.add(familyMap.getKey(), columnMap.getKey(), timeStamp, colVal);
+                LOG.info("Migrating row. family: '{}', column: '{}', ts: '{}', colVal: '{}'",
+                         familyMap.getKey(), columnMap.getKey(), timeStamp, colVal);
+
+                // the hbase version for all the columns are equal since every column of a row corresponds to one
+                // partition and a partition is created entirely within a single transaction.
+                hBaseVersion = timeStamp;
+              }
+            }
+          }
+
+          Preconditions.checkNotNull(hBaseVersion,
+                                     "There should have been at least one column in the scan. Table: {}, Rowkey: {}",
+                                     oldPartitionsTableId, result.getRow());
+
+          // additionally since 3.1.0, we keep two addition columns for each partition: creation time of the partition
+          // and the transaction write pointer of the transaction in which the partition was added
+          put.add(columnFamily, PartitionedFileSetDataset.WRITE_PTR_COL,
+                  hBaseVersion, Bytes.toBytes(hBaseVersion));
+          // here, we make the assumption that dropping the six right-most digits of the transaction write pointer
+          // yields the timestamp at which it started
+          put.add(columnFamily, PartitionedFileSetDataset.CREATION_TIME_COL,
+                  hBaseVersion, Bytes.toBytes(hBaseVersion / MILLION));
+
+          newDataTable.put(put);
+          LOG.debug("Deleting old key {} for deletion", Bytes.toString(result.getRow()));
+          oldTable.delete(new Delete(result.getRow()));
+        }
+      } finally {
+        oldTable.close();
+        newIndexTable.close();
+        newDataTable.close();
+      }
+      LOG.info("Successfully migrated data from table {} Now deleting it.", Bytes.toString(oldTable.getTableName()));
+      hBaseAdmin.deleteTable(oldTable.getTableName());
+      LOG.info("Succsefully deleted old data table {}", Bytes.toString(oldTable.getTableName()));
+    } catch (Exception e) {
+      LOG.error("Error while migrating data from table: {}", oldPartitionsTableId, e);
+      throw Throwables.propagate(e);
+    } finally {
+      oldTable.close();
+    }
+  }
+}
