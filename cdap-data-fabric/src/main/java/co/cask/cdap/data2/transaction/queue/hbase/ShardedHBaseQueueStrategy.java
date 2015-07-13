@@ -115,7 +115,7 @@ public final class ShardedHBaseQueueStrategy implements HBaseQueueStrategy, Clos
   private ResultScanner createHBaseScanner(ConsumerConfig consumerConfig, HTable hTable, Scan scan,
                                            int numRows) throws IOException {
     // Modify the scan with sharded key prefix
-    ScanBuilder shardedScan = tableUtil.createScanBuilder(scan);
+    ScanBuilder shardedScan = tableUtil.buildScan(scan);
 
     // we should roughly divide by number of buckets, but don't want another RPC for the case we are not exactly right
     int caching = (int) (1.1 * numRows / distributorBuckets);

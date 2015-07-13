@@ -560,56 +560,56 @@ public abstract class HBaseTableUtil {
   /**
    * Creates a {@link ScanBuilder}.
    */
-  public ScanBuilder createScanBuilder() {
+  public ScanBuilder buildScan() {
     return new DefaultScanBuilder();
   }
 
   /**
    * Creates a {@link ScanBuilder} by copying from another {@link Scan} instance.
    */
-  public ScanBuilder createScanBuilder(Scan scan) throws IOException {
+  public ScanBuilder buildScan(Scan scan) throws IOException {
     return new DefaultScanBuilder(scan);
   }
 
   /**
    * Creates a {@link PutBuilder} for the given row.
    */
-  public PutBuilder createPutBuilder(byte[] row) {
+  public PutBuilder buildPut(byte[] row) {
     return new DefaultPutBuilder(row);
   }
 
   /**
    * Creates a {@link PutBuilder} by copying from another {@link Put} instance.
    */
-  public PutBuilder createPutBuilder(Put put) {
+  public PutBuilder buildPut(Put put) {
     return new DefaultPutBuilder(put);
   }
 
   /**
    * Creates a {@link GetBuilder} for the given row.
    */
-  public GetBuilder createGetBuilder(byte[] row) {
+  public GetBuilder buildGet(byte[] row) {
     return new DefaultGetBuilder(row);
   }
 
   /**
    * Creates a {@link GetBuilder} by copying from another {@link Get} instance.
    */
-  public GetBuilder createGetBuilder(Get get) {
+  public GetBuilder buildGet(Get get) {
     return new DefaultGetBuilder(get);
   }
 
   /**
    * Creates a {@link DeleteBuilder} for the given row.
    */
-  public DeleteBuilder createDeleteBuilder(byte[] row) {
+  public DeleteBuilder buildDelete(byte[] row) {
     return new DefaultDeleteBuilder(row);
   }
 
   /**
    * Creates a {@link DeleteBuilder} by copying from another {@link Delete} instance.
    */
-  public DeleteBuilder createDeleteBuilder(Delete delete) {
+  public DeleteBuilder buildDelete(Delete delete) {
     return new DefaultDeleteBuilder(delete);
   }
 

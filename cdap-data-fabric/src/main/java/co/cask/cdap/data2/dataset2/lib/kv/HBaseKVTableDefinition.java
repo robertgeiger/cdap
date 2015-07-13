@@ -32,8 +32,6 @@ import com.google.inject.Inject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
@@ -145,9 +143,9 @@ public class HBaseKVTableDefinition extends AbstractDatasetDefinition<NoTxKeyVal
     public void put(byte[] key, @Nullable byte[] value) {
       try {
         if (value == null) {
-          table.delete(tableUtil.createDeleteBuilder(key).create());
+          table.delete(tableUtil.buildDelete(key).create());
         } else {
-          Put put = tableUtil.createPutBuilder(key)
+          Put put = tableUtil.buildPut(key)
             .add(DATA_COLUMN_FAMILY, DEFAULT_COLUMN, value)
             .create();
           table.put(put);
@@ -161,7 +159,7 @@ public class HBaseKVTableDefinition extends AbstractDatasetDefinition<NoTxKeyVal
     @Override
     public byte[] get(byte[] key) {
       try {
-        Result result = table.get(tableUtil.createGetBuilder(key).create());
+        Result result = table.get(tableUtil.buildGet(key).create());
         return result.isEmpty() ? null : result.getValue(DATA_COLUMN_FAMILY, DEFAULT_COLUMN);
       } catch (IOException e) {
         throw Throwables.propagate(e);

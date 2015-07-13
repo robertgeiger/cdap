@@ -86,7 +86,7 @@ public abstract class AbstractQueueUpgrader extends AbstractUpgrader {
 
     LOG.info("Starting upgrade for table {}", Bytes.toString(hTable.getTableName()));
     try {
-      ScanBuilder scan = tableUtil.createScanBuilder();
+      ScanBuilder scan = tableUtil.buildScan();
       scan.setTimeRange(0, HConstants.LATEST_TIMESTAMP);
       scan.addFamily(QueueEntryRow.COLUMN_FAMILY);
       scan.setMaxVersions(1); // we only need to see one version of each row
@@ -107,7 +107,7 @@ public abstract class AbstractQueueUpgrader extends AbstractUpgrader {
               mutations.add(put);
             }
             LOG.debug("Marking old key {} for deletion", rowKeyString);
-            mutations.add(tableUtil.createDeleteBuilder(row).create());
+            mutations.add(tableUtil.buildDelete(row).create());
           }
           LOG.info("Finished processing row key {}", rowKeyString);
         }

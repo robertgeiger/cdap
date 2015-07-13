@@ -294,42 +294,42 @@ public class HBase10TableUtil extends HBaseTableUtil {
   }
 
   @Override
-  public ScanBuilder createScanBuilder() {
+  public ScanBuilder buildScan() {
     return new HBase10ScanBuilder();
   }
 
   @Override
-  public ScanBuilder createScanBuilder(Scan scan) throws IOException {
+  public ScanBuilder buildScan(Scan scan) throws IOException {
     return new HBase10ScanBuilder(scan);
   }
 
   @Override
-  public PutBuilder createPutBuilder(byte[] row) {
+  public PutBuilder buildPut(byte[] row) {
     return new HBase10PutBuilder(row);
   }
 
   @Override
-  public PutBuilder createPutBuilder(Put put) {
+  public PutBuilder buildPut(Put put) {
     return new HBase10PutBuilder(put);
   }
 
   @Override
-  public GetBuilder createGetBuilder(byte[] row) {
+  public GetBuilder buildGet(byte[] row) {
     return new HBase10GetBuilder(row);
   }
 
   @Override
-  public GetBuilder createGetBuilder(Get get) {
+  public GetBuilder buildGet(Get get) {
     return new HBase10GetBuilder(get);
   }
 
   @Override
-  public DeleteBuilder createDeleteBuilder(byte[] row) {
+  public DeleteBuilder buildDelete(byte[] row) {
     return new HBase10DeleteBuilder(row);
   }
 
   @Override
-  public DeleteBuilder createDeleteBuilder(Delete delete) {
+  public DeleteBuilder buildDelete(Delete delete) {
     return new HBase10DeleteBuilder(delete);
   }
 }

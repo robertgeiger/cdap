@@ -260,7 +260,7 @@ public class HBaseTableTest extends BufferingTableTest<BufferingTable> {
       testHBase.forEachRegion(enabledTableNameBytes, new Function<HRegion, Object>() {
         @Override
         public Object apply(HRegion hRegion) {
-          Scan scan = hBaseTableUtil.createScanBuilder().build();
+          Scan scan = hBaseTableUtil.buildScan().build();
           try {
             RegionScanner scanner = hRegion.getScanner(scan);
             List<Cell> results = Lists.newArrayList();

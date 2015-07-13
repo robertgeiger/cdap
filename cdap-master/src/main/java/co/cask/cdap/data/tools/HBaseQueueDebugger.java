@@ -181,7 +181,7 @@ public class HBaseQueueDebugger extends AbstractIdleService {
     int distributorBuckets = queueClientFactory.getDistributorBuckets(hTable.getTableDescriptor());
     ShardedHBaseQueueStrategy queueStrategy = new ShardedHBaseQueueStrategy(tableUtil, distributorBuckets);
 
-    ScanBuilder scan = tableUtil.createScanBuilder();
+    ScanBuilder scan = tableUtil.buildScan();
     scan.setStartRow(start.getStartRow());
     if (end != null) {
       scan.setStopRow(end.getStartRow());

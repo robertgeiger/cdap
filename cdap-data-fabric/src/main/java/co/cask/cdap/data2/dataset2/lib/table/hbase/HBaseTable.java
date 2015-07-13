@@ -161,7 +161,7 @@ public class HBaseTable extends BufferingTable {
   protected void persist(NavigableMap<byte[], NavigableMap<byte[], Update>> buff) throws Exception {
     List<Put> puts = Lists.newArrayList();
     for (Map.Entry<byte[], NavigableMap<byte[], Update>> row : buff.entrySet()) {
-      PutBuilder put = tableUtil.createPutBuilder(row.getKey());
+      PutBuilder put = tableUtil.buildPut(row.getKey());
       Put incrementPut = null;
       for (Map.Entry<byte[], Update> column : row.getValue().entrySet()) {
         // we want support tx and non-tx modes
@@ -206,7 +206,7 @@ public class HBaseTable extends BufferingTable {
     if (existing != null) {
       return existing;
     }
-    return tableUtil.createPutBuilder(row)
+    return tableUtil.buildPut(row)
       .setAttribute(DELTA_WRITE, Bytes.toBytes(true))
       .create();
   }
@@ -216,7 +216,7 @@ public class HBaseTable extends BufferingTable {
     // NOTE: we use Delete with the write pointer as the specific version to delete.
     List<Delete> deletes = Lists.newArrayList();
     for (Map.Entry<byte[], NavigableMap<byte[], Update>> row : persisted.entrySet()) {
-      DeleteBuilder delete = tableUtil.createDeleteBuilder(row.getKey());
+      DeleteBuilder delete = tableUtil.buildDelete(row.getKey());
       for (Map.Entry<byte[], Update> column : row.getValue().entrySet()) {
         // we want support tx and non-tx modes
         if (tx != null) {
@@ -248,7 +248,7 @@ public class HBaseTable extends BufferingTable {
 
   @Override
   protected Scanner scanPersisted(co.cask.cdap.api.dataset.table.Scan scan) throws Exception {
-    ScanBuilder hScan = tableUtil.createScanBuilder();
+    ScanBuilder hScan = tableUtil.buildScan();
     hScan.addFamily(columnFamily);
     // todo: should be configurable
     // NOTE: by default we assume scanner is used in mapreduce job, hence no cache blocks
@@ -290,7 +290,7 @@ public class HBaseTable extends BufferingTable {
   }
 
   private Get createGet(byte[] row, @Nullable byte[][] columns) {
-    GetBuilder get = tableUtil.createGetBuilder(row);
+    GetBuilder get = tableUtil.buildGet(row);
     get.addFamily(columnFamily);
     if (columns != null && columns.length > 0) {
       for (byte[] column : columns) {

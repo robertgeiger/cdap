@@ -117,7 +117,7 @@ public final class HBaseStreamFileConsumer extends AbstractStreamFileConsumer {
 
   @Override
   protected StateScanner scanStates(byte[] startRow, byte[] stopRow) throws IOException {
-    Scan scan = tableUtil.createScanBuilder()
+    Scan scan = tableUtil.buildScan()
       .setStartRow(startRow)
       .setStopRow(stopRow)
       .setMaxVersions(1)

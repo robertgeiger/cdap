@@ -98,7 +98,7 @@ public final class SaltedHBaseQueueStrategy implements HBaseQueueStrategy {
   public QueueScanner createScanner(ConsumerConfig consumerConfig,
                                     HTable hTable, Scan scan, int numRows) throws IOException {
     // we should roughly divide by number of buckets, but don't want another RPC for the case we are not exactly right
-    ScanBuilder distributedScan = tableUtil.createScanBuilder(scan);
+    ScanBuilder distributedScan = tableUtil.buildScan(scan);
     int caching = (int) (1.1 * numRows / distributorBuckets);
     distributedScan.setCaching(caching);
 
