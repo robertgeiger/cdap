@@ -35,6 +35,7 @@ import co.cask.cdap.data2.dataset2.lib.table.PutValue;
 import co.cask.cdap.data2.dataset2.lib.table.Update;
 import co.cask.cdap.data2.dataset2.lib.table.inmemory.PrefixedNamespaces;
 import co.cask.cdap.data2.util.TableId;
+import co.cask.cdap.data2.util.hbase.DeleteBuilder;
 import co.cask.cdap.data2.util.hbase.GetBuilder;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.data2.util.hbase.PutBuilder;
@@ -215,7 +216,7 @@ public class HBaseTable extends BufferingTable {
     // NOTE: we use Delete with the write pointer as the specific version to delete.
     List<Delete> deletes = Lists.newArrayList();
     for (Map.Entry<byte[], NavigableMap<byte[], Update>> row : persisted.entrySet()) {
-      Delete delete = new Delete(row.getKey());
+      DeleteBuilder delete = tableUtil.createDeleteBuilder(row.getKey());
       for (Map.Entry<byte[], Update> column : row.getValue().entrySet()) {
         // we want support tx and non-tx modes
         if (tx != null) {
@@ -226,7 +227,7 @@ public class HBaseTable extends BufferingTable {
           delete.deleteColumns(columnFamily, column.getKey());
         }
       }
-      deletes.add(delete);
+      deletes.add(delete.create());
     }
     hTable.delete(deletes);
     hTable.flushCommits();

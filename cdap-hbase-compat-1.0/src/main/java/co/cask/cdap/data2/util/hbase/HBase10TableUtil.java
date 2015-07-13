@@ -36,6 +36,7 @@ import org.apache.hadoop.hbase.NamespaceNotFoundException;
 import org.apache.hadoop.hbase.RegionLoad;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
@@ -320,5 +321,15 @@ public class HBase10TableUtil extends HBaseTableUtil {
   @Override
   public GetBuilder createGetBuilder(Get get) {
     return new HBase10GetBuilder(get);
+  }
+
+  @Override
+  public DeleteBuilder createDeleteBuilder(byte[] row) {
+    return new HBase10DeleteBuilder(row);
+  }
+
+  @Override
+  public DeleteBuilder createDeleteBuilder(Delete delete) {
+    return new HBase10DeleteBuilder(delete);
   }
 }

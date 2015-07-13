@@ -25,6 +25,7 @@ import co.cask.cdap.common.utils.ImmutablePair;
 import co.cask.cdap.data2.dataset2.lib.table.FuzzyRowFilter;
 import co.cask.cdap.data2.dataset2.lib.table.MetricsTable;
 import co.cask.cdap.data2.util.TableId;
+import co.cask.cdap.data2.util.hbase.DeleteBuilder;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.data2.util.hbase.PutBuilder;
 import co.cask.cdap.data2.util.hbase.ScanBuilder;
@@ -107,9 +108,10 @@ public class HBaseMetricsTable implements MetricsTable {
   public boolean swap(byte[] row, byte[] column, byte[] oldValue, byte[] newValue) {
     try {
       if (newValue == null) {
-        Delete delete = new Delete(row);
         // HBase API weirdness: we must use deleteColumns() because deleteColumn() deletes only the last version.
-        delete.deleteColumns(columnFamily, column);
+        Delete delete = tableUtil.createDeleteBuilder(row)
+          .deleteColumns(columnFamily, column)
+          .create();
         return hTable.checkAndDelete(row, columnFamily, column, oldValue, delete);
       } else {
         Put put = tableUtil.createPutBuilder(row)
@@ -198,12 +200,12 @@ public class HBaseMetricsTable implements MetricsTable {
 
   @Override
   public void delete(byte[] row, byte[][] columns) {
-    Delete delete = new Delete(row);
+    DeleteBuilder delete = tableUtil.createDeleteBuilder(row);
     for (byte[] column : columns) {
       delete.deleteColumns(columnFamily, column);
     }
     try {
-      hTable.delete(delete);
+      hTable.delete(delete.create());
     } catch (IOException e) {
       throw new DataSetException("Delete failed on table " + tableId, e);
     }

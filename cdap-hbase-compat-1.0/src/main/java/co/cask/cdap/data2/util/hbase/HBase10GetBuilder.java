@@ -21,13 +21,13 @@ import org.apache.hadoop.hbase.client.Get;
 /**
  * HBase 1.0 specific implementation for {@link GetBuilder}.
  */
-public class HBase10GetBuilder extends DefaultGetBuilder {
+class HBase10GetBuilder extends DefaultGetBuilder {
 
-  public HBase10GetBuilder(byte[] row) {
+  HBase10GetBuilder(byte[] row) {
     super(row);
   }
 
-  public HBase10GetBuilder(Get get) {
+  HBase10GetBuilder(Get get) {
     super(get);
   }
 

@@ -27,13 +27,13 @@ import java.util.Map;
 /**
  * HBase 1.0 specific implementation for {@link ScanBuilder}.
  */
-public class HBase10ScanBuilder extends DefaultScanBuilder {
+class HBase10ScanBuilder extends DefaultScanBuilder {
 
-  protected HBase10ScanBuilder() {
+  HBase10ScanBuilder() {
     super();
   }
 
-  protected HBase10ScanBuilder(Scan other) throws IOException {
+  HBase10ScanBuilder(Scan other) throws IOException {
     super(other);
   }
 

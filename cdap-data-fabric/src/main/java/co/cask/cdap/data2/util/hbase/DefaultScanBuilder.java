@@ -33,70 +33,70 @@ class DefaultScanBuilder implements ScanBuilder {
 
   protected final Scan scan;
 
-  protected DefaultScanBuilder() {
+  DefaultScanBuilder() {
     this.scan = new Scan();
   }
 
-  protected DefaultScanBuilder(Scan other) throws IOException {
+  DefaultScanBuilder(Scan other) throws IOException {
     this.scan = new Scan(other);
   }
 
   @Override
-  public final ScanBuilder addFamily(byte[] family) {
+  public ScanBuilder addFamily(byte[] family) {
     scan.addFamily(family);
     return this;
   }
 
   @Override
-  public final ScanBuilder addColumn(byte[] family, byte[] qualifier) {
+  public ScanBuilder addColumn(byte[] family, byte[] qualifier) {
     scan.addColumn(family, qualifier);
     return this;
   }
 
   @Override
-  public final ScanBuilder setTimeRange(long minStamp, long maxStamp) throws IOException {
+  public ScanBuilder setTimeRange(long minStamp, long maxStamp) throws IOException {
     scan.setTimeRange(minStamp, maxStamp);
     return this;
   }
 
   @Override
-  public final ScanBuilder setTimeStamp(long timestamp) throws IOException {
+  public ScanBuilder setTimeStamp(long timestamp) throws IOException {
     scan.setTimeStamp(timestamp);
     return this;
   }
 
   @Override
-  public final ScanBuilder setStartRow(byte[] startRow) {
+  public ScanBuilder setStartRow(byte[] startRow) {
     scan.setStartRow(startRow);
     return this;
   }
 
   @Override
-  public final ScanBuilder setStopRow(byte[] stopRow) {
+  public ScanBuilder setStopRow(byte[] stopRow) {
     scan.setStopRow(stopRow);
     return this;
   }
 
   @Override
-  public final ScanBuilder setMaxVersions() {
+  public ScanBuilder setMaxVersions() {
     scan.setMaxVersions();
     return this;
   }
 
   @Override
-  public final ScanBuilder setMaxVersions(int maxVersions) {
+  public ScanBuilder setMaxVersions(int maxVersions) {
     scan.setMaxVersions(maxVersions);
     return this;
   }
 
   @Override
-  public final ScanBuilder setFilter(Filter filter) {
+  public ScanBuilder setFilter(Filter filter) {
     scan.setFilter(filter);
     return this;
   }
 
   @Override
-  public final ScanBuilder setFamilyMap(Map<byte[], NavigableSet<byte[]>> familyMap) {
+  public ScanBuilder setFamilyMap(Map<byte[], NavigableSet<byte[]>> familyMap) {
     scan.setFamilyMap(familyMap);
     return this;
   }

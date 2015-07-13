@@ -24,15 +24,15 @@ import java.io.IOException;
 /**
  * Default implementation of {@link GetBuilder}. Specific HBase compat module can extends and override methods.
  */
-public class DefaultGetBuilder implements GetBuilder {
+class DefaultGetBuilder implements GetBuilder {
 
   protected final Get get;
 
-  public DefaultGetBuilder(byte[] row) {
+  DefaultGetBuilder(byte[] row) {
     this.get = new Get(row);
   }
 
-  public DefaultGetBuilder(Get get) {
+  DefaultGetBuilder(Get get) {
     this.get = new Get(get);
   }
 

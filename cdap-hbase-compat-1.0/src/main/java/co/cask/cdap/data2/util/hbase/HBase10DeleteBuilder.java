@@ -16,30 +16,36 @@
 
 package co.cask.cdap.data2.util.hbase;
 
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Delete;
 
 /**
- * HBase 1.0 specific implementation for {@link PutBuilder}.
+ * HBase 1.0 specific implementation for {@link DeleteBuilder}.
  */
-class HBase10PutBuilder extends DefaultPutBuilder {
+class HBase10DeleteBuilder extends DefaultDeleteBuilder {
 
-  HBase10PutBuilder(Put put) {
-    super(put);
-  }
-
-  HBase10PutBuilder(byte[] row) {
+  HBase10DeleteBuilder(byte[] row) {
     super(row);
   }
 
+  HBase10DeleteBuilder(Delete delete) {
+    super(delete);
+  }
+
   @Override
-  public PutBuilder setAttribute(String name, byte[] value) {
-    put.setAttribute(name, value);
+  public DeleteBuilder setAttribute(String name, byte[] value) {
+    delete.setAttribute(name, value);
     return this;
   }
 
   @Override
-  public PutBuilder setId(String id) {
-    put.setId(id);
+  public DeleteBuilder setId(String id) {
+    delete.setId(id);
+    return this;
+  }
+
+  @Override
+  public DeleteBuilder setTimestamp(long timestamp) {
+    delete.setTimestamp(timestamp);
     return this;
   }
 }

@@ -41,6 +41,7 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
+import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
@@ -596,6 +597,20 @@ public abstract class HBaseTableUtil {
    */
   public GetBuilder createGetBuilder(Get get) {
     return new DefaultGetBuilder(get);
+  }
+
+  /**
+   * Creates a {@link DeleteBuilder} for the given row.
+   */
+  public DeleteBuilder createDeleteBuilder(byte[] row) {
+    return new DefaultDeleteBuilder(row);
+  }
+
+  /**
+   * Creates a {@link DeleteBuilder} by copying from another {@link Delete} instance.
+   */
+  public DeleteBuilder createDeleteBuilder(Delete delete) {
+    return new DefaultDeleteBuilder(delete);
   }
 
   public abstract void setCompression(HColumnDescriptor columnDescriptor, CompressionType type);

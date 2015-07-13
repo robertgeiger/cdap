@@ -145,7 +145,7 @@ public class HBaseKVTableDefinition extends AbstractDatasetDefinition<NoTxKeyVal
     public void put(byte[] key, @Nullable byte[] value) {
       try {
         if (value == null) {
-          table.delete(new Delete(key));
+          table.delete(tableUtil.createDeleteBuilder(key).create());
         } else {
           Put put = tableUtil.createPutBuilder(key)
             .add(DATA_COLUMN_FAMILY, DEFAULT_COLUMN, value)

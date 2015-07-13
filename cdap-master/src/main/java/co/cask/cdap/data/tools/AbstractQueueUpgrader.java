@@ -28,14 +28,12 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.twill.filesystem.LocationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +107,7 @@ public abstract class AbstractQueueUpgrader extends AbstractUpgrader {
               mutations.add(put);
             }
             LOG.debug("Marking old key {} for deletion", rowKeyString);
-            mutations.add(new Delete(row));
+            mutations.add(tableUtil.createDeleteBuilder(row).create());
           }
           LOG.info("Finished processing row key {}", rowKeyString);
         }

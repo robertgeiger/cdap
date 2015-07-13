@@ -269,8 +269,9 @@ public abstract class AbstractIncrementHandlerTest {
       assertColumn(table, row1, col, 11);
 
       // perform a delete on the column
-      Delete delete = new Delete(row1);
-      delete.deleteColumns(FAMILY, col);
+      Delete delete = tableUtil.createDeleteBuilder(row1)
+        .deleteColumns(FAMILY, col)
+        .create();
       // use batch to work around a bug in delete coprocessor hooks on HBase 0.94
       table.batch(Lists.newArrayList(delete));
 
@@ -287,8 +288,9 @@ public abstract class AbstractIncrementHandlerTest {
       assertColumn(table, row1, col, 100);
 
       // perform a family delete
-      delete = new Delete(row1);
-      delete.deleteFamily(FAMILY);
+      delete = tableUtil.createDeleteBuilder(row1)
+        .deleteFamily(FAMILY)
+        .create();
       // use batch to work around a bug in delete coprocessor hooks on HBase 0.94
       table.batch(Lists.newArrayList(delete));
 
@@ -305,7 +307,7 @@ public abstract class AbstractIncrementHandlerTest {
       assertColumn(table, row1, col, 100);
 
       // perform a row delete
-      delete = new Delete(row1);
+      delete = tableUtil.createDeleteBuilder(row1).create();
       // use batch to work around a bug in delete coprocessor hooks on HBase 0.94
       table.batch(Lists.newArrayList(delete));
 
