@@ -418,7 +418,8 @@ public abstract class HBaseQueueTest extends QueueTest {
     try (
       final HBaseQueueProducer oldProducer = hBaseQueueClientFactory.createProducer(
         oldQueueAdmin, queueName, QueueConstants.QueueType.QUEUE,
-        QueueMetrics.NOOP_QUEUE_METRICS, new SaltedHBaseQueueStrategy(buckets), new ArrayList<ConsumerGroupConfig>());
+        QueueMetrics.NOOP_QUEUE_METRICS, new SaltedHBaseQueueStrategy(tableUtil, buckets),
+        new ArrayList<ConsumerGroupConfig>());
     ) {
       // Enqueue 10 items to old queue table
       Transactions.createTransactionExecutor(executorFactory, oldProducer)

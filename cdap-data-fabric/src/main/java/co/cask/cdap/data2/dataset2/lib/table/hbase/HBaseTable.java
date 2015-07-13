@@ -36,6 +36,7 @@ import co.cask.cdap.data2.dataset2.lib.table.Update;
 import co.cask.cdap.data2.dataset2.lib.table.inmemory.PrefixedNamespaces;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
+import co.cask.cdap.data2.util.hbase.ScanBuilder;
 import co.cask.tephra.Transaction;
 import co.cask.tephra.TransactionCodec;
 import co.cask.tephra.TxConstants;
@@ -49,11 +50,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.OperationWithAttributes;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +75,7 @@ public class HBaseTable extends BufferingTable {
 
   public static final String DELTA_WRITE = "d";
 
+  private final HBaseTableUtil tableUtil;
   private final HTable hTable;
   private final String hTableName;
   private final byte[] columnFamily;
@@ -98,6 +98,7 @@ public class HBaseTable extends BufferingTable {
     // todo: make configurable
     hTable.setWriteBufferSize(HBaseTableUtil.DEFAULT_WRITE_BUFFER_SIZE);
     hTable.setAutoFlush(false);
+    this.tableUtil = tableUtil;
     this.hTable = hTable;
     this.hTableName = Bytes.toStringBinary(hTable.getTableName());
     this.columnFamily = HBaseTableAdmin.getColumnFamily(spec);
@@ -244,7 +245,7 @@ public class HBaseTable extends BufferingTable {
 
   @Override
   protected Scanner scanPersisted(co.cask.cdap.api.dataset.table.Scan scan) throws Exception {
-    Scan hScan = new Scan();
+    ScanBuilder hScan = tableUtil.createScanBuilder();
     hScan.addFamily(columnFamily);
     // todo: should be configurable
     // NOTE: by default we assume scanner is used in mapreduce job, hence no cache blocks
@@ -261,14 +262,13 @@ public class HBaseTable extends BufferingTable {
     }
 
     setFilterIfNeeded(hScan, scan.getFilter());
+    hScan.setAttribute(TxConstants.TX_OPERATION_ATTRIBUTE_KEY, txCodec.encode(tx));
 
-    addToOperation(hScan, tx);
-
-    ResultScanner resultScanner = hTable.getScanner(hScan);
+    ResultScanner resultScanner = hTable.getScanner(hScan.build());
     return new HBaseScanner(resultScanner, columnFamily);
   }
 
-  private void setFilterIfNeeded(Scan scan, @Nullable Filter filter) {
+  private void setFilterIfNeeded(ScanBuilder scan, @Nullable Filter filter) {
     if (filter == null) {
       return;
     }
@@ -302,7 +302,7 @@ public class HBaseTable extends BufferingTable {
       if (tx == null) {
         get.setMaxVersions(1);
       } else {
-        addToOperation(get, tx);
+        get.setAttribute(TxConstants.TX_OPERATION_ATTRIBUTE_KEY, txCodec.encode(tx));
       }
     } catch (IOException ioe) {
       throw Throwables.propagate(ioe);
@@ -320,7 +320,7 @@ public class HBaseTable extends BufferingTable {
       return result.isEmpty() ? EMPTY_ROW_MAP : result.getFamilyMap(columnFamily);
     }
 
-    addToOperation(get, tx);
+    get.setAttribute(TxConstants.TX_OPERATION_ATTRIBUTE_KEY, txCodec.encode(tx));
 
     Result result = hTable.get(get);
     return getRowMap(result, columnFamily);
@@ -341,9 +341,5 @@ public class HBaseTable extends BufferingTable {
     }
 
     return unwrapDeletes(rowMap);
-  }
-
-  private void addToOperation(OperationWithAttributes op, Transaction tx) throws IOException {
-    op.setAttribute(TxConstants.TX_OPERATION_ATTRIBUTE_KEY, txCodec.encode(tx));
   }
 }

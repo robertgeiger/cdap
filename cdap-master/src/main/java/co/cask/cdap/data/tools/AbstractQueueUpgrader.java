@@ -23,6 +23,7 @@ import co.cask.cdap.data2.dataset2.lib.hbase.AbstractHBaseDataSetAdmin;
 import co.cask.cdap.data2.transaction.queue.QueueEntryRow;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
+import co.cask.cdap.data2.util.hbase.ScanBuilder;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -87,14 +88,13 @@ public abstract class AbstractQueueUpgrader extends AbstractUpgrader {
 
     LOG.info("Starting upgrade for table {}", Bytes.toString(hTable.getTableName()));
     try {
-      Scan scan = new Scan();
+      ScanBuilder scan = tableUtil.createScanBuilder();
       scan.setTimeRange(0, HConstants.LATEST_TIMESTAMP);
       scan.addFamily(QueueEntryRow.COLUMN_FAMILY);
       scan.setMaxVersions(1); // we only need to see one version of each row
       List<Mutation> mutations = Lists.newArrayList();
       Result result;
-      ResultScanner resultScanner = hTable.getScanner(scan);
-      try {
+      try (ResultScanner resultScanner = hTable.getScanner(scan.build())) {
         while ((result = resultScanner.next()) != null) {
           byte[] row = result.getRow();
           String rowKeyString = Bytes.toString(row);
@@ -113,8 +113,6 @@ public abstract class AbstractQueueUpgrader extends AbstractUpgrader {
           }
           LOG.info("Finished processing row key {}", rowKeyString);
         }
-      } finally {
-        resultScanner.close();
       }
 
       hTable.batch(mutations);

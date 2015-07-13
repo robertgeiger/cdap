@@ -43,6 +43,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.twill.api.ClassAcceptor;
 import org.apache.twill.filesystem.Location;
@@ -551,6 +552,20 @@ public abstract class HBaseTableUtil {
     HTableDescriptor tableDescriptor = getHTableDescriptor(admin, tableId);
     dropTable(admin, tableId);
     createTableIfNotExists(admin, tableId, tableDescriptor);
+  }
+
+  /**
+   * Creates a {@link ScanBuilder}.
+   */
+  public ScanBuilder createScanBuilder() {
+    return new DefaultScanBuilder();
+  }
+
+  /**
+   * Creates a {@link ScanBuilder} by copying from another {@link Scan} instance.
+   */
+  public ScanBuilder createScanBuilder(Scan scan) throws IOException {
+    return new DefaultScanBuilder(scan);
   }
 
   public abstract void setCompression(HColumnDescriptor columnDescriptor, CompressionType type);

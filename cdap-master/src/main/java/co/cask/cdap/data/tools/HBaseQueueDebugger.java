@@ -43,6 +43,7 @@ import co.cask.cdap.data2.transaction.queue.hbase.ShardedHBaseQueueStrategy;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtilFactory;
+import co.cask.cdap.data2.util.hbase.ScanBuilder;
 import co.cask.cdap.internal.app.runtime.flow.FlowUtils;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
@@ -81,16 +82,18 @@ import javax.annotation.Nullable;
  */
 public class HBaseQueueDebugger extends AbstractIdleService {
 
+  private final HBaseTableUtil tableUtil;
   private final HBaseQueueAdmin queueAdmin;
   private final ZKClientService zkClientService;
   private final HBaseQueueClientFactory queueClientFactory;
   private final TransactionExecutorFactory txExecutorFactory;
 
   @Inject
-  public HBaseQueueDebugger(HBaseQueueAdmin queueAdmin,
+  public HBaseQueueDebugger(HBaseTableUtil tableUtil, HBaseQueueAdmin queueAdmin,
                             HBaseQueueClientFactory queueClientFactory,
                             ZKClientService zkClientService,
                             TransactionExecutorFactory txExecutorFactory) {
+    this.tableUtil = tableUtil;
     this.queueAdmin = queueAdmin;
     this.queueClientFactory = queueClientFactory;
     this.zkClientService = zkClientService;
@@ -179,7 +182,7 @@ public class HBaseQueueDebugger extends AbstractIdleService {
     int distributorBuckets = queueClientFactory.getDistributorBuckets(hTable.getTableDescriptor());
     ShardedHBaseQueueStrategy queueStrategy = new ShardedHBaseQueueStrategy(distributorBuckets);
 
-    Scan scan = new Scan();
+    ScanBuilder scan = tableUtil.createScanBuilder();
     scan.setStartRow(start.getStartRow());
     if (end != null) {
       scan.setStopRow(end.getStartRow());
@@ -209,7 +212,7 @@ public class HBaseQueueDebugger extends AbstractIdleService {
     for (final int instanceId : instanceIds) {
       System.out.printf("Processing instance %d", instanceId);
       ConsumerConfig consConfig = new ConsumerConfig(groupConfig, instanceId);
-      final QueueScanner scanner = queueStrategy.createScanner(consConfig, hTable, scan, rowsCache);
+      final QueueScanner scanner = queueStrategy.createScanner(consConfig, hTable, scan.build(), rowsCache);
 
       try {
         txExecutor.execute(new TransactionExecutor.Procedure<HBaseConsumerStateStore>() {
