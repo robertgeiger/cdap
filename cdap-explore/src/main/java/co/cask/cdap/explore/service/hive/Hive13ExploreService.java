@@ -77,7 +77,7 @@ public class Hive13ExploreService extends BaseHiveExploreService {
   @Override
   protected List<QueryResult> doFetchNextResults(OperationHandle handle, FetchOrientation fetchOrientation,
                                                  int size) throws Exception {
-    Class cliServiceClass = Class.forName("org.apache.hive.service.cli.CLIService");
+    Class cliServiceClass = this.getClass().getClassLoader().loadClass("org.apache.hive.service.cli.CLIService");
     Method fetchResultsMethod = cliServiceClass.getMethod(
       "fetchResults", OperationHandle.class, FetchOrientation.class, Long.TYPE);
     RowSet rowSet = (RowSet) fetchResultsMethod.invoke(getCliService(), handle, fetchOrientation, size);
