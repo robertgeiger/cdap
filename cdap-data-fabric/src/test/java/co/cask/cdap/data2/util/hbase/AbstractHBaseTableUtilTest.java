@@ -302,16 +302,13 @@ public abstract class AbstractHBaseTableUtilTest {
   }
 
   private void writeSome(String namespace, String tableName) throws IOException {
-    HTable table = getTableUtil().createHTable(testHBase.getConfiguration(), TableId.from(namespace, tableName));
-    try {
+    try (HTable table = getTableUtil().createHTable(testHBase.getConfiguration(), TableId.from(namespace, tableName))) {
       // writing at least couple megs to reflect in "megabyte"-based metrics
       for (int i = 0; i < 8; i++) {
         Put put = new Put(Bytes.toBytes("row" + i));
         put.add(Bytes.toBytes("d"), Bytes.toBytes("col" + i), new byte[1024 * 1024]);
         table.put(put);
       }
-    } finally {
-      table.close();
     }
   }
 

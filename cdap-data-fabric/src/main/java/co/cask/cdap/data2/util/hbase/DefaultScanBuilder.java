@@ -108,6 +108,12 @@ class DefaultScanBuilder implements ScanBuilder {
   }
 
   @Override
+  public ScanBuilder setId(String id) {
+    scan.setId(id);
+    return this;
+  }
+
+  @Override
   public ScanBuilder setAuthorizations(Authorizations authorizations) {
     scan.setAuthorizations(authorizations);
     return this;

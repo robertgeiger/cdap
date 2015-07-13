@@ -44,6 +44,12 @@ public class HBase10ScanBuilder extends DefaultScanBuilder {
   }
 
   @Override
+  public ScanBuilder setId(String id) {
+    scan.setId(id);
+    return this;
+  }
+
+  @Override
   public ScanBuilder setAuthorizations(Authorizations authorizations) {
     scan.setAuthorizations(authorizations);
     return this;

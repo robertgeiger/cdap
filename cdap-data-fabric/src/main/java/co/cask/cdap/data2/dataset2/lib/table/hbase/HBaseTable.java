@@ -36,6 +36,7 @@ import co.cask.cdap.data2.dataset2.lib.table.Update;
 import co.cask.cdap.data2.dataset2.lib.table.inmemory.PrefixedNamespaces;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
+import co.cask.cdap.data2.util.hbase.PutBuilder;
 import co.cask.cdap.data2.util.hbase.ScanBuilder;
 import co.cask.tephra.Transaction;
 import co.cask.tephra.TransactionCodec;
@@ -158,7 +159,7 @@ public class HBaseTable extends BufferingTable {
   protected void persist(NavigableMap<byte[], NavigableMap<byte[], Update>> buff) throws Exception {
     List<Put> puts = Lists.newArrayList();
     for (Map.Entry<byte[], NavigableMap<byte[], Update>> row : buff.entrySet()) {
-      Put put = new Put(row.getKey());
+      PutBuilder put = tableUtil.createPutBuilder(row.getKey());
       Put incrementPut = null;
       for (Map.Entry<byte[], Update> column : row.getValue().entrySet()) {
         // we want support tx and non-tx modes
@@ -188,7 +189,7 @@ public class HBaseTable extends BufferingTable {
         puts.add(incrementPut);
       }
       if (!put.isEmpty()) {
-        puts.add(put);
+        puts.add(put.create());
       }
     }
     if (!puts.isEmpty()) {
@@ -203,9 +204,9 @@ public class HBaseTable extends BufferingTable {
     if (existing != null) {
       return existing;
     }
-    Put put = new Put(row);
-    put.setAttribute(DELTA_WRITE, Bytes.toBytes(true));
-    return put;
+    return tableUtil.createPutBuilder(row)
+      .setAttribute(DELTA_WRITE, Bytes.toBytes(true))
+      .create();
   }
 
   @Override

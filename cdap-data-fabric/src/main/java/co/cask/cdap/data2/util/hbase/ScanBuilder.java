@@ -21,6 +21,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.security.access.Permission;
 import org.apache.hadoop.hbase.security.visibility.Authorizations;
+import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
 import java.util.Map;
@@ -53,6 +54,8 @@ public interface ScanBuilder {
   ScanBuilder setFamilyMap(Map<byte[], NavigableSet<byte[]>> familyMap);
 
   ScanBuilder setAttribute(String name, byte[] value);
+
+  ScanBuilder setId(String id);
 
   ScanBuilder setAuthorizations(Authorizations authorizations);
 

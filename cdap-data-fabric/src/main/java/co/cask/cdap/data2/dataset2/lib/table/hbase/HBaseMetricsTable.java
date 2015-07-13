@@ -26,6 +26,7 @@ import co.cask.cdap.data2.dataset2.lib.table.FuzzyRowFilter;
 import co.cask.cdap.data2.dataset2.lib.table.MetricsTable;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
+import co.cask.cdap.data2.util.hbase.PutBuilder;
 import co.cask.cdap.data2.util.hbase.ScanBuilder;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -87,11 +88,11 @@ public class HBaseMetricsTable implements MetricsTable {
   public void put(NavigableMap<byte[], NavigableMap<byte[], Long>> updates) {
     List<Put> puts = Lists.newArrayList();
     for (Map.Entry<byte[], NavigableMap<byte[], Long>> row : updates.entrySet()) {
-      Put put = new Put(row.getKey());
+      PutBuilder put = tableUtil.createPutBuilder(row.getKey());
       for (Map.Entry<byte[], Long> column : row.getValue().entrySet()) {
         put.add(columnFamily, column.getKey(), Bytes.toBytes(column.getValue()));
       }
-      puts.add(put);
+      puts.add(put.create());
     }
     try {
       hTable.put(puts);
@@ -110,8 +111,9 @@ public class HBaseMetricsTable implements MetricsTable {
         delete.deleteColumns(columnFamily, column);
         return hTable.checkAndDelete(row, columnFamily, column, oldValue, delete);
       } else {
-        Put put = new Put(row);
-        put.add(columnFamily, column, newValue);
+        Put put = tableUtil.createPutBuilder(row)
+          .add(columnFamily, column, newValue)
+          .create();
         return hTable.checkAndPut(row, columnFamily, column, oldValue, put);
       }
     } catch (IOException e) {
@@ -148,9 +150,9 @@ public class HBaseMetricsTable implements MetricsTable {
   }
 
   private Put getIncrementalPut(byte[] row) {
-    Put put = new Put(row);
-    put.setAttribute(HBaseTable.DELTA_WRITE, Bytes.toBytes(true));
-    return put;
+    return tableUtil.createPutBuilder(row)
+      .setAttribute(HBaseTable.DELTA_WRITE, Bytes.toBytes(true))
+      .create();
   }
 
   @Override

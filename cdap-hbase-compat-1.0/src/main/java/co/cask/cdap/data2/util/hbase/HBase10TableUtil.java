@@ -38,6 +38,7 @@ import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 
@@ -298,5 +299,15 @@ public class HBase10TableUtil extends HBaseTableUtil {
   @Override
   public ScanBuilder createScanBuilder(Scan scan) throws IOException {
     return new HBase10ScanBuilder(scan);
+  }
+
+  @Override
+  public PutBuilder createPutBuilder(byte[] row) {
+    return new HBase10PutBuilder(row);
+  }
+
+  @Override
+  public PutBuilder createPutBuilder(Put put) {
+    return new HBase10PutBuilder(put);
   }
 }

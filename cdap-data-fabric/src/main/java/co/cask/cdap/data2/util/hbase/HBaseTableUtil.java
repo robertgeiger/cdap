@@ -43,6 +43,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.twill.api.ClassAcceptor;
@@ -566,6 +567,20 @@ public abstract class HBaseTableUtil {
    */
   public ScanBuilder createScanBuilder(Scan scan) throws IOException {
     return new DefaultScanBuilder(scan);
+  }
+
+  /**
+   * Creates a {@link PutBuilder} for the given row.
+   */
+  public PutBuilder createPutBuilder(byte[] row) {
+    return new DefaultPutBuilder(row);
+  }
+
+  /**
+   * Creates a {@link PutBuilder} by copying from another {@link Put} instance.
+   */
+  public PutBuilder createPutBuilder(Put put) {
+    return new DefaultPutBuilder(put);
   }
 
   public abstract void setCompression(HColumnDescriptor columnDescriptor, CompressionType type);
