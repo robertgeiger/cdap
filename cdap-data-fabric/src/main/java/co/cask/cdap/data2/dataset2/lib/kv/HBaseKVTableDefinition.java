@@ -161,7 +161,7 @@ public class HBaseKVTableDefinition extends AbstractDatasetDefinition<NoTxKeyVal
     @Override
     public byte[] get(byte[] key) {
       try {
-        Result result = table.get(new Get(key));
+        Result result = table.get(tableUtil.createGetBuilder(key).create());
         return result.isEmpty() ? null : result.getValue(DATA_COLUMN_FAMILY, DEFAULT_COLUMN);
       } catch (IOException e) {
         throw Throwables.propagate(e);

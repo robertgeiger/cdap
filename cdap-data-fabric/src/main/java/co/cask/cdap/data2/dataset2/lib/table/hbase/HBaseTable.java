@@ -35,6 +35,7 @@ import co.cask.cdap.data2.dataset2.lib.table.PutValue;
 import co.cask.cdap.data2.dataset2.lib.table.Update;
 import co.cask.cdap.data2.dataset2.lib.table.inmemory.PrefixedNamespaces;
 import co.cask.cdap.data2.util.TableId;
+import co.cask.cdap.data2.util.hbase.GetBuilder;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.data2.util.hbase.PutBuilder;
 import co.cask.cdap.data2.util.hbase.ScanBuilder;
@@ -288,7 +289,7 @@ public class HBaseTable extends BufferingTable {
   }
 
   private Get createGet(byte[] row, @Nullable byte[][] columns) {
-    Get get = new Get(row);
+    GetBuilder get = tableUtil.createGetBuilder(row);
     get.addFamily(columnFamily);
     if (columns != null && columns.length > 0) {
       for (byte[] column : columns) {
@@ -308,22 +309,19 @@ public class HBaseTable extends BufferingTable {
     } catch (IOException ioe) {
       throw Throwables.propagate(ioe);
     }
-    return get;
+    return get.create();
   }
 
   private NavigableMap<byte[], byte[]> getInternal(byte[] row, @Nullable byte[][] columns) throws IOException {
     Get get = createGet(row, columns);
 
+    Result result = hTable.get(get);
+
     // no tx logic needed
     if (tx == null) {
-      get.setMaxVersions(1);
-      Result result = hTable.get(get);
       return result.isEmpty() ? EMPTY_ROW_MAP : result.getFamilyMap(columnFamily);
     }
 
-    get.setAttribute(TxConstants.TX_OPERATION_ATTRIBUTE_KEY, txCodec.encode(tx));
-
-    Result result = hTable.get(get);
     return getRowMap(result, columnFamily);
   }
 

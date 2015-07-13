@@ -274,7 +274,7 @@ public abstract class AbstractIncrementHandlerTest {
       // use batch to work around a bug in delete coprocessor hooks on HBase 0.94
       table.batch(Lists.newArrayList(delete));
 
-      Get get = new Get(row1);
+      Get get = tableUtil.createGetBuilder(row1).create();
       Result result = table.get(get);
       LOG.info("Get after delete returned " + result);
       assertTrue(result.isEmpty());
@@ -292,7 +292,7 @@ public abstract class AbstractIncrementHandlerTest {
       // use batch to work around a bug in delete coprocessor hooks on HBase 0.94
       table.batch(Lists.newArrayList(delete));
 
-      get = new Get(row1);
+      get = tableUtil.createGetBuilder(row1).create();
       result = table.get(get);
       LOG.info("Get after delete returned " + result);
       assertTrue(result.isEmpty());
@@ -309,7 +309,7 @@ public abstract class AbstractIncrementHandlerTest {
       // use batch to work around a bug in delete coprocessor hooks on HBase 0.94
       table.batch(Lists.newArrayList(delete));
 
-      get = new Get(row1);
+      get = tableUtil.createGetBuilder(row1).create();
       result = table.get(get);
       LOG.info("Get after delete returned " + result);
       assertTrue(result.isEmpty());

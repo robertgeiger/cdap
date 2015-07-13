@@ -71,9 +71,10 @@ public class HBaseMetricsTable implements MetricsTable {
   @Nullable
   public byte[] get(byte[] row, byte[] column) {
     try {
-      Get get = new Get(row);
-      get.addColumn(columnFamily, column);
-      get.setMaxVersions(1);
+      Get get = tableUtil.createGetBuilder(row)
+        .addColumn(columnFamily, column)
+        .setMaxVersions(1)
+        .create();
       Result getResult = hTable.get(get);
       if (!getResult.isEmpty()) {
         return getResult.getValue(columnFamily, column);

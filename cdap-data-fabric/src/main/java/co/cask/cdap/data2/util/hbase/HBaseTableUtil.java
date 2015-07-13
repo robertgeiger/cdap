@@ -41,6 +41,7 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
@@ -581,6 +582,20 @@ public abstract class HBaseTableUtil {
    */
   public PutBuilder createPutBuilder(Put put) {
     return new DefaultPutBuilder(put);
+  }
+
+  /**
+   * Creates a {@link GetBuilder} for the given row.
+   */
+  public GetBuilder createGetBuilder(byte[] row) {
+    return new DefaultGetBuilder(row);
+  }
+
+  /**
+   * Creates a {@link GetBuilder} by copying from another {@link Get} instance.
+   */
+  public GetBuilder createGetBuilder(Get get) {
+    return new DefaultGetBuilder(get);
   }
 
   public abstract void setCompression(HColumnDescriptor columnDescriptor, CompressionType type);
