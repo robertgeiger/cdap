@@ -68,7 +68,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.twill.zookeeper.ZKClientService;
 
 import java.net.URI;
@@ -180,7 +179,7 @@ public class HBaseQueueDebugger extends AbstractIdleService {
                                              Bytes.toBytes(groupConfig.getGroupId()));
 
     int distributorBuckets = queueClientFactory.getDistributorBuckets(hTable.getTableDescriptor());
-    ShardedHBaseQueueStrategy queueStrategy = new ShardedHBaseQueueStrategy(distributorBuckets);
+    ShardedHBaseQueueStrategy queueStrategy = new ShardedHBaseQueueStrategy(tableUtil, distributorBuckets);
 
     ScanBuilder scan = tableUtil.createScanBuilder();
     scan.setStartRow(start.getStartRow());
