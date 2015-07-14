@@ -141,9 +141,10 @@ public abstract class AbstractHBaseTableUtilTest {
 
     // modify
     HTableDescriptor desc = getTableDescriptor("namespace2", "table1");
-    desc.setValue("mykey", "myvalue");
+    HTableDescriptorBuilder newDesc = getTableUtil().createHTableDescriptor(desc);
+    newDesc.setValue("mykey", "myvalue");
     disable("namespace2", "table1");
-    getTableUtil().modifyTable(hAdmin, desc);
+    getTableUtil().modifyTable(hAdmin, newDesc.build());
     desc = getTableDescriptor("namespace2", "table1");
     Assert.assertTrue(desc.getValue("mykey").equals("myvalue"));
     enable("namespace2", "table1");
@@ -327,9 +328,9 @@ public abstract class AbstractHBaseTableUtilTest {
 
   private void create(TableId tableId) throws IOException {
     HBaseTableUtil tableUtil = getTableUtil();
-    HTableDescriptor desc = tableUtil.createHTableDescriptor(tableId);
+    HTableDescriptorBuilder desc = tableUtil.createHTableDescriptor(tableId);
     desc.addFamily(new HColumnDescriptor("d"));
-    tableUtil.createTableIfNotExists(hAdmin, tableId, desc);
+    tableUtil.createTableIfNotExists(hAdmin, tableId, desc.build());
   }
 
   private boolean exists(String namespace, String tableName) throws IOException {

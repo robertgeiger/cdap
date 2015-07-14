@@ -27,6 +27,7 @@ import co.cask.cdap.api.dataset.module.DatasetModule;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
+import co.cask.cdap.data2.util.hbase.HTableDescriptorBuilder;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import org.apache.hadoop.conf.Configuration;
@@ -100,9 +101,9 @@ public class HBaseKVTableDefinition extends AbstractDatasetDefinition<NoTxKeyVal
       columnDescriptor.setMaxVersions(1);
       tableUtil.setBloomFilter(columnDescriptor, HBaseTableUtil.BloomType.ROW);
 
-      HTableDescriptor tableDescriptor = tableUtil.createHTableDescriptor(tableId);
+      HTableDescriptorBuilder tableDescriptor = tableUtil.createHTableDescriptor(tableId);
       tableDescriptor.addFamily(columnDescriptor);
-      tableUtil.createTableIfNotExists(admin, tableId, tableDescriptor);
+      tableUtil.createTableIfNotExists(admin, tableId, tableDescriptor.build());
     }
 
     @Override

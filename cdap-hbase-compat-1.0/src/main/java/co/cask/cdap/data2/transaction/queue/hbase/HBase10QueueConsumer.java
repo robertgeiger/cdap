@@ -34,7 +34,7 @@ import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import java.util.Map;
 
 /**
- * HBase 0.98 implementation of {@link HBaseQueueConsumer}.
+ * HBase 1.0 implementation of {@link HBaseQueueConsumer}.
  */
 final class HBase10QueueConsumer extends HBaseQueueConsumer {
   private final Filter processedStateFilter;

@@ -392,12 +392,20 @@ public abstract class HBaseTableUtil {
   public abstract HTable createHTable(Configuration conf, TableId tableId) throws IOException;
 
   /**
-   * Creates a new {@link HTableDescriptor} which may contain an HBase namespace depending on the HBase version
+   * Creates a new {@link HTableDescriptorBuilder} which may contain an HBase namespace depending on the HBase version
    *
    * @param tableId the {@link TableId} to create an {@link HTableDescriptor} for
-   * @return an {@link HTableDescriptor} for the table
+   * @return an {@link HTableDescriptorBuilder} for the table
    */
-  public abstract HTableDescriptor createHTableDescriptor(TableId tableId);
+  public abstract HTableDescriptorBuilder createHTableDescriptor(TableId tableId);
+
+  /**
+   * Creates a new {@link HTableDescriptorBuilder} which may contain an HBase namespace depending on the HBase version
+   *
+   * @param tableDescriptor the {@link HTableDescriptor} whose values should be copied
+   * @return an {@link HTableDescriptorBuilder} for the table
+   */
+  public abstract HTableDescriptorBuilder createHTableDescriptor(HTableDescriptor tableDescriptor);
 
   /**
    * Constructs a {@link HTableDescriptor} which may contain an HBase namespace for an existing table
