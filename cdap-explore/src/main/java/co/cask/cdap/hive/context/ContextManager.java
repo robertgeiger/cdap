@@ -35,6 +35,7 @@ import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
+import co.cask.cdap.explore.service.ExploreServiceUtils;
 import co.cask.cdap.notifications.feeds.client.NotificationFeedClientModule;
 import co.cask.cdap.proto.Id;
 import com.google.common.base.Objects;
@@ -43,10 +44,18 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.util.ApplicationClassLoader;
 import org.apache.twill.zookeeper.ZKClientService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.security.CodeSource;
 import javax.annotation.Nullable;
 
 /**
@@ -54,10 +63,20 @@ import javax.annotation.Nullable;
  */
 public class ContextManager {
   private static Context savedContext;
+  private static final Logger LOG = LoggerFactory.getLogger(ContextManager.class);
 
   public static void saveContext(DatasetFramework datasetFramework, StreamAdmin streamAdmin,
                                  SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
     savedContext = new Context(datasetFramework, streamAdmin, datasetInstantiatorFactory);
+  }
+
+  private static void printClasses(ClassLoader classLoader) {
+    if (classLoader instanceof URLClassLoader) {
+      URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
+      for (URL url : urlClassLoader.getURLs()) {
+        LOG.info("URL class : {}", url);
+      }
+    }
   }
 
   /**
@@ -104,6 +123,31 @@ public class ContextManager {
         }
       }
     );
+
+    boolean isMapReduceSet = conf.getBoolean(MRJobConfig.MAPREDUCE_JOB_CLASSLOADER, false);
+    LOG.info("MMMM mapreduce.job.user.classpath.first value : {}", isMapReduceSet);
+    String appClasspath = System.getenv(ApplicationConstants.Environment.APP_CLASSPATH.key());
+    LOG.info("MMMM appClassPath : {}", appClasspath);
+    String[] systemClasses = conf.getStrings(
+      MRJobConfig.MAPREDUCE_JOB_CLASSLOADER_SYSTEM_CLASSES);
+    for (String systemClass : systemClasses) {
+      LOG.info("MMMM mapreduce.job.classloader.system.class : {}", systemClass);
+    }
+
+    ClassLoader classLoader = ContextManager.class.getClassLoader();
+    if (classLoader instanceof ApplicationClassLoader) {
+      LOG.info("MMMM CLASSLOADER instance of ApplicationClassLoader");
+      ClassLoader parentClassLoader = classLoader.getParent();
+      if (parentClassLoader instanceof URLClassLoader) {
+        LOG.info("MMMM PARENT CLASSLOADER instance of URLClassLoader");
+        printClasses(parentClassLoader);
+      } else {
+        LOG.info("MMMM PARENT CLASSLOADER is not an instance of URLClassLoader");
+      }
+      LOG.info("MMMM CHILD CLASSES");
+      printClasses(classLoader);
+    }
+
 
     ZKClientService zkClientService = injector.getInstance(ZKClientService.class);
     zkClientService.startAndWait();

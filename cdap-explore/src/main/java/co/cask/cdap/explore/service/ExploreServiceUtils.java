@@ -27,6 +27,7 @@ import co.cask.cdap.explore.service.hive.HiveCDH4ExploreService;
 import co.cask.cdap.explore.service.hive.HiveCDH5ExploreService;
 import co.cask.cdap.format.RecordFormats;
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -37,7 +38,10 @@ import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.VersionInfo;
+import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.twill.api.ClassAcceptor;
 import org.apache.twill.internal.utils.Dependencies;
 import org.slf4j.Logger;
@@ -97,6 +101,7 @@ public class ExploreServiceUtils {
   private static ClassLoader exploreClassLoader = null;
 
   private static final Pattern HIVE_SITE_FILE_PATTERN = Pattern.compile("^.*/hive-site\\.xml$");
+  private static final Pattern YARN_SITE_FILE_PATTERN = Pattern.compile("^.*/yarn-site\\.xml$");
 
   /**
    * Get all the files contained in a class path.
@@ -332,15 +337,64 @@ public class ExploreServiceUtils {
     return jarFiles;
   }
 
+  public static File hijackConfFile(File confFile) {
+    if (HIVE_SITE_FILE_PATTERN.matcher(confFile.getAbsolutePath()).matches()) {
+      return hijackHiveConfFile(confFile);
+    } else if (YARN_SITE_FILE_PATTERN.matcher(confFile.getAbsolutePath()).matches()) {
+      return hijackYarnConfFile(confFile);
+    } else {
+      return confFile;
+    }
+  }
+
+
+  /**
+   * Check that the file is a hive-site.xml file, and return a temp copy of it to which are added
+   * necessary options. If it is not a hive-site.xml file, return it as is.
+   */
+  public static File hijackYarnConfFile(File confFile) {
+    Configuration conf = new Configuration(false);
+    try {
+      conf.addResource(confFile.toURI().toURL());
+    } catch (MalformedURLException e) {
+      LOG.error("File {} is malformed.", confFile, e);
+      throw Throwables.propagate(e);
+    }
+
+    String yarnAppClassPath = conf.get(YarnConfiguration.YARN_APPLICATION_CLASSPATH,
+                                       Joiner.on(",").join(YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH));
+
+    yarnAppClassPath = "$PWD/*," + yarnAppClassPath;
+
+    LOG.info("GGGG yarnAppClasspath is {}", yarnAppClassPath);
+    conf.set(YarnConfiguration.YARN_APPLICATION_CLASSPATH, yarnAppClassPath);
+
+    File newYarnConfFile = new File(Files.createTempDir(), "yarn-site.xml");
+    FileOutputStream fos;
+    try {
+      fos = new FileOutputStream(newYarnConfFile);
+    } catch (FileNotFoundException e) {
+      LOG.error("Problem creating temporary hive-site.xml conf file at {}", newYarnConfFile, e);
+      throw Throwables.propagate(e);
+    }
+
+    try {
+      conf.writeXml(fos);
+    } catch (IOException e) {
+      LOG.error("Could not write modified configuration to temporary yarn-site.xml at {}", newYarnConfFile, e);
+      throw Throwables.propagate(e);
+    } finally {
+      Closeables.closeQuietly(fos);
+    }
+
+    return newYarnConfFile;
+  }
+
   /**
    * Check that the file is a hive-site.xml file, and return a temp copy of it to which are added
    * necessary options. If it is not a hive-site.xml file, return it as is.
    */
   public static File hijackHiveConfFile(File confFile) {
-    if (!HIVE_SITE_FILE_PATTERN.matcher(confFile.getAbsolutePath()).matches()) {
-      return confFile;
-    }
-
     Configuration conf = new Configuration(false);
     try {
       conf.addResource(confFile.toURI().toURL());
@@ -354,8 +408,10 @@ public class ExploreServiceUtils {
     // Those settings will be in hive-site.xml in the classpath of the Explore Service. Therefore,
     // all HiveConf objects created there will have those settings, and they will be passed to
     // the map reduces jobs launched by Hive.
-    conf.setBoolean("mapreduce.user.classpath.first", true);
-    conf.setBoolean(Job.MAPREDUCE_JOB_USER_CLASSPATH_FIRST, true);
+    conf.setBoolean("mapreduce.job.classloader", true);
+    conf.setBoolean(Job.MAPREDUCE_JOB_USER_CLASSPATH_FIRST, false);
+
+    conf.setBoolean(MRJobConfig.MAPREDUCE_JOB_CLASSLOADER, false);
 
     File newHiveConfFile = new File(Files.createTempDir(), "hive-site.xml");
     FileOutputStream fos;
