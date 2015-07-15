@@ -100,7 +100,7 @@ public class IndexedTable extends AbstractDataset implements Table {
   /**
    * Column key used to store the existence of a row in the secondary index.
    */
-  private static final byte[] IDX_COL = {'r'};
+  public static final byte[] IDX_COL = {'r'};
   private static final byte DELIMITER_BYTE = 0;
   private static final byte[] KEY_DELIMITER = new byte[] { DELIMITER_BYTE };
 
@@ -277,7 +277,7 @@ public class IndexedTable extends AbstractDataset implements Table {
     table.put(put);
   }
 
-  private byte[] createIndexKey(byte[] row, byte[] column, byte[] value) {
+  public static byte[] createIndexKey(byte[] row, byte[] column, byte[] value) {
     return Bytes.concat(column, KEY_DELIMITER, value, KEY_DELIMITER, row);
   }
 

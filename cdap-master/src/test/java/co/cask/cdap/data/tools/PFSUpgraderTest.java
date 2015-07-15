@@ -30,6 +30,7 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetFrameworkTestUtil;
 import co.cask.cdap.data2.dataset2.lib.partitioned.PartitionedFileSetDefinition;
+import co.cask.cdap.data2.dataset2.lib.partitioned.PartitionedFileSetTableMigrator;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionExecutor;

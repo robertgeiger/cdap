@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.cdap.data.tools;
+package co.cask.cdap.data2.dataset2.lib.partitioned;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.dataset.DatasetProperties;
@@ -22,8 +22,6 @@ import co.cask.cdap.api.dataset.DatasetSpecification;
 import co.cask.cdap.api.dataset.lib.IndexedTable;
 import co.cask.cdap.data2.datafabric.dataset.DatasetsUtil;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.lib.partitioned.PartitionedFileSetDataset;
-import co.cask.cdap.data2.dataset2.lib.partitioned.PartitionedFileSetDefinition;
 import co.cask.cdap.data2.dataset2.lib.table.hbase.HBaseTableAdmin;
 import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
@@ -31,6 +29,7 @@ import co.cask.cdap.data2.util.hbase.ScanBuilder;
 import co.cask.cdap.proto.Id;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
@@ -72,7 +71,7 @@ public class PartitionedFileSetTableMigrator {
    * @param dsSpec the specification of the PartitionedFileSet that needs migrating
    * @throws Exception
    */
-  void upgrade(Id.Namespace namespaceId, DatasetSpecification dsSpec) throws Exception {
+  public void upgrade(Id.Namespace namespaceId, DatasetSpecification dsSpec) throws Exception {
     DatasetSpecification newPartitionsSpec = dsSpec.getSpecification(PartitionedFileSetDefinition.PARTITION_TABLE_NAME);
     TableId oldPartitionsTableId = TableId.from(namespaceId, newPartitionsSpec.getName());
     TableId indexTableId = TableId.from(namespaceId, newPartitionsSpec.getName() + ".i");
@@ -131,15 +130,31 @@ public class PartitionedFileSetTableMigrator {
 
           // additionally since 3.1.0, we keep two addition columns for each partition: creation time of the partition
           // and the transaction write pointer of the transaction in which the partition was added
+          byte[] hbaseVersionBytes = Bytes.toBytes(hBaseVersion);
           put.add(columnFamily, PartitionedFileSetDataset.WRITE_PTR_COL,
-                  hBaseVersion, Bytes.toBytes(hBaseVersion));
+                  hBaseVersion, hbaseVersionBytes);
           // here, we make the assumption that dropping the six right-most digits of the transaction write pointer
           // yields the timestamp at which it started
+          byte[] creationTimeBytes = Bytes.toBytes(hBaseVersion / MILLION);
           put.add(columnFamily, PartitionedFileSetDataset.CREATION_TIME_COL,
-                  hBaseVersion, Bytes.toBytes(hBaseVersion / MILLION));
+                  hBaseVersion, creationTimeBytes);
 
           newDataTable.put(put);
-          LOG.debug("Deleting old key {} for deletion", Bytes.toString(result.getRow()));
+
+          // index the data table on the two columns
+          Put indexTableWritePointer = new Put(IndexedTable.createIndexKey(result.getRow(),
+                                                                           PartitionedFileSetDataset.WRITE_PTR_COL,
+                                                                           hbaseVersionBytes));
+          indexTableWritePointer.add(columnFamily, IndexedTable.IDX_COL, hBaseVersion, result.getRow());
+
+          Put indexTableCreationTime =
+            new Put(IndexedTable.createIndexKey(result.getRow(), PartitionedFileSetDataset.CREATION_TIME_COL,
+                                                creationTimeBytes));
+          indexTableCreationTime.add(columnFamily, IndexedTable.IDX_COL, hBaseVersion, result.getRow());
+
+          newIndexTable.put(ImmutableList.of(indexTableCreationTime, indexTableWritePointer));
+
+          LOG.debug("Deleting old key {}.", Bytes.toString(result.getRow()));
           oldTable.delete(new Delete(result.getRow()));
         }
       } finally {

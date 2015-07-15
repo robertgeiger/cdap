@@ -59,7 +59,7 @@ public class PartitionedFileSetDefinition extends AbstractDatasetDefinition<Part
   @VisibleForTesting
   public static final String FILESET_NAME = "files";
 
-  public static final String INDEXED_COLS = Bytes.toString(PartitionedFileSetDataset.WRITE_PTR_COL) + ','
+  protected static final String INDEXED_COLS = Bytes.toString(PartitionedFileSetDataset.WRITE_PTR_COL) + ','
     + Bytes.toString(PartitionedFileSetDataset.CREATION_TIME_COL);
 
   protected final DatasetDefinition<? extends IndexedTable, ?> indexedTableDef;

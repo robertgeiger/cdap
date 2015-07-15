@@ -77,8 +77,8 @@ public class PartitionedFileSetDataset extends AbstractDataset implements Partit
   protected static final byte[] RELATIVE_PATH = { 'p' };
   protected static final byte[] FIELD_PREFIX = { 'f', '.' };
   protected static final byte[] METADATA_PREFIX = { 'm', '.' };
-  public static final byte[] CREATION_TIME_COL = { 'c' };
-  public static final byte[] WRITE_PTR_COL = { 'w' };
+  protected static final byte[] CREATION_TIME_COL = { 'c' };
+  protected static final byte[] WRITE_PTR_COL = { 'w' };
 
   protected final FileSet files;
   protected final IndexedTable partitionsTable;
