@@ -16,8 +16,10 @@
 
 package co.cask.cdap.template.etl.api;
 
+import co.cask.cdap.api.data.DatasetContext;
+
 /**
  * Context passed to {@link Transform}s.
  */
-public interface TransformContext extends PluginContext {
+public interface TransformContext extends PluginContext, DatasetContext {
 }

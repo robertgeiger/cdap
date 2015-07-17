@@ -16,10 +16,16 @@
 
 package co.cask.cdap.template.etl.realtime;
 
+import co.cask.cdap.api.data.DatasetContext;
+import co.cask.cdap.api.data.DatasetInstantiationException;
+import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.templates.plugins.PluginProperties;
 import co.cask.cdap.api.worker.WorkerContext;
 import co.cask.cdap.template.etl.api.TransformContext;
+
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Context for the Transform Stage.
@@ -29,11 +35,13 @@ public class RealtimeTransformContext implements TransformContext {
   private final Metrics metrics;
 
   protected final String pluginPrefix;
+  private final AtomicReference<DatasetContext> datasetContextRef;
 
   public RealtimeTransformContext(WorkerContext context, Metrics metrics, String pluginPrefix) {
     this.context = context;
     this.metrics = metrics;
     this.pluginPrefix = pluginPrefix;
+    this.datasetContextRef = new AtomicReference<>();
   }
 
   @Override
@@ -44,5 +52,26 @@ public class RealtimeTransformContext implements TransformContext {
   @Override
   public PluginProperties getPluginProperties() {
     return context.getPluginProperties(pluginPrefix);
+  }
+
+  @Override
+  public <T extends Dataset> T getDataset(String name) throws DatasetInstantiationException {
+    if (datasetContextRef.get() == null) {
+      throw new IllegalStateException("Transaction is not active");
+    }
+    return datasetContextRef.get().getDataset(name);
+  }
+
+  @Override
+  public <T extends Dataset> T getDataset(String name, Map<String, String> arguments)
+    throws DatasetInstantiationException {
+    if (datasetContextRef.get() == null) {
+      throw new IllegalStateException("Transaction is not active");
+    }
+    return datasetContextRef.get().getDataset(name, arguments);
+  }
+
+  void resetDatasetContext(DatasetContext datasetContext) {
+    datasetContextRef.set(datasetContext);
   }
 }
