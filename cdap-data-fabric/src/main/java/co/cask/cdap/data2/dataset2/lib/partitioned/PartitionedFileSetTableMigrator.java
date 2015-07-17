@@ -63,8 +63,7 @@ public class PartitionedFileSetTableMigrator {
   private final DatasetFramework dsFramework;
 
   @Inject
-  protected PartitionedFileSetTableMigrator(HBaseTableUtil tableUtil, Configuration conf,
-                                            DatasetFramework dsFramework) {
+  public PartitionedFileSetTableMigrator(HBaseTableUtil tableUtil, Configuration conf, DatasetFramework dsFramework) {
     this.tableUtil = tableUtil;
     this.conf = conf;
     this.dsFramework = dsFramework;
