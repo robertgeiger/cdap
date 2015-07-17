@@ -131,7 +131,9 @@ public class UpgradeTool {
   private enum Action {
     UPGRADE("Upgrades CDAP to 3.0\n" +
               "  The upgrade tool upgrades the following: \n" +
-              "  1. User Datasets (Upgrades the coprocessor jars for tables)\n" +
+              "  1. User Datasets\n" +
+              "      - Upgrades the coprocessor jars for tables\n" +
+              "      - Migrates the metadata for PartitionedFileSets\n" +
               "  2. System Datasets\n" +
               "  3. StreamConversionAdapter\n" +
               "  4. UsageRegistry Dataset Type\n" +
@@ -140,7 +142,7 @@ public class UpgradeTool {
 
     private final String description;
 
-    private Action(String description) {
+    Action(String description) {
       this.description = description;
     }
 
@@ -317,7 +319,6 @@ public class UpgradeTool {
     } catch (Exception e) {
       System.out.println(String.format("Failed to perform action '%s'. Reason: '%s'.", action, e.getMessage()));
       e.printStackTrace(System.out);
-      throw e;
     }
   }
 
@@ -359,15 +360,23 @@ public class UpgradeTool {
     DatasetUpgrader dsUpgrade = injector.getInstance(DatasetUpgrader.class);
     dsUpgrade.upgrade();
 
+    LOG.info("Upgrading PartitionedFileSets ...");
+    PFSUpgrader pfsUpgrader = injector.getInstance(PFSUpgrader.class);
+    pfsUpgrader.upgrade();
+
+    LOG.info("Upgrading QueueAdmin ...");
     QueueAdmin queueAdmin = injector.getInstance(QueueAdmin.class);
     queueAdmin.upgrade();
 
+    LOG.info("Upgrading Adapters ...");
     upgradeAdapters();
 
+    LOG.info("Upgrading UsageRegistry Dataset ...");
     UsageRegistry usageRegistry = injector.getInstance(UsageRegistry.class);
     usageRegistry.upgrade(injector.getInstance(Key.get(DatasetInstanceManager.class,
                                                        Names.named("datasetInstanceManager"))));
   }
+
 
   /**
    * Upgrades adapters by first deleting all the schedule triggers and the the job itself in every namespace follwed by
