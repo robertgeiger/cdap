@@ -50,14 +50,20 @@ import java.util.NavigableMap;
  */
 public class PartitionedFileSetTableMigrator {
   private static final Logger LOG = LoggerFactory.getLogger(PartitionedFileSetTableMigrator.class);
+
+  // copied from IndexedTable.java. This upgrade is only needed from 3.0 -> 3.1, so this code will be removed
+  // after 3.1 release. This is done to avoid publicizing the fields on IndexedTable.
+  private static final byte[] IDX_COL = {'r'};
+  private static final byte DELIMITER_BYTE = 0;
+  private static final byte[] KEY_DELIMITER = new byte[] { DELIMITER_BYTE };
+
   private static final long MILLION = 1000 * 1000;
   protected final HBaseTableUtil tableUtil;
   protected final Configuration conf;
   private final DatasetFramework dsFramework;
 
   @Inject
-  protected PartitionedFileSetTableMigrator(HBaseTableUtil tableUtil, Configuration conf,
-                                            DatasetFramework dsFramework) {
+  public PartitionedFileSetTableMigrator(HBaseTableUtil tableUtil, Configuration conf, DatasetFramework dsFramework) {
     this.tableUtil = tableUtil;
     this.conf = conf;
     this.dsFramework = dsFramework;
@@ -142,15 +148,15 @@ public class PartitionedFileSetTableMigrator {
           newDataTable.put(put);
 
           // index the data table on the two columns
-          Put indexWritePointerPut = new Put(IndexedTable.createIndexKey(result.getRow(),
-                                                                         PartitionedFileSetDataset.WRITE_PTR_COL,
-                                                                         hbaseVersionBytes));
-          indexWritePointerPut.add(columnFamily, IndexedTable.IDX_COL, writeVersion, result.getRow());
+          Put indexWritePointerPut = new Put(createIndexKey(result.getRow(),
+                                                            PartitionedFileSetDataset.WRITE_PTR_COL,
+                                                            hbaseVersionBytes));
+          indexWritePointerPut.add(columnFamily, IDX_COL, writeVersion, result.getRow());
 
-          Put indexCreationTimePut = new Put(IndexedTable.createIndexKey(result.getRow(),
-                                                                         PartitionedFileSetDataset.CREATION_TIME_COL,
-                                                                         creationTimeBytes));
-          indexCreationTimePut.add(columnFamily, IndexedTable.IDX_COL, writeVersion, result.getRow());
+          Put indexCreationTimePut = new Put(createIndexKey(result.getRow(),
+                                                            PartitionedFileSetDataset.CREATION_TIME_COL,
+                                                            creationTimeBytes));
+          indexCreationTimePut.add(columnFamily, IDX_COL, writeVersion, result.getRow());
 
           newIndexTable.put(ImmutableList.of(indexCreationTimePut, indexWritePointerPut));
 
@@ -171,5 +177,9 @@ public class PartitionedFileSetTableMigrator {
     } finally {
       oldTable.close();
     }
+  }
+
+  private byte[] createIndexKey(byte[] row, byte[] column, byte[] value) {
+    return Bytes.concat(column, KEY_DELIMITER, value, KEY_DELIMITER, row);
   }
 }
