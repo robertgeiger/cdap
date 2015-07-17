@@ -25,6 +25,7 @@ import co.cask.cdap.api.dataset.lib.IndexedTableDefinition;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
 import co.cask.cdap.api.dataset.lib.Partitioning;
+import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
@@ -43,6 +44,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.SortedMap;
 
@@ -78,20 +80,43 @@ public class PFSUpgraderTest {
 
 
   @Test
-  public void testSimpleUpgrade() throws Exception {
+  public void testSimplePFSUpgrade() throws Exception {
     Id.DatasetInstance ds1 = Id.DatasetInstance.from("test", "fs1");
     framework.addInstance(PartitionedFileSet.class.getName(), ds1,
                           FileSetProperties.builder().setBasePath("/temp/fs1").build());
-    // specs created by the current DSFramework already use an IndexedTable for the partitions dataset
+    // PFS specs created by the current DSFramework already use an IndexedTable for the partitions dataset
     Assert.assertTrue(pfsUpgrader.alreadyUpgraded(framework.getDatasetSpec(ds1)));
 
 
     // test conversion from old PartitionedFileSet spec to current spec
-        DatasetSpecification oldResultsSpec = constructOldPfsSpec("results", dsProps.getProperties());
-    DatasetSpecification newResultsSpec = pfsUpgrader.convertSpec(oldResultsSpec.getName(), oldResultsSpec);
+    DatasetSpecification oldResultsSpec = constructOldPfsSpec("results", dsProps.getProperties(),
+                                                              PartitionedFileSet.class.getName());
+    testPFSUpgrade(oldResultsSpec);
+  }
+
+  @Test
+  public void testSimpleTPFSUpgrade() throws Exception {
+    Id.DatasetInstance ds1 = Id.DatasetInstance.from("test", "tfs1");
+    framework.addInstance(TimePartitionedFileSet.class.getName(), ds1,
+                          FileSetProperties.builder().setBasePath("/temp/fs1").build());
+    // TPFS specs created by the current DSFramework already use an IndexedTable for the partitions dataset
+    Assert.assertTrue(pfsUpgrader.alreadyUpgraded(framework.getDatasetSpec(ds1)));
+
+
+    // test conversion from old TimePartitionedFileSet spec to current spec
+    DatasetSpecification oldResultsSpec = constructOldPfsSpec("results", Collections.<String, String>emptyMap(),
+                                                              TimePartitionedFileSet.class.getName());
+    testPFSUpgrade(oldResultsSpec);
+
+  }
+
+  // does the conversion and assertions for the PFS and TPFS specifications
+  private void testPFSUpgrade(DatasetSpecification oldPFSSpec) throws Exception {
+    Assert.assertTrue(pfsUpgrader.needsConverting(oldPFSSpec));
+    DatasetSpecification newResultsSpec = pfsUpgrader.convertSpec(oldPFSSpec.getName(), oldPFSSpec);
 
     // the files Dataset shouldn't be changed
-    Assert.assertEquals(oldResultsSpec.getSpecification(PartitionedFileSetDefinition.FILESET_NAME),
+    Assert.assertEquals(oldPFSSpec.getSpecification(PartitionedFileSetDefinition.FILESET_NAME),
                         newResultsSpec.getSpecification(PartitionedFileSetDefinition.FILESET_NAME));
 
     DatasetSpecification newPartitionsSpec =
@@ -102,7 +127,8 @@ public class PFSUpgraderTest {
 
   @Test
   public void testEmbeddedPfsUpgrade() throws Exception {
-    DatasetSpecification pfsSpec = constructOldPfsSpec("results", dsProps.getProperties());
+    DatasetSpecification pfsSpec = constructOldPfsSpec("results", dsProps.getProperties(),
+                                                       PartitionedFileSet.class.getName());
 
     DatasetSpecification embeddingDsSpec = DatasetSpecification.builder("outerDataset", "customDs")
       .datasets(pfsSpec)
@@ -134,8 +160,8 @@ public class PFSUpgraderTest {
     }
   }
 
-  private DatasetSpecification constructOldPfsSpec(String name, Map<String, String> properties) {
-    DatasetSpecification.Builder pfsBuilder = DatasetSpecification.builder(name, PartitionedFileSet.class.getName());
+  private DatasetSpecification constructOldPfsSpec(String name, Map<String, String> properties, String typeName) {
+    DatasetSpecification.Builder pfsBuilder = DatasetSpecification.builder(name, typeName);
     pfsBuilder.properties(properties);
 
     DatasetSpecification filesSpec =
