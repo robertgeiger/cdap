@@ -131,7 +131,7 @@ public class UpgradeTool {
   private enum Action {
     UPGRADE("Upgrades CDAP to 3.0\n" +
               "  The upgrade tool upgrades the following: \n" +
-              "  1. User Datasets (Upgrades the coprocessor jars for tables, and the base paths for file sets)\n" +
+              "  1. User Datasets (Upgrades the coprocessor jars for tables)\n" +
               "  2. System Datasets\n" +
               "  3. StreamConversionAdapter\n" +
               "  4. UsageRegistry Dataset Type\n" +
