@@ -97,15 +97,16 @@ public class PartitionedFileSetTableMigrator {
     try {
       ScanBuilder scan = tableUtil.buildScan();
       scan.setTimeRange(0, HConstants.LATEST_TIMESTAMP);
-      scan.setMaxVersions(1); // we only need to see one version of each row
+      // migrate all versions. Since we write the same versions in the new table, transactional semantics should carry
+      // across (invalid transactions' data remains invalid, etc). There shouldn't be too many versions of a given row
+      // of the partitions table anyways.
+      scan.setMaxVersions();
       try (ResultScanner resultScanner = oldTable.getScanner(scan.build())) {
         Result result;
         while ((result = resultScanner.next()) != null) {
           Put put = new Put(result.getRow());
 
-
           Long writeVersion = null;
-
           for (Map.Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> familyMap :
             result.getMap().entrySet()) {
             for (Map.Entry<byte[], NavigableMap<Long, byte[]>> columnMap : familyMap.getValue().entrySet()) {
@@ -162,7 +163,7 @@ public class PartitionedFileSetTableMigrator {
         newDataTable.close();
       }
       LOG.info("Successfully migrated data from table {} Now deleting it.", Bytes.toString(oldTable.getTableName()));
-      hBaseAdmin.deleteTable(oldTable.getTableName());
+      tableUtil.dropTable(hBaseAdmin, oldPartitionsTableId);
       LOG.info("Succsefully deleted old data table {}", Bytes.toString(oldTable.getTableName()));
     } catch (Exception e) {
       LOG.error("Error while migrating data from table: {}", oldPartitionsTableId, e);
