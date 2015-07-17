@@ -33,6 +33,14 @@ import java.util.Map;
 /**
  */
 public class ScriptTransformTest {
+
+  private static final ScriptTransformContext TEST_CONTEXT = new ScriptTransformContext() {
+    @Override
+    public Object lookup(String dataset, String column) {
+      return dataset + ":" + column;
+    }
+  };
+
   private static final Schema SCHEMA = Schema.recordOf("record",
     Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
     Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
@@ -72,11 +80,18 @@ public class ScriptTransformTest {
     .set("unionField", 3)
     .build();
 
+  private static final Schema STRING_SCHEMA = Schema.recordOf(
+    "record",
+    Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+  private static final StructuredRecord STRING_RECORD = StructuredRecord.builder(STRING_SCHEMA)
+    .set("stringField", "zzz")
+    .build();
+
   @Test
   public void testSimple() throws Exception {
-    ScriptTransform.Config config = new ScriptTransform.Config(
+    ScriptTransform.Config config = new TestScriptTransform.Config(
       "function transform(x) { x.intField = x.intField * 1024; return x; }", null);
-    Transform<StructuredRecord, StructuredRecord> transform = new ScriptTransform(config);
+    Transform<StructuredRecord, StructuredRecord> transform = new TestScriptTransform(config);
     transform.initialize(null);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -120,15 +135,32 @@ public class ScriptTransformTest {
   }
 
   @Test
+  public void testLookup() throws Exception {
+    ScriptTransform.Config config = new TestScriptTransform.Config(
+      "function transform(x, ctx) { " +
+        "x.stringField = x.stringField + '..hi..' + ctx.lookup('a', 'b'); return x; }", null);
+    Transform<StructuredRecord, StructuredRecord> transform = new TestScriptTransform(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(STRING_RECORD, emitter);
+    StructuredRecord output = emitter.getEmitted().get(0);
+
+    // check record1
+    Assert.assertEquals(STRING_SCHEMA, output.getSchema());
+    Assert.assertEquals("zzz..hi..a:b", output.get("stringField"));
+  }
+
+  @Test
   public void testDropAndRename() throws Exception {
     Schema outputSchema = Schema.recordOf(
       "smallerSchema",
       Schema.Field.of("x", Schema.of(Schema.Type.INT)),
       Schema.Field.of("y", Schema.of(Schema.Type.LONG)));
-    ScriptTransform.Config config = new ScriptTransform.Config(
+    ScriptTransform.Config config = new TestScriptTransform.Config(
       "function transform(input) { return { 'x':input.intField, 'y':input.longField }; }",
       outputSchema.toString());
-    Transform<StructuredRecord, StructuredRecord> transform = new ScriptTransform(config);
+    Transform<StructuredRecord, StructuredRecord> transform = new TestScriptTransform(config);
     transform.initialize(null);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -191,7 +223,7 @@ public class ScriptTransformTest {
       .build();
 
     Schema outputSchema = Schema.recordOf("output", Schema.Field.of("x", Schema.of(Schema.Type.DOUBLE)));
-    ScriptTransform.Config config = new ScriptTransform.Config(
+    ScriptTransform.Config config = new TestScriptTransform.Config(
       "function transform(input) {\n" +
       "  var pi = input.inner1.list[0].p;\n" +
       "  var e = input.inner1.list[0].e;\n" +
@@ -207,7 +239,7 @@ public class ScriptTransformTest {
       "  return ans;\n" +
       "}",
       outputSchema.toString());
-    Transform<StructuredRecord, StructuredRecord> transform = new ScriptTransform(config);
+    Transform<StructuredRecord, StructuredRecord> transform = new TestScriptTransform(config);
     transform.initialize(null);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -215,5 +247,20 @@ public class ScriptTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
     Assert.assertEquals(outputSchema, output.getSchema());
     Assert.assertTrue(Math.abs(2.71 * 2.71 + 3.14 * 3.14 * 3.14 - (Double) output.get("x")) < 0.000001);
+  }
+
+  /**
+   * Test {@link ScriptTransform} that has a fake {@link ScriptTransformContext}.
+   */
+  public class TestScriptTransform extends ScriptTransform {
+
+    public TestScriptTransform(Config config) {
+      super(config);
+    }
+
+    @Override
+    protected ScriptTransformContext createContext() {
+      return TEST_CONTEXT;
+    }
   }
 }
