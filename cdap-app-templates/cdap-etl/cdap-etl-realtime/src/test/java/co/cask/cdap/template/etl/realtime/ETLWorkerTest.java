@@ -47,6 +47,7 @@ import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -107,7 +108,7 @@ public class ETLWorkerTest extends TestBase {
     addTemplatePlugins(TEMPLATE_ID, "realtime-sinks-1.0.0.jar",
                        RealtimeCubeSink.class, RealtimeTableSink.class, StreamSink.class);
     addTemplatePlugins(TEMPLATE_ID, "transforms-1.0.0.jar",
-                       ProjectionTransform.class, ScriptFilterTransform.class, 
+                       ProjectionTransform.class, ScriptFilterTransform.class,
                        StructuredRecordToGenericRecordTransform.class);
     deployTemplate(NAMESPACE, TEMPLATE_ID, ETLRealtimeTemplate.class,
                    PipelineConfigurable.class.getPackage().getName(),
@@ -135,7 +136,10 @@ public class ETLWorkerTest extends TestBase {
     long startTime = System.currentTimeMillis();
     ETLStage source = new ETLStage("Test", ImmutableMap.of(TestSource.PROPERTY_TYPE, TestSource.STREAM_TYPE));
     ETLStage sink = new ETLStage("Stream", ImmutableMap.of(Properties.Stream.NAME, "testStream"));
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink);
+    ETLStage transform = new ETLStage("Script", ImmutableMap.of(
+      "script", "function transform(e, ctx) { " +
+        "e.headers.h1 = e.headers.h1 + ctx.lookup('dataset1', 'column1'); return e; }"));
+    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, ImmutableList.of(transform));
 
     AdapterConfig adapterConfig = new AdapterConfig("test adapter", TEMPLATE_ID.getId(), GSON.toJsonTree(etlConfig));
     Id.Adapter adapterId = Id.Adapter.from(NAMESPACE, "testToStream");
@@ -164,7 +168,7 @@ public class ETLWorkerTest extends TestBase {
     ByteBuffer body = event.getBody();
     Map<String, String> headers = event.getHeaders();
     if (headers != null && !headers.isEmpty()) {
-      Assert.assertEquals("v1", headers.get("h1"));
+      Assert.assertEquals("v1dataset1:column1", headers.get("h1"));
     }
     Assert.assertEquals("Hello", Bytes.toString(body, Charsets.UTF_8));
   }
