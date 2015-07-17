@@ -77,7 +77,6 @@ public class PartitionedFileSetTableMigrator {
     TableId indexTableId = TableId.from(namespaceId, newPartitionsSpec.getName() + ".i");
     TableId dataTableId = TableId.from(namespaceId, newPartitionsSpec.getName() + ".d");
 
-
     byte[] columnFamily = HBaseTableAdmin.getColumnFamily(newPartitionsSpec);
 
     HBaseAdmin hBaseAdmin = new HBaseAdmin(conf);
@@ -105,7 +104,7 @@ public class PartitionedFileSetTableMigrator {
           Put put = new Put(result.getRow());
 
 
-          Long hBaseVersion = null;
+          Long writeVersion = null;
 
           for (Map.Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> familyMap :
             result.getMap().entrySet()) {
@@ -114,45 +113,45 @@ public class PartitionedFileSetTableMigrator {
                 Long timeStamp = columnEntry.getKey();
                 byte[] colVal = columnEntry.getValue();
                 put.add(familyMap.getKey(), columnMap.getKey(), timeStamp, colVal);
-                LOG.info("Migrating row. family: '{}', column: '{}', ts: '{}', colVal: '{}'",
-                         familyMap.getKey(), columnMap.getKey(), timeStamp, colVal);
+                LOG.debug("Migrating row. family: '{}', column: '{}', ts: '{}', colVal: '{}'",
+                          familyMap.getKey(), columnMap.getKey(), timeStamp, colVal);
 
                 // the hbase version for all the columns are equal since every column of a row corresponds to one
                 // partition and a partition is created entirely within a single transaction.
-                hBaseVersion = timeStamp;
+                writeVersion = timeStamp;
               }
             }
           }
 
-          Preconditions.checkNotNull(hBaseVersion,
+          Preconditions.checkNotNull(writeVersion,
                                      "There should have been at least one column in the scan. Table: {}, Rowkey: {}",
                                      oldPartitionsTableId, result.getRow());
 
           // additionally since 3.1.0, we keep two addition columns for each partition: creation time of the partition
           // and the transaction write pointer of the transaction in which the partition was added
-          byte[] hbaseVersionBytes = Bytes.toBytes(hBaseVersion);
+          byte[] hbaseVersionBytes = Bytes.toBytes(writeVersion);
           put.add(columnFamily, PartitionedFileSetDataset.WRITE_PTR_COL,
-                  hBaseVersion, hbaseVersionBytes);
+                  writeVersion, hbaseVersionBytes);
           // here, we make the assumption that dropping the six right-most digits of the transaction write pointer
           // yields the timestamp at which it started
-          byte[] creationTimeBytes = Bytes.toBytes(hBaseVersion / MILLION);
+          byte[] creationTimeBytes = Bytes.toBytes(writeVersion / MILLION);
           put.add(columnFamily, PartitionedFileSetDataset.CREATION_TIME_COL,
-                  hBaseVersion, creationTimeBytes);
+                  writeVersion, creationTimeBytes);
 
           newDataTable.put(put);
 
           // index the data table on the two columns
-          Put indexTableWritePointer = new Put(IndexedTable.createIndexKey(result.getRow(),
-                                                                           PartitionedFileSetDataset.WRITE_PTR_COL,
-                                                                           hbaseVersionBytes));
-          indexTableWritePointer.add(columnFamily, IndexedTable.IDX_COL, hBaseVersion, result.getRow());
+          Put indexWritePointerPut = new Put(IndexedTable.createIndexKey(result.getRow(),
+                                                                         PartitionedFileSetDataset.WRITE_PTR_COL,
+                                                                         hbaseVersionBytes));
+          indexWritePointerPut.add(columnFamily, IndexedTable.IDX_COL, writeVersion, result.getRow());
 
-          Put indexTableCreationTime =
-            new Put(IndexedTable.createIndexKey(result.getRow(), PartitionedFileSetDataset.CREATION_TIME_COL,
-                                                creationTimeBytes));
-          indexTableCreationTime.add(columnFamily, IndexedTable.IDX_COL, hBaseVersion, result.getRow());
+          Put indexCreationTimePut = new Put(IndexedTable.createIndexKey(result.getRow(),
+                                                                         PartitionedFileSetDataset.CREATION_TIME_COL,
+                                                                         creationTimeBytes));
+          indexCreationTimePut.add(columnFamily, IndexedTable.IDX_COL, writeVersion, result.getRow());
 
-          newIndexTable.put(ImmutableList.of(indexTableCreationTime, indexTableWritePointer));
+          newIndexTable.put(ImmutableList.of(indexCreationTimePut, indexWritePointerPut));
 
           LOG.debug("Deleting old key {}.", Bytes.toString(result.getRow()));
           oldTable.delete(new Delete(result.getRow()));

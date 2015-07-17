@@ -21,6 +21,7 @@ import co.cask.cdap.api.dataset.lib.FileSet;
 import co.cask.cdap.api.dataset.lib.IndexedTable;
 import co.cask.cdap.api.dataset.lib.IndexedTableDefinition;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
+import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.data2.datafabric.dataset.DatasetMetaTableUtil;
 import co.cask.cdap.data2.datafabric.dataset.service.mds.DatasetInstanceMDS;
@@ -207,7 +208,8 @@ public class PFSUpgrader {
 
   boolean isPartitionedFileSet(DatasetSpecification dsSpec) {
     String dsType = dsSpec.getType();
-    return (PartitionedFileSet.class.getName().equals(dsType) || "partitionedFileSet".equals(dsType));
+    return PartitionedFileSet.class.getName().equals(dsType) || "partitionedFileSet".equals(dsType)
+      || TimePartitionedFileSet.class.getName().equals(dsType) || "timePartitionedFileSet".equals(dsType);
   }
 
   boolean isIndexedTable(DatasetSpecification dsSpec) {
