@@ -40,7 +40,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.VersionInfo;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.twill.api.ClassAcceptor;
 import org.apache.twill.internal.utils.Dependencies;
@@ -260,37 +259,56 @@ public class ExploreServiceUtils {
     if (classLoader == null) {
       usingCL = ExploreRuntimeModule.class.getClassLoader();
     }
-    Set<String> bootstrapClassPaths = getBoostrapClasses();
+
+    final Set<String> bootstrapClassPaths = getBoostrapClasses();
+
+    ClassAcceptor classAcceptor = new ClassAcceptor() {
+      /* Excluding any class contained in the bootstrapClassPaths and Kryo classes.
+        * We need to remove Kryo dependency in the Explore container. Spark introduced version 2.21 version of Kryo,
+        * which would be normally shipped to the Explore container. Yet, Hive requires Kryo 2.22,
+        * and gets it from the Hive jars - hive-exec.jar to be precise.
+        * */
+      @Override
+      public boolean accept(String className, URL classUrl, URL classPathUrl) {
+        if (bootstrapClassPaths.contains(classPathUrl.getFile())) {
+          return false;
+        }
+        if (className.startsWith("com.esotericsoftware.kryo")) {
+          return false;
+        }
+        return true;
+      }
+    };
 
     Set<File> hBaseTableDeps = traceDependencies(HBaseTableUtilFactory.getHBaseTableUtilClass().getName(),
-                                                 bootstrapClassPaths, usingCL);
+                                                 usingCL, classAcceptor);
 
     // Note the order of dependency jars is important so that HBase jars come first in the classpath order
     // LinkedHashSet maintains insertion order while removing duplicate entries.
     Set<File> orderedDependencies = new LinkedHashSet<>();
     orderedDependencies.addAll(hBaseTableDeps);
     orderedDependencies.addAll(traceDependencies(DatasetService.class.getName(),
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
     orderedDependencies.addAll(traceDependencies("co.cask.cdap.hive.datasets.DatasetStorageHandler",
-                                                 bootstrapClassPaths, usingCL));
+                                                  usingCL, classAcceptor));
     orderedDependencies.addAll(traceDependencies("co.cask.cdap.hive.datasets.StreamStorageHandler",
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
     orderedDependencies.addAll(traceDependencies("org.apache.hadoop.hive.ql.exec.mr.ExecDriver",
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
     orderedDependencies.addAll(traceDependencies("org.apache.hive.service.cli.CLIService",
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
     orderedDependencies.addAll(traceDependencies("org.apache.hadoop.mapred.YarnClientProtocolProvider",
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
     orderedDependencies.addAll(traceDependencies(RecordFormats.class.getName(),
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
 
     // Needed for - at least - CDH 4.4 integration
     orderedDependencies.addAll(traceDependencies("org.apache.hive.builtins.BuiltinUtils",
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
 
     // Needed for - at least - CDH 5 integration
     orderedDependencies.addAll(traceDependencies("org.apache.hadoop.hive.shims.Hadoop23Shims",
-                                                 bootstrapClassPaths, usingCL));
+                                                 usingCL, classAcceptor));
 
     exploreDependencies = orderedDependencies;
     return orderedDependencies;
@@ -298,15 +316,11 @@ public class ExploreServiceUtils {
 
   /**
    * Trace the dependencies files of the given className, using the classLoader,
-   * and excluding any class contained in the bootstrapClassPaths and Kryo classes.
-   * We need to remove Kryo dependency in the Explore container. Spark introduced version 2.21 version of Kryo,
-   * which would be normally shipped to the Explore container. Yet, Hive requires Kryo 2.22,
-   * and gets it from the Hive jars - hive-exec.jar to be precise.
+   * and including the classes that's accepted by the classAcceptor
    *
    * Nothing is returned if the classLoader does not contain the className.
    */
-  public static Set<File> traceDependencies(String className, final Set<String> bootstrapClassPaths,
-                                            ClassLoader classLoader)
+  public static Set<File> traceDependencies(String className, ClassLoader classLoader, final ClassAcceptor classAcceptor)
     throws IOException {
     ClassLoader usingCL = classLoader;
     if (usingCL == null) {
@@ -319,11 +333,7 @@ public class ExploreServiceUtils {
       new ClassAcceptor() {
         @Override
         public boolean accept(String className, URL classUrl, URL classPathUrl) {
-          if (bootstrapClassPaths.contains(classPathUrl.getFile())) {
-            return false;
-          }
-
-          if (className.startsWith("com.esotericsoftware.kryo")) {
+          if (!classAcceptor.accept(className, classUrl, classPathUrl)) {
             return false;
           }
 
