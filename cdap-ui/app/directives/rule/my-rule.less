@@ -1,0 +1,16 @@
+@import "../../styles/variables.less";
+my-rule {
+  .parent {
+    display: flex;
+  }
+  .child {
+    margin: 5px;
+  }
+
+  @media (max-width: @screen-xs-min) {
+    .parent {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}

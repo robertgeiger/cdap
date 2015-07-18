@@ -1,0 +1,17 @@
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="panel-title">
+      <div>{{fieldObj.name}} ({{fieldObj.type}})</div>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div ng-repeat="rule in MyRulesContainerCtrl.fieldObj.rules" ng-if="MyRulesContainerCtrl.fieldObj.rules.length > 0">
+      <my-rule data-type="fieldObj.type" data-rule=rule></my-rule>
+    </div>
+    <div ng-if="MyRulesContainerCtrl.fieldObj.rules.length == 0">
+      <div class="well well-lg">
+        No Rules as of now
+      </div>
+    </div>
+  </div>
+</div>
