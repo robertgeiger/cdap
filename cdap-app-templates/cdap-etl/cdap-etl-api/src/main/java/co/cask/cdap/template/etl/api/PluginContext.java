@@ -14,29 +14,31 @@
  * the License.
  */
 
-package co.cask.cdap.template.etl.api.realtime;
+package co.cask.cdap.template.etl.api;
 
 import co.cask.cdap.api.annotation.Beta;
-import co.cask.cdap.api.templates.AdapterContext;
-import co.cask.cdap.template.etl.api.PluginContext;
+import co.cask.cdap.api.metrics.Metrics;
+import co.cask.cdap.api.templates.plugins.PluginProperties;
 
 /**
- * Context passed to the Source and Sink stages of Realtime Adapter.
+ * Context passed to ETL stages.
  */
 @Beta
-public interface RealtimeContext extends PluginContext, AdapterContext {
+public interface PluginContext {
 
   /**
-   * Get Instance Id.
+   * Gets the {@link PluginProperties} associated with the stage.
    *
-   * @return instance id
+   * @return the {@link PluginProperties}.
    */
-  int getInstanceId();
+  PluginProperties getPluginProperties();
 
   /**
-   * Get Instance Count.
+   * Get an instance of {@link Metrics}, used to collect metrics. Note that metric names are not scoped by
+   * the stage they are emitted from. A metric called 'reads' emitted in one stage will be aggregated with
+   * those emitted in another stage.
    *
-   * @return instance count
+   * @return {@link Metrics} for collecting metrics
    */
-  int getInstanceCount();
+  Metrics getMetrics();
 }

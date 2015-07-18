@@ -16,10 +16,14 @@
 
 package co.cask.cdap.template.etl.batch;
 
+import co.cask.cdap.api.data.DatasetInstantiationException;
+import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.mapreduce.MapReduceContext;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.templates.plugins.PluginProperties;
 import co.cask.cdap.template.etl.api.TransformContext;
+
+import java.util.Map;
 
 /**
  * Context for the Transform Stage.
@@ -44,5 +48,16 @@ public class BatchTransformContext implements TransformContext {
   @Override
   public PluginProperties getPluginProperties() {
     return context.getPluginProperties(pluginPrefix);
+  }
+
+  @Override
+  public <T extends Dataset> T getDataset(String name) throws DatasetInstantiationException {
+    return context.getDataset(name);
+  }
+
+  @Override
+  public <T extends Dataset> T getDataset(String name, Map<String, String> arguments)
+    throws DatasetInstantiationException {
+    return context.getDataset(name, arguments);
   }
 }

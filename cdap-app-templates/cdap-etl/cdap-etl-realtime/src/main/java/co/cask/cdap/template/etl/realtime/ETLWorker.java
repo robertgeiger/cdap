@@ -70,6 +70,7 @@ public class ETLWorker extends AbstractWorker {
   private Metrics metrics;
 
   private volatile boolean running;
+  private RealtimeTransformContext transformContext;
 
   @Override
   public void configure() {
@@ -157,11 +158,21 @@ public class ETLWorker extends AbstractWorker {
       ETLStage stage = stages.get(i);
       String transformId = transformIds.get(i);
       try {
-        Transform transform = context.newPluginInstance(transformId);
-        RealtimeTransformContext transformContext = new RealtimeTransformContext(context, metrics, transformId);
+        final Transform transform = context.newPluginInstance(transformId);
+        transformContext = new RealtimeTransformContext(context, metrics, transformId);
         LOG.info("Transform Stage : {}", stage.getName());
         LOG.info("Transform Class : {}", transform.getClass().getName());
-        transform.initialize(transformContext);
+        getContext().execute(new TxRunnable() {
+          @Override
+          public void run(DatasetContext context) throws Exception {
+            try {
+              transformContext.resetDatasetContext(context);
+              transform.initialize(transformContext);
+            } finally {
+              transformContext.resetDatasetContext(null);
+            }
+          }
+        });
         transforms.add(transform);
         transformMetrics.add(new StageMetrics(metrics, StageMetrics.Type.TRANSFORM, stage.getName()));
       } catch (InstantiationException e) {
@@ -207,18 +218,28 @@ public class ETLWorker extends AbstractWorker {
         continue;
       }
 
-      // For each object emitted by the source, invoke the transformExecutor and collect all the data
-      // to be persisted in the sink.
-      for (Object sourceData : sourceEmitter) {
-        try {
-          for (Object object : transformExecutor.runOneIteration(sourceData)) {
-            dataToSink.add(object);
+      getContext().execute(new TxRunnable() {
+        @Override
+        public void run(DatasetContext context) throws Exception {
+          transformContext.resetDatasetContext(context);
+          try {
+            // For each object emitted by the source, invoke the transformExecutor and collect all the data
+            // to be persisted in the sink.
+            for (Object sourceData : sourceEmitter) {
+              try {
+                for (Object object : transformExecutor.runOneIteration(sourceData)) {
+                  dataToSink.add(object);
+                }
+              } catch (Exception e) {
+                LOG.warn("Adapter {} : Exception thrown while processing data {}", adapterName, sourceData, e);
+              }
+            }
+            sourceEmitter.reset();
+          } finally {
+            transformContext.resetDatasetContext(null);
           }
-        } catch (Exception e) {
-          LOG.warn("Adapter {} : Exception thrown while processing data {}", adapterName, sourceData, e);
         }
-      }
-      sourceEmitter.reset();
+      });
 
       // Start a Transaction if there is data to persist or if the Source state has changed.
       try {
