@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.lib.ObjectMappedTable;
 import co.cask.cdap.api.templates.plugins.PluginConfig;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.Transform;
@@ -27,6 +28,8 @@ import co.cask.cdap.template.etl.api.TransformContext;
 import co.cask.cdap.template.etl.common.StructuredRecordSerializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -39,9 +42,11 @@ import javax.script.ScriptException;
  * Filters records using custom javascript provided by the config.
  */
 @Plugin(type = "transform")
-@Name("Script")
+@Name("Validator")
 @Description("Executes user provided Javascript in order to transform one record into another")
 public class ScriptValidatorTransform extends Transform<StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(ScriptValidatorTransform.class);
+
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
     .create();
@@ -49,7 +54,7 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
   private static final String VARIABLE_NAME = "dont_name_your_variable_this";
   private ScriptEngine engine;
   private Invocable invocable;
-  private String errorDataset;
+  private String errorDatasetName;
   private final Config config;
 
   /**
@@ -79,7 +84,8 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
   }
 
   @Override
-  public void initialize(TransformContext context) {
+  public void initialize(TransformContext context) throws Exception {
+    super.initialize(context);
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
     engine.put("_global_ctx", createContext());
@@ -99,6 +105,12 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
     if (config.errorDataset == null) {
       throw new IllegalArgumentException("Dataset to write invalid input objects not provided.");
     }
+    // Verify if we are able to access errorDatasetName
+    errorDatasetName = config.errorDataset;
+    ObjectMappedTable<Error> errorTable = getContext().getDataset(errorDatasetName);
+    if (errorTable == null) {
+      throw new IllegalArgumentException("Cannot access dataset " + errorDatasetName);
+    }
   }
 
   @Override
@@ -108,8 +120,16 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
       engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
       Map scriptOutput = (Map) invocable.invokeFunction(FUNCTION_NAME);
       boolean result = (boolean) scriptOutput.get("result");
+
+      LOG.info("Got result: {} for input: {}", result, input);
       if (result) {
+        LOG.info("Emitting to sink...");
         emitter.emit(input);
+      } else {
+        LOG.info("Writing to error data...");
+        ObjectMappedTable<Error> errorTable = getContext().getDataset(errorDatasetName);
+        Error error = new Error(System.currentTimeMillis(), GSON.toJson(input));
+        errorTable.write(String.valueOf(System.currentTimeMillis()), error);
       }
     } catch (Exception e) {
       throw new IllegalArgumentException("Could not transform input: " + e.getMessage(), e);
