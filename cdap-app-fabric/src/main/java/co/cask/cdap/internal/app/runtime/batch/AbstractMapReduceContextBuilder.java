@@ -28,14 +28,20 @@ import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.internal.app.runtime.adapter.PluginInstantiator;
 import co.cask.cdap.internal.app.runtime.workflow.WorkflowMapReduceProgram;
 import co.cask.cdap.templates.AdapterDefinition;
+import co.cask.tephra.InvalidTruncateTimeException;
 import co.cask.tephra.Transaction;
-import co.cask.tephra.TransactionAware;
+import co.cask.tephra.TransactionCouldNotTakeSnapshotException;
+import co.cask.tephra.TransactionFailureException;
+import co.cask.tephra.TransactionNotInProgressException;
+import co.cask.tephra.TransactionSystemClient;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import org.apache.twill.discovery.DiscoveryServiceClient;
 import org.apache.twill.internal.RunIds;
 
+import java.io.InputStream;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -69,7 +75,7 @@ public abstract class AbstractMapReduceContextBuilder {
                                      String programNameInWorkflow,
                                      @Nullable WorkflowToken workflowToken,
                                      Arguments runtimeArguments,
-                                     Transaction tx,
+                                     final Transaction tx,
                                      Program mrProgram,
                                      @Nullable String inputDataSetName,
                                      @Nullable List<Split> inputSplits,
@@ -110,18 +116,97 @@ public abstract class AbstractMapReduceContextBuilder {
       datasets.add(outputDataSetName);
     }
 
+    TransactionSystemClient constantTxClient = new TransactionSystemClient() {
+      @Override
+      public Transaction startShort() {
+        return tx;
+      }
+
+      @Override
+      public Transaction startShort(int i) {
+        return tx;
+      }
+
+      @Override
+      public Transaction startLong() {
+        return tx;
+      }
+
+      @Override
+      public boolean canCommit(Transaction transaction, Collection<byte[]> collection)
+        throws TransactionNotInProgressException {
+        return false;
+      }
+
+      @Override
+      public boolean commit(Transaction transaction) throws TransactionNotInProgressException {
+        return false;
+      }
+
+      @Override
+      public void abort(Transaction transaction) {
+
+      }
+
+      @Override
+      public boolean invalidate(long l) {
+        return false;
+      }
+
+      @Override
+      public Transaction checkpoint(Transaction transaction) throws TransactionNotInProgressException {
+        return null;
+      }
+
+      @Override
+      public InputStream getSnapshotInputStream() throws TransactionCouldNotTakeSnapshotException {
+        return null;
+      }
+
+      @Override
+      public String status() {
+        return null;
+      }
+
+      @Override
+      public void resetState() {
+
+      }
+
+      @Override
+      public boolean truncateInvalidTx(Set<Long> set) {
+        return false;
+      }
+
+      @Override
+      public boolean truncateInvalidTxBefore(long l) throws InvalidTruncateTimeException {
+        return false;
+      }
+
+      @Override
+      public int getInvalidSize() {
+        return 0;
+      }
+    };
+
     // Creating mapreduce job context
     MapReduceSpecification spec = program.getApplicationSpecification().getMapReduce().get(program.getName());
-    BasicMapReduceContext context =
-      new BasicMapReduceContext(program, type, RunIds.fromString(runId), taskId, runtimeArguments, datasets, spec,
+    DynamicMapReduceContext context =
+      new DynamicMapReduceContext(program, type, RunIds.fromString(runId), taskId, runtimeArguments, spec,
                                 logicalStartTime, programNameInWorkflow, workflowToken, discoveryServiceClient,
-                                metricsCollectionService, datasetFramework, adapterSpec, pluginInstantiator);
-
-    // propagating tx to all txAware guys
-    // NOTE: tx will be committed by client code
-    for (TransactionAware txAware : context.getDatasetInstantiator().getTransactionAware()) {
-      txAware.startTx(tx);
+                                metricsCollectionService, constantTxClient, datasetFramework, adapterSpec,
+                                pluginInstantiator);
+    try {
+      context.startTx();
+    } catch (TransactionFailureException e) {
+      // No exception will be thrown since this is using constant txn txClient
     }
+
+//    // propagating tx to all txAware guys
+//    // NOTE: tx will be committed by client code
+//    for (TransactionAware txAware : context.getDatasetInstantiator().getTransactionAware()) {
+//      txAware.startTx(tx);
+//    }
 
     // Setting extra context's configuration: mapreduce input and output
     if (inputDataSetName != null && inputSplits != null) {

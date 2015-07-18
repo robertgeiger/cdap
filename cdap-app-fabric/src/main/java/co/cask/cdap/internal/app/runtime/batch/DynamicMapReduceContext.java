@@ -33,7 +33,9 @@ import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DynamicDatasetContext;
 import co.cask.cdap.internal.app.runtime.adapter.PluginInstantiator;
 import co.cask.cdap.templates.AdapterDefinition;
+import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
+import co.cask.tephra.TransactionFailureException;
 import co.cask.tephra.TransactionSystemClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -135,5 +137,19 @@ public class DynamicMapReduceContext extends BasicMapReduceContext implements Da
 
   public TransactionContext getTransactionContext() {
     return txContext;
+  }
+
+  public void startTx() throws TransactionFailureException {
+    txContext.start();
+  }
+
+  @Override
+  public void flushOperations() throws Exception {
+    // TODO: can there be more than one thread in context of MapReduce?
+    for (Dataset dataset : datasetsCache.get(Thread.currentThread().getId()).values()) {
+      if (dataset instanceof TransactionAware) {
+        ((TransactionAware) dataset).commitTx();
+      }
+    }
   }
 }
