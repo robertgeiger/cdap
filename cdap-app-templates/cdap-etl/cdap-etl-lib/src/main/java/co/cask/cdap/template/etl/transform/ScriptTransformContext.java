@@ -16,14 +16,27 @@
 
 package co.cask.cdap.template.etl.transform;
 
+import co.cask.cdap.api.data.DatasetContext;
+import co.cask.cdap.api.dataset.Dataset;
+import co.cask.cdap.api.dataset.lib.ObjectMappedTable;
+import com.google.common.base.Preconditions;
+
 /**
  * Context for {@link ScriptTransform}.
  */
 public class ScriptTransformContext {
 
-  public Object lookup(String dataset, String column) {
-    // TODO: read from explorable dataset
-    return dataset + ":" + column;
+  private final DatasetContext datasetContext;
+
+  public ScriptTransformContext(DatasetContext datasetContext) {
+    this.datasetContext = datasetContext;
+  }
+
+  public Object lookup(String datasetName, String key) {
+    Dataset dataset = datasetContext.getDataset(datasetName);
+    Preconditions.checkArgument(dataset instanceof ObjectMappedTable, "lookup dataset must be a ObjectMappedTable");
+    ObjectMappedTable table = (ObjectMappedTable) dataset;
+    return table.read(key);
   }
 
 }

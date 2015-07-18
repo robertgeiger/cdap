@@ -17,6 +17,7 @@
 package co.cask.cdap.template.etl.transform;
 
 import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.template.etl.api.Transform;
@@ -34,7 +35,7 @@ import java.util.Map;
  */
 public class ScriptTransformTest {
 
-  private static final ScriptTransformContext TEST_CONTEXT = new ScriptTransformContext() {
+  private static final ScriptTransformContext TEST_CONTEXT = new ScriptTransformContext(null) {
     @Override
     public Object lookup(String dataset, String column) {
       return dataset + ":" + column;
@@ -259,7 +260,7 @@ public class ScriptTransformTest {
     }
 
     @Override
-    protected ScriptTransformContext createContext() {
+    protected ScriptTransformContext createContext(DatasetContext datasetContext) {
       return TEST_CONTEXT;
     }
   }

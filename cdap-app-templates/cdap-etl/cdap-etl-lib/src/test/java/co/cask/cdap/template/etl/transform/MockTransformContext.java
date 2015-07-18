@@ -16,6 +16,8 @@
 
 package co.cask.cdap.template.etl.transform;
 
+import co.cask.cdap.api.data.DatasetInstantiationException;
+import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.templates.plugins.PluginProperties;
 import co.cask.cdap.template.etl.api.TransformContext;
@@ -46,5 +48,15 @@ public class MockTransformContext implements TransformContext {
   @Override
   public Metrics getMetrics() {
     return NoopMetrics.INSTANCE;
+  }
+
+  @Override
+  public <T extends Dataset> T getDataset(String name) throws DatasetInstantiationException {
+    return null;
+  }
+
+  @Override
+  public <T extends Dataset> T getDataset(String name, Map<String, String> arguments) throws DatasetInstantiationException {
+    return null;
   }
 }

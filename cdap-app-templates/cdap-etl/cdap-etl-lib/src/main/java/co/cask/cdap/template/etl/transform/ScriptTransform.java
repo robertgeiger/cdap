@@ -19,6 +19,7 @@ package co.cask.cdap.template.etl.transform;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.templates.plugins.PluginConfig;
@@ -88,7 +89,7 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
   public void initialize(TransformContext context) {
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
-    engine.put("_global_ctx", createContext());
+    engine.put("_global_ctx", createContext(context));
 
     try {
       // this is pretty ugly, but doing this so that we can pass the 'input' json into the transform function.
@@ -114,7 +115,6 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) {
     try {
-      engine.put("_global_ctx", createContext());
       engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
       Map scriptOutput = (Map) invocable.invokeFunction(FUNCTION_NAME);
       StructuredRecord output = decodeRecord(scriptOutput, schema == null ? input.getSchema() : schema);
@@ -124,8 +124,8 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
     }
   }
 
-  protected ScriptTransformContext createContext() {
-    return new ScriptTransformContext();
+  protected ScriptTransformContext createContext(DatasetContext datasetContext) {
+    return new ScriptTransformContext(datasetContext);
   }
 
   private Object decode(Object object, Schema schema) {
