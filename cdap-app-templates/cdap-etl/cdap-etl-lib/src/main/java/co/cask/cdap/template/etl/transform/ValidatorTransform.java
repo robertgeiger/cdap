@@ -44,8 +44,8 @@ import javax.script.ScriptException;
 @Plugin(type = "transform")
 @Name("Validator")
 @Description("Executes user provided Javascript in order to transform one record into another")
-public class ScriptValidatorTransform extends Transform<StructuredRecord, StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(ScriptValidatorTransform.class);
+public class ValidatorTransform extends Transform<StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(ValidatorTransform.class);
 
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
@@ -79,7 +79,7 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
   }
 
   // for unit tests, otherwise config is injected by plugin framework.
-  public ScriptValidatorTransform(Config config) {
+  public ValidatorTransform(Config config) {
     this.config = config;
   }
 
@@ -88,14 +88,14 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
     super.initialize(context);
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
-    engine.put("_global_ctx", createContext());
+    engine.put("_global_ctx", new ValidatorTransformContext());
 
     try {
       // this is pretty ugly, but doing this so that we can pass the 'input' json into the transform function.
       // that is, we want people to implement
       // function transform(input) { ... }
       // rather than function transform() { ... } and have them access a global variable in the function
-      String script = String.format("function %s() { return transform(%s, _global_ctx); }\n%s",
+      String script = String.format("function %s() { return validate(%s, _global_ctx); }\n%s",
                                     FUNCTION_NAME, VARIABLE_NAME, config.script);
       engine.eval(script);
     } catch (ScriptException e) {
@@ -116,7 +116,7 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) {
     try {
-      engine.put("_global_ctx", createContext());
+      engine.put("_global_ctx", new ValidatorTransformContext());
       engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
       Map scriptOutput = (Map) invocable.invokeFunction(FUNCTION_NAME);
       boolean result = (boolean) scriptOutput.get("result");
@@ -136,8 +136,5 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
     }
   }
 
-  protected ScriptTransformContext createContext() {
-    return new ScriptTransformContext();
-  }
 
 }

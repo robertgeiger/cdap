@@ -41,9 +41,9 @@ import java.util.concurrent.TimeUnit;
 /**
  *
  */
-public class ScriptValidatorTransformTest extends BaseETLBatchTest {
-  private static final String script =
-    "function transform(x, ctx) {return x.key % 2 == 0 ? { result : true } : { result : false }; }";
+public class ValidatorTransformTest extends BaseETLBatchTest {
+  private static final String script = "    function validate(input, ctx) {" +
+    "      return x.key % 2 == 0 ? { result : true } : { result : false }; }";
 
   @Test
   public void testValidator() throws Exception {
