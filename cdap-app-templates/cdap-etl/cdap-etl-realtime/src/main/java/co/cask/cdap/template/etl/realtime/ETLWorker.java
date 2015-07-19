@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Worker driver for Realtime ETL Adapters.
@@ -70,7 +71,7 @@ public class ETLWorker extends AbstractWorker {
   private Metrics metrics;
 
   private volatile boolean running;
-  private RealtimeTransformContext transformContext;
+  private final AtomicReference<DatasetContext> datasetContextWrapper = new AtomicReference<>();
 
   @Override
   public void configure() {
@@ -128,10 +129,21 @@ public class ETLWorker extends AbstractWorker {
   private void initializeSource(WorkerContext context, ETLStage stage) throws Exception {
     String sourcePluginId = context.getRuntimeArguments().get(Constants.Source.PLUGINID);
     source = context.newPluginInstance(sourcePluginId);
-    RealtimeContext sourceContext = new WorkerRealtimeContext(context, metrics, sourcePluginId);
+    final RealtimeContext sourceContext =
+      new WorkerRealtimeContext(context, metrics, sourcePluginId, datasetContextWrapper);
     LOG.info("Source Stage : {}", stage.getName());
     LOG.info("Source Class : {}", source.getClass().getName());
-    source.initialize(sourceContext);
+    getContext().execute(new TxRunnable() {
+      @Override
+      public void run(DatasetContext context) throws Exception {
+        try {
+          datasetContextWrapper.set(context);
+          source.initialize(sourceContext);
+        } finally {
+          datasetContextWrapper.set(null);
+        }
+      }
+    });
     sourceEmitter = new DefaultEmitter(new StageMetrics(metrics, StageMetrics.Type.SOURCE, stage.getName()));
   }
 
@@ -139,10 +151,21 @@ public class ETLWorker extends AbstractWorker {
   private void initializeSink(WorkerContext context, ETLStage stage) throws Exception {
     String sinkPluginId = context.getRuntimeArguments().get(Constants.Sink.PLUGINID);
     sink = context.newPluginInstance(sinkPluginId);
-    RealtimeContext sinkContext = new WorkerRealtimeContext(context, metrics, sinkPluginId);
+    final RealtimeContext sinkContext =
+      new WorkerRealtimeContext(context, metrics, sinkPluginId, datasetContextWrapper);
     LOG.info("Sink Stage : {}", stage.getName());
     LOG.info("Sink Class : {}", sink.getClass().getName());
-    sink.initialize(sinkContext);
+    getContext().execute(new TxRunnable() {
+      @Override
+      public void run(DatasetContext context) throws Exception {
+        try {
+          datasetContextWrapper.set(context);
+          sink.initialize(sinkContext);
+        } finally {
+          datasetContextWrapper.set(null);
+        }
+      }
+    });
     sink = new TrackedRealtimeSink(sink, metrics, stage.getName());
   }
 
@@ -159,17 +182,18 @@ public class ETLWorker extends AbstractWorker {
       String transformId = transformIds.get(i);
       try {
         final Transform transform = context.newPluginInstance(transformId);
-        transformContext = new RealtimeTransformContext(context, metrics, transformId);
+        final RealtimeTransformContext transformContext =
+          new RealtimeTransformContext(context, metrics, transformId, datasetContextWrapper);
         LOG.info("Transform Stage : {}", stage.getName());
         LOG.info("Transform Class : {}", transform.getClass().getName());
         getContext().execute(new TxRunnable() {
           @Override
           public void run(DatasetContext context) throws Exception {
             try {
-              transformContext.resetDatasetContext(context);
+              datasetContextWrapper.set(context);
               transform.initialize(transformContext);
             } finally {
-              transformContext.resetDatasetContext(null);
+              datasetContextWrapper.set(null);
             }
           }
         });
@@ -207,10 +231,20 @@ public class ETLWorker extends AbstractWorker {
     while (running) {
       // Invoke poll method of the source to fetch data
       try {
-        SourceState newState = source.poll(sourceEmitter, new SourceState(currentState));
-        if (newState != null) {
-          nextState.setState(newState);
-        }
+        getContext().execute(new TxRunnable() {
+          @Override
+          public void run(DatasetContext context) throws Exception {
+            try {
+              datasetContextWrapper.set(context);
+              SourceState newState = source.poll(sourceEmitter, new SourceState(currentState));
+              if (newState != null) {
+                nextState.setState(newState);
+              }
+            } finally {
+              datasetContextWrapper.set(null);
+            }
+          }
+        });
       } catch (Exception e) {
         // Continue since the source threw an exception. No point in processing records and state is not changed.
         LOG.warn("Adapter {} : Exception thrown during polling of Source for data", adapterName, e);
@@ -221,8 +255,8 @@ public class ETLWorker extends AbstractWorker {
       getContext().execute(new TxRunnable() {
         @Override
         public void run(DatasetContext context) throws Exception {
-          transformContext.resetDatasetContext(context);
           try {
+            datasetContextWrapper.set(context);
             // For each object emitted by the source, invoke the transformExecutor and collect all the data
             // to be persisted in the sink.
             for (Object sourceData : sourceEmitter) {
@@ -236,7 +270,7 @@ public class ETLWorker extends AbstractWorker {
             }
             sourceEmitter.reset();
           } finally {
-            transformContext.resetDatasetContext(null);
+            datasetContextWrapper.set(null);
           }
         }
       });
@@ -247,17 +281,21 @@ public class ETLWorker extends AbstractWorker {
           getContext().execute(new TxRunnable() {
             @Override
             public void run(DatasetContext context) throws Exception {
+              try {
+                datasetContextWrapper.set(context);
+                // Invoke the sink's write method if there is any object to be written.
+                if (!dataToSink.isEmpty()) {
+                  DefaultDataWriter defaultDataWriter = new DefaultDataWriter(getContext(), context);
+                  sink.write(dataToSink, defaultDataWriter);
+                }
 
-              // Invoke the sink's write method if there is any object to be written.
-              if (!dataToSink.isEmpty()) {
-                DefaultDataWriter defaultDataWriter = new DefaultDataWriter(getContext(), context);
-                sink.write(dataToSink, defaultDataWriter);
-              }
-
-              // Persist nextState if it is different from currentState
-              if (!nextState.equals(currentState)) {
-                KeyValueTable stateTable = context.getDataset(ETLRealtimeTemplate.STATE_TABLE);
-                stateTable.write(stateStoreKey, GSON.toJson(nextState));
+                // Persist nextState if it is different from currentState
+                if (!nextState.equals(currentState)) {
+                  KeyValueTable stateTable = context.getDataset(ETLRealtimeTemplate.STATE_TABLE);
+                  stateTable.write(stateStoreKey, GSON.toJson(nextState));
+                }
+              } finally {
+                datasetContextWrapper.set(null);
               }
             }
           });
@@ -281,8 +319,14 @@ public class ETLWorker extends AbstractWorker {
 
   @Override
   public void destroy() {
-    Destroyables.destroyQuietly(source);
-    Destroyables.destroyQuietly(transformExecutor);
-    Destroyables.destroyQuietly(sink);
+    getContext().execute(new TxRunnable() {
+      @Override
+      public void run(DatasetContext context) throws Exception {
+        datasetContextWrapper.set(context);
+        Destroyables.destroyQuietly(source);
+        Destroyables.destroyQuietly(transformExecutor);
+        Destroyables.destroyQuietly(sink);
+      }
+    });
   }
 }
