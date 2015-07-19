@@ -61,11 +61,13 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
    * Configuration for the script transform.
    */
   public static class Config extends PluginConfig {
-    @Description("Javascript defining how to transform one record into another. The script must implement a function " +
-      "called 'transform', which take as input a Json object that represents the input record, and returns " +
-      "a Json object that respresents the transformed input. " +
-      "For example, 'function transform(input) { input.count = input.count * 1024; return input; }' " +
-      "will scale the 'count' field by 1024.")
+    @Description("Javascript defining the function to validate input. The script must implement a function " +
+      "called 'validate', which take as input a Json object that represents the input record and context, " +
+      "and returns a Json object that specifies whether the input is valid or not. " +
+      "For example, " +
+      "'function validate(input, ctx) {return input.cost < 100 ? { result : true } : { result : false }; }' " +
+      "will mark any input whose cost is less than 100 as valid object by returning result=true. Input objects " +
+      "whose cost is more than or equal to 100 will be marked as invalid by returning result=false")
     private final String script;
 
     @Description("The Dataset to write the input objects that failed validation.")
@@ -91,11 +93,11 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
     engine.put("_global_ctx", createContext());
 
     try {
-      // this is pretty ugly, but doing this so that we can pass the 'input' json into the transform function.
+      // this is pretty ugly, but doing this so that we can pass the 'input' json into the validate function.
       // that is, we want people to implement
-      // function transform(input) { ... }
-      // rather than function transform() { ... } and have them access a global variable in the function
-      String script = String.format("function %s() { return transform(%s, _global_ctx); }\n%s",
+      // function validate(input) { ... }
+      // rather than function validate() { ... } and have them access a global variable in the function
+      String script = String.format("function %s() { return validate(%s, _global_ctx); }\n%s",
                                     FUNCTION_NAME, VARIABLE_NAME, config.script);
       engine.eval(script);
     } catch (ScriptException e) {
