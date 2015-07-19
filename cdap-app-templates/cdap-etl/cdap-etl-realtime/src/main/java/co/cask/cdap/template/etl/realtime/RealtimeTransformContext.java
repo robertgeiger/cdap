@@ -35,13 +35,14 @@ public class RealtimeTransformContext implements TransformContext {
   private final Metrics metrics;
 
   protected final String pluginPrefix;
-  private final AtomicReference<DatasetContext> datasetContextRef;
+  private final AtomicReference<DatasetContext> datasetContextWrapper;
 
-  public RealtimeTransformContext(WorkerContext context, Metrics metrics, String pluginPrefix) {
+  public RealtimeTransformContext(WorkerContext context, Metrics metrics, String pluginPrefix,
+                                  AtomicReference<DatasetContext> datasetContextWrapper) {
     this.context = context;
     this.metrics = metrics;
     this.pluginPrefix = pluginPrefix;
-    this.datasetContextRef = new AtomicReference<>();
+    this.datasetContextWrapper = datasetContextWrapper;
   }
 
   @Override
@@ -56,22 +57,18 @@ public class RealtimeTransformContext implements TransformContext {
 
   @Override
   public <T extends Dataset> T getDataset(String name) throws DatasetInstantiationException {
-    if (datasetContextRef.get() == null) {
+    if (datasetContextWrapper.get() == null) {
       throw new IllegalStateException("Transaction is not active");
     }
-    return datasetContextRef.get().getDataset(name);
+    return datasetContextWrapper.get().getDataset(name);
   }
 
   @Override
   public <T extends Dataset> T getDataset(String name, Map<String, String> arguments)
     throws DatasetInstantiationException {
-    if (datasetContextRef.get() == null) {
+    if (datasetContextWrapper.get() == null) {
       throw new IllegalStateException("Transaction is not active");
     }
-    return datasetContextRef.get().getDataset(name, arguments);
-  }
-
-  void resetDatasetContext(DatasetContext datasetContext) {
-    datasetContextRef.set(datasetContext);
+    return datasetContextWrapper.get().getDataset(name, arguments);
   }
 }

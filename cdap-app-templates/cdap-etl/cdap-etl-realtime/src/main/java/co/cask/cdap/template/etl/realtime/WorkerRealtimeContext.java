@@ -16,6 +16,7 @@
 
 package co.cask.cdap.template.etl.realtime;
 
+import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.templates.AdapterSpecification;
 import co.cask.cdap.api.templates.plugins.PluginProperties;
@@ -24,6 +25,7 @@ import co.cask.cdap.api.worker.WorkerContext;
 import co.cask.cdap.template.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.template.etl.common.Constants;
 
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 /**
@@ -32,8 +34,9 @@ import javax.annotation.Nullable;
 public class WorkerRealtimeContext extends RealtimeTransformContext implements RealtimeContext {
   private final WorkerContext context;
 
-  public WorkerRealtimeContext(WorkerContext context, Metrics metrics, String pluginPrefix) {
-    super(context, metrics, pluginPrefix);
+  public WorkerRealtimeContext(WorkerContext context, Metrics metrics, String pluginPrefix,
+                               AtomicReference<DatasetContext> datasetContextWrapper) {
+    super(context, metrics, pluginPrefix, datasetContextWrapper);
     this.context = context;
   }
 
