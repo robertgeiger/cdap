@@ -38,7 +38,11 @@
         <div class="panel-body">
           <div ng-repeat="field in MyRuleFactoryCtrl.fields"
                 ng-if="MyRuleFactoryCtrl.fields.length > 0">
-            <my-rules-container data-field-obj="field"></my-rules-container>
+            <my-rules-container
+              data-field-obj="field"
+              data-on-delete="MyRuleFactoryCtrl.removeField"
+              data-on-delete-context="MyRuleFactoryCtrl">
+            </my-rules-container>
           </div>
           <div ng-if="MyRuleFactoryCtrl.fields.length == 0">
             <div class="well well-lg">

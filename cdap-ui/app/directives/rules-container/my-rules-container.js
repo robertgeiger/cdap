@@ -3,7 +3,9 @@ angular.module(PKG.name + '.commons')
     return {
       restrict: 'E',
       scope: {
-        fieldObj: '='
+        fieldObj: '=',
+        onDelete: '&',
+        onDeleteContext: '='
       },
       templateUrl: 'rules-container/my-rules-container.html',
       controller: 'MyRulesContainerCtrl',

@@ -1,12 +1,14 @@
 @import "../../styles/variables.less";
 my-rule {
+  margin: 5px 0;
+  display: block;
+
   .parent {
     display: flex;
   }
   .child {
-    margin: 5px;
+    margin: 0 0 0 5px;
   }
-
   @media (max-width: @screen-xs-min) {
     .parent {
       display: flex;
