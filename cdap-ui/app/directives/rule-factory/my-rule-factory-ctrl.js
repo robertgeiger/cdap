@@ -9,4 +9,7 @@ angular.module(PKG.name + '.commons')
         rules: []
       });
     };
+    this.generateScript = function() {
+      
+    };
   });
