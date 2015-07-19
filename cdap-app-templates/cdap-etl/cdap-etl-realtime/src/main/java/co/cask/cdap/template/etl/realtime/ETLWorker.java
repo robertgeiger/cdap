@@ -129,7 +129,8 @@ public class ETLWorker extends AbstractWorker {
   private void initializeSource(WorkerContext context, ETLStage stage) throws Exception {
     String sourcePluginId = context.getRuntimeArguments().get(Constants.Source.PLUGINID);
     source = context.newPluginInstance(sourcePluginId);
-    final RealtimeContext sourceContext = new WorkerRealtimeContext(context, metrics, sourcePluginId, datasetContextWrapper);
+    final RealtimeContext sourceContext =
+      new WorkerRealtimeContext(context, metrics, sourcePluginId, datasetContextWrapper);
     LOG.info("Source Stage : {}", stage.getName());
     LOG.info("Source Class : {}", source.getClass().getName());
     getContext().execute(new TxRunnable() {
