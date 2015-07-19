@@ -49,6 +49,9 @@ public class PurchaseApp extends AbstractApplication {
     // Process events in realtime using a Flow
     addFlow(new PurchaseFlow());
 
+    // Process events in realtime using a Flow
+    addFlow(new NamePurchaseFlow());
+
     // Specify a MapReduce to run on the acquired data
     addMapReduce(new PurchaseHistoryBuilder());
 
@@ -79,6 +82,8 @@ public class PurchaseApp extends AbstractApplication {
     try {
       createDataset("history", PurchaseHistoryStore.class, PurchaseHistoryStore.properties());
       createDataset("purchases", ObjectMappedTable.class,
+                    ObjectMappedTableProperties.builder().setType(Purchase.class).build());
+      createDataset("named_purchases", ObjectMappedTable.class,
                     ObjectMappedTableProperties.builder().setType(Purchase.class).build());
     } catch (UnsupportedTypeException e) {
       // This exception is thrown by ObjectMappedTable if its parameter type cannot be
