@@ -4,4 +4,9 @@ angular.module(PKG.name + '.commons')
     this.fieldObj.rules.push({
       name: 'isGreaterThan'
     });
+    this.addRule = function() {
+      this.fieldObj.rules.push({
+        name: 'isGreaterThan'
+      });
+    };
   });

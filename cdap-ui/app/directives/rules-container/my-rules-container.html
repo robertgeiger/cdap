@@ -5,13 +5,22 @@
     </div>
   </div>
   <div class="panel-body">
-    <div ng-repeat="rule in MyRulesContainerCtrl.fieldObj.rules" ng-if="MyRulesContainerCtrl.fieldObj.rules.length > 0">
+
+    <div ng-repeat="rule in MyRulesContainerCtrl.fieldObj.rules"
+          ng-if="MyRulesContainerCtrl.fieldObj.rules.length > 0">
       <my-rule data-type="fieldObj.type" data-rule=rule></my-rule>
+      <div class="btn btn-default"
+            ng-click="MyRulesContainerCtrl.addRule(fieldObj)"
+            ng-if="$last">
+        <span class="fa fa-plus"></span>
+      </div>
     </div>
+
     <div ng-if="MyRulesContainerCtrl.fieldObj.rules.length == 0">
       <div class="well well-lg">
         No Rules as of now
       </div>
     </div>
+
   </div>
 </div>
