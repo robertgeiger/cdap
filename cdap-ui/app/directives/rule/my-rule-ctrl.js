@@ -20,10 +20,10 @@ angular.module(PKG.name + '.commons')
         numFields: ['text']
       },
       isNumber: {
-        numFields: ['text']
+        numFields: []
       },
       isPositive: {
-        numFields: ['text', 'text', 'text', 'text']
+        numFields: []
       }
     };
     this.ruleToTypeMap = {
