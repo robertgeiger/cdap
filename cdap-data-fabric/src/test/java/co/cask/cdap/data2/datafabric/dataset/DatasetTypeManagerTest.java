@@ -16,68 +16,58 @@
 
 package co.cask.cdap.data2.datafabric.dataset;
 
+import co.cask.cdap.api.data.batch.BatchReadable;
+import co.cask.cdap.api.data.batch.RecordScannable;
+import co.cask.cdap.api.data.batch.RecordScanner;
+import co.cask.cdap.api.data.batch.Split;
+import co.cask.cdap.api.data.batch.SplitReader;
+import co.cask.cdap.api.dataset.DatasetAdmin;
+import co.cask.cdap.api.dataset.DatasetContext;
+import co.cask.cdap.api.dataset.DatasetDefinition;
+import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.DatasetSpecification;
+import co.cask.cdap.api.dataset.lib.AbstractDataset;
+import co.cask.cdap.api.dataset.lib.AbstractDatasetDefinition;
+import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.module.DatasetDefinitionRegistry;
 import co.cask.cdap.api.dataset.module.DatasetModule;
 import co.cask.cdap.common.conf.CConfiguration;
-import co.cask.cdap.common.conf.CConfigurationUtil;
 import co.cask.cdap.common.conf.Constants;
-import co.cask.cdap.common.guice.ConfigModule;
-import co.cask.cdap.common.guice.LocationRuntimeModule;
-import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.common.utils.DirUtils;
-import co.cask.cdap.data.runtime.SystemDatasetRuntimeModule;
-import co.cask.cdap.data2.datafabric.dataset.service.mds.MDSDatasetsRegistry;
+import co.cask.cdap.data2.datafabric.dataset.service.DatasetServiceTestBase;
 import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
-import co.cask.cdap.data2.dataset2.DatasetDefinitionRegistryFactory;
-import co.cask.cdap.data2.dataset2.DefaultDatasetDefinitionRegistry;
-import co.cask.cdap.data2.dataset2.InMemoryDatasetFramework;
 import co.cask.cdap.proto.DatasetModuleMeta;
 import co.cask.cdap.proto.Id;
-import co.cask.tephra.TransactionManager;
-import co.cask.tephra.inmemory.InMemoryTxSystemClient;
-import co.cask.tephra.runtime.TransactionInMemoryModule;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.twill.filesystem.LocationFactory;
+import com.google.common.base.Preconditions;
 import org.apache.twill.internal.Services;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Testing DatasetTypeManager class.
  */
-public class DatasetTypeManagerTest {
+public class DatasetTypeManagerTest extends DatasetServiceTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(DatasetTypeManagerTest.class);
 
-  @ClassRule
-  public static TemporaryFolder tmpFolder = new TemporaryFolder();
-
   private DatasetTypeManager datasetTypeManager;
-  private LocationFactory locationFactory;
   private CConfiguration cConf;
-  protected TransactionManager txManager;
-  private MDSDatasetsRegistry mdsDatasetsRegistry;
 
   @Before
   public void before() throws Exception {
+    super.before();
+
     // Boiler plate setup for Dataset manager test.
     cConf = CConfiguration.create();
     File dataDir = new File(tmpFolder.newFolder(), "data");
@@ -92,51 +82,19 @@ public class DatasetTypeManagerTest {
     // Set dataset ext modules
     cConf.set(DatasetTypeManager.CDAP_DATASET_EXT_NAMES, FakeExtDatasetModule.NAME);
     cConf.set(DatasetTypeManager.CDAP_DATASET_EXT_MODULES, FakeExtDatasetModule.class.getName());
-
-    // Tx Manager to support working with datasets
-    Configuration txConf = HBaseConfiguration.create();
-    CConfigurationUtil.copyTxProperties(cConf, txConf);
-    txManager = new TransactionManager(txConf);
-    txManager.startAndWait();
-    InMemoryTxSystemClient txSystemClient = new InMemoryTxSystemClient(txManager);
-
-    final Injector injector = Guice.createInjector(
-      new ConfigModule(cConf),
-      new LocationRuntimeModule().getInMemoryModules(),
-      new SystemDatasetRuntimeModule().getInMemoryModules(),
-      new TransactionInMemoryModule());
-
-    DatasetDefinitionRegistryFactory registryFactory = new DatasetDefinitionRegistryFactory() {
-      @Override
-      public DatasetDefinitionRegistry create() {
-        DefaultDatasetDefinitionRegistry registry = new DefaultDatasetDefinitionRegistry();
-        injector.injectMembers(registry);
-        return registry;
-      }
-    };
-
-    locationFactory = injector.getInstance(LocationFactory.class);
-    ImmutableMap<String, DatasetModule> modules = ImmutableMap.<String, DatasetModule>builder()
-      .putAll(injector.getInstance(Key.get(new TypeLiteral<Map<String, DatasetModule>>() {
-                                           },
-                                           Names.named("defaultDatasetModules"))))
-      .putAll(DatasetMetaTableUtil.getModules())
-      .build();
-
-    mdsDatasetsRegistry =
-      new MDSDatasetsRegistry(txSystemClient, new InMemoryDatasetFramework(registryFactory, modules, cConf));
   }
 
   @After
-  public void after()throws Exception {
-    Services.chainStop(datasetTypeManager, txManager);
-    Locations.deleteQuietly(locationFactory.create(Constants.DEFAULT_NAMESPACE));
+  public void after() {
+    super.after();
+
+    Services.chainStop(datasetTypeManager);
   }
 
   @Test
   public void testExtDatesetModule() {
     datasetTypeManager = new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory,
-                                                                   Collections.<String, DatasetModule>emptyMap());
+                                                Collections.<String, DatasetModule>emptyMap());
 
     // start
     datasetTypeManager.startAndWait();
@@ -149,13 +107,97 @@ public class DatasetTypeManagerTest {
     Assert.assertTrue(FakeExtDatasetModule.class.getName().equals(moduleMeta.getClassName()));
   }
 
+
+  // Helper classes.
+
   public static class FakeExtDatasetModule implements DatasetModule {
 
     public static final String NAME = "fakeExtDSModule";
 
     @Override
     public void register(DatasetDefinitionRegistry registry) {
+      DatasetDefinition<KeyValueTable, DatasetAdmin> kvTableDef = registry.get("keyValueTable");
+      registry.add(new FakeExtDatasetDefinition(FakeExtDataset.TYPE_NAME, kvTableDef));
+      registry.add(new FakeExtDatasetDefinition(FakeExtDataset.class.getName(), kvTableDef));
+
       LOG.info("HACK REGISTER FAKE EXT DATASETMODULE IS CALLED.");
     }
   }
+
+  public static class FakeExtDatasetDefinition extends AbstractDatasetDefinition<FakeExtDataset, DatasetAdmin> {
+
+    private final DatasetDefinition<? extends KeyValueTable, ?> tableDef;
+
+    public FakeExtDatasetDefinition(String name, DatasetDefinition<? extends KeyValueTable, ?> keyValueDef) {
+      super(name);
+      Preconditions.checkArgument(keyValueDef != null, "KeyValueTable definition is required");
+      this.tableDef = keyValueDef;
+    }
+
+    @Override
+    public DatasetSpecification configure(String instanceName, DatasetProperties properties) {
+      return DatasetSpecification.builder(instanceName, getName())
+        .properties(properties.getProperties())
+        .datasets(tableDef.configure("objects", properties))
+        .build();
+    }
+
+    @Override
+    public DatasetAdmin getAdmin(DatasetContext datasetContext, DatasetSpecification spec,
+                                 ClassLoader classLoader) throws IOException {
+      return tableDef.getAdmin(datasetContext, spec.getSpecification("objects"), classLoader);
+    }
+
+    @Override
+    public FakeExtDataset getDataset(DatasetContext datasetContext, DatasetSpecification spec,
+                                     Map<String, String> arguments, ClassLoader classLoader) throws IOException {
+      DatasetSpecification kvTableSpec = spec.getSpecification("objects");
+      KeyValueTable table = tableDef.getDataset(datasetContext, kvTableSpec, arguments, classLoader);
+
+      return new FakeExtDataset(spec.getName(), table);
+    }
+  }
+
+
+  public static class FakeExtDataset extends AbstractDataset implements BatchReadable<byte[], byte[]>,
+    RecordScannable<KeyValue<byte[], byte[]>> {
+
+    public static final String TYPE_NAME = "fakeType";
+
+    private KeyValueTable table;
+
+    public FakeExtDataset(String instanceName, KeyValueTable table) {
+      super(instanceName, table);
+      this.table = table;
+    }
+
+    public byte[] get(byte[] key) {
+      return table.read(key);
+    }
+
+    public void put(byte[] key, byte[] value) {
+      table.write(key, value);
+    }
+
+    @Override
+    public Type getRecordType() {
+      return table.getRecordType();
+    }
+
+    @Override
+    public List<Split> getSplits() {
+      return table.getSplits();
+    }
+
+    @Override
+    public RecordScanner<KeyValue<byte[], byte[]>> createSplitRecordScanner(Split split) {
+      return table.createSplitRecordScanner(split);
+    }
+
+    @Override
+    public SplitReader<byte[], byte[]> createSplitReader(Split split) {
+      return table.createSplitReader(split);
+    }
+  }
+
 }

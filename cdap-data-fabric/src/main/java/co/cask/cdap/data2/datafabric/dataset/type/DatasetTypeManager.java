@@ -422,8 +422,10 @@ public class DatasetTypeManager extends AbstractIdleService {
     int i = 0;
     for (String moduleClassName : extDatasetModules.split(",")) {
       try {
+        LOG.info("TRYING TO ADD EXT MODULE " + moduleClassName);
+
         // Use the context classloader to check for the extension class
-        Class<?> clazz = Class.forName(moduleClassName);
+        Class<?> clazz = Class.forName(moduleClassName.trim());
 
         // For each module check if it implements DatasetModule.
         if (!DatasetModule.class.isAssignableFrom(clazz)) {
