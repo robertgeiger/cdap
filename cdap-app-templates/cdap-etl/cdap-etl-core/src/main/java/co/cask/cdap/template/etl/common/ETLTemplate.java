@@ -98,7 +98,8 @@ public abstract class ETLTemplate<T extends ETLConfig> extends ApplicationTempla
 
     // Store transform id list to be serialized and passed to the driver program
     List<String> transformIds = Lists.newArrayListWithCapacity(transformConfigs.size());
-    List<Transformation> transforms = Lists.newArrayListWithCapacity(transformConfigs.size());
+    List<Transformation> transformation = Lists.newArrayListWithCapacity(transformConfigs.size());
+    List<Transform> transforms = Lists.newArrayListWithCapacity(transformConfigs.size());
     for (int i = 0; i < transformConfigs.size(); i++) {
       ETLStage transformConfig = transformConfigs.get(i);
 
@@ -114,13 +115,17 @@ public abstract class ETLTemplate<T extends ETLConfig> extends ApplicationTempla
       }
 
       transformIds.add(transformId);
+      transformation.add(transformObj);
       transforms.add(transformObj);
     }
 
     // Validate Source -> Transform -> Sink hookup
-    validateStages(source, sink, transforms);
+    validateStages(source, sink, transformation);
 
     configure(source, configurer, sourcePluginId);
+    for (int i = 0; i < transforms.size(); i++) {
+      configure(transforms.get(i), configurer, transformIds.get(i));
+    }
     configure(sink, configurer, sinkPluginId);
 
     configurer.addRuntimeArgument(Constants.ADAPTER_NAME, adapterName);
