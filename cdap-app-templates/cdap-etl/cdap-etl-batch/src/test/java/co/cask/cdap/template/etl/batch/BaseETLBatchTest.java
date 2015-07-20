@@ -51,6 +51,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
+import org.apache.commons.validator.GenericValidator;
 import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.hsqldb.jdbc.JDBCDriver;
@@ -85,7 +86,8 @@ public class BaseETLBatchTest extends TestBase {
     addTemplatePlugins(TEMPLATE_ID, "test-sources-1.0.0.jar", MetaKVTableSource.class);
     addTemplatePlugins(TEMPLATE_ID, "test-sinks-1.0.0.jar", MetaKVTableSink.class);
     addTemplatePlugins(TEMPLATE_ID, "transforms-1.0.0.jar",
-      ProjectionTransform.class, ScriptFilterTransform.class, StructuredRecordToGenericRecordTransform.class);
+      ProjectionTransform.class, ScriptFilterTransform.class, StructuredRecordToGenericRecordTransform.class,
+      ScriptValidatorTransformTest.class, GenericValidator.class);
     addTemplatePlugins(TEMPLATE_ID, "hsql-jdbc-1.0.0.jar", JDBCDriver.class);
     addTemplatePluginJson(TEMPLATE_ID, "hsql-jdbc-1.0.0.json", "jdbc", "hypersql", "hypersql jdbc driver",
       JDBCDriver.class.getName());

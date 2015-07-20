@@ -4,29 +4,30 @@
     "position": [ "group1" ],
     "group1": {
       "display" : "Stream Configuration",
-      "position" : ["body.field", "headers.field", "name"],
+      "position" : ["errorDataset", "rules", "schema", "schema.row.field"],
       "fields": {
-        "body.field": {
+        "errorDataset": {
           "widget": "textbox",
           "label" : "Data Field Name",
           "properties": {
             "width": "medium"
           }
         },
-        "headers.field": {
-          "widget": "textbox",
-          "label" : "Header Field Name",
-          "properties": {
-            "width": "medium"
-          }
+        "rules": {
+          "widget": "data-validator",
+          "description": "Data Validator"
         },
-        "name": {
-          "widget": "textbox",
-          "label" : "Name",
-          "description" : "Name of the stream to which we write to. If the stream is present, then data will be written to it. If it's not present then one would be created.",
-          "properties": {
-            "width": "medium"
-          }
+        "schema.row.field": {
+          "widget": "schema",
+          "description": "Schema Row Field",
+          "label": "Schema Row Field"
+        },
+        "schema": {
+          "widget": "schema",
+          "label": "Schema",
+          "description" : "Specify the schema for the table",
+          "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
+          "schema-default-type" : "string"
         }
       }
     }
