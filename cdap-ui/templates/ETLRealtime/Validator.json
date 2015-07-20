@@ -4,21 +4,25 @@
     "position": [ "group1" ],
     "group1": {
       "display" : "Stream Configuration",
-      "position" : ["errorDataset", "rules", "schema", "schema.row.field"],
+      "position" : ["errorDataset", "rules", "schema", "schema.row.field", "script"],
       "fields": {
         "errorDataset": {
           "widget": "textbox",
-          "label" : "Data Field Name",
+          "label" : "Error Dataset",
           "properties": {
             "width": "medium"
           }
+        },
+        "script": {
+          "widget": "javascript-editor",
+          "label" : "Javascript"
         },
         "rules": {
           "widget": "data-validator",
           "description": "Data Validator"
         },
         "schema.row.field": {
-          "widget": "schema",
+          "widget": "textbox",
           "description": "Schema Row Field",
           "label": "Schema Row Field"
         },
