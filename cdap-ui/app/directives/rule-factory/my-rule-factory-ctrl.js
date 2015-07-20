@@ -24,51 +24,22 @@ angular.module(PKG.name + '.commons')
 
     this.generateScript = function() {
       var fnSignature = 'function transform(input, context) {';
-      var isBlankOrNull = function isBlankOrNull(input) {
-        return input === null || (typeof input === 'string' && input.length === 0);
-      };
-      var isGreaterThan = function isGreaterThan(input, value) {
-        return input > value;
-      };
-      var isLessThan = function isLessThan(input, value) {
-        return input < value;
-      };
-      var isEqualTo = function isEqualTo(input, value) {
-        return input === value;
-      };
-      var isNumber = function isNumber(input) {
-        return isNaN(input);
-      };
-      var isMaxLength = function isMaxLength(input, length) {
-        return input.length > length;
-      };
-      var isPositive = function isPositive(input) {
-        return input > 0;
-      };
-      var isValidEmail = function isValidEmail(input) {
-        var re = /\S+@\S+\.\S+/;
-        return re.test(input);
-      };
 
-      var validationFunctions = [
-        isBlankOrNull, isGreaterThan, isLessThan, isEqualTo, isNumber,
-        isMaxLength, isPositive, isValidEmail
-      ];
-      validationFunctions.forEach(function(fn) {
-        fnSignature += fn.toString();
-      });
       var ifExpression = 'if (';
       var endIfExpression = ') {return {result: false}; }';
       this.fields.forEach(function(field) {
         fnSignature += ifExpression;
-        field.rules.forEach(function(rule) {
-          fnSignature += '!' + rule.name + '(input.' + field.name;
+        field.rules.forEach(function(rule, index, rules) {
+          fnSignature += '!context.' + rule.name + '(input.' + field.name;
           rule.fields.forEach(function(arg) {
             fnSignature += ', ' + arg;
           });
           fnSignature += ')';
-          fnSignature += endIfExpression;
+          if (index !== rules.length -1) {
+            fnSignature += ' && ';
+          }
         });
+        fnSignature += endIfExpression;
       });
       fnSignature += 'return {result: true};}';
       console.info(fnSignature);
