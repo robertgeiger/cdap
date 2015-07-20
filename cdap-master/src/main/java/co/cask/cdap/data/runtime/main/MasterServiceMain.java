@@ -42,6 +42,7 @@ import co.cask.cdap.data.runtime.DataSetServiceModules;
 import co.cask.cdap.data.runtime.DataSetsModules;
 import co.cask.cdap.data.stream.StreamAdminModules;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
+import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
 import co.cask.cdap.data2.util.hbase.ConfigurationTable;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.explore.client.ExploreClient;
@@ -597,6 +598,12 @@ public class MasterServiceMain extends DaemonMain {
 
         // Add HBase dependencies
         preparer.withDependencies(baseInjector.getInstance(HBaseTableUtil.class).getClass());
+
+        // Add custom dataset modules
+        Map<String, Class<?>> extDatasetModules = DatasetTypeManager.getExtensionClasses(cConf);
+        if (!extDatasetModules.isEmpty()) {
+          preparer.withDependencies(extDatasetModules.values());
+        }
 
         // Add secure tokens
         if (User.isHBaseSecurityEnabled(hConf) || UserGroupInformation.isSecurityEnabled()) {

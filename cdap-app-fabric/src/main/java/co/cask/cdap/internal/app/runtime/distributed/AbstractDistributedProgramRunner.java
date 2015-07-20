@@ -29,6 +29,7 @@ import co.cask.cdap.common.twill.AbortOnTimeoutEventHandler;
 import co.cask.cdap.common.twill.HadoopClassExcluder;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.data.security.HBaseTokenUtils;
+import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtilFactory;
 import co.cask.cdap.internal.app.runtime.ProgramOptionConstants;
 import co.cask.cdap.internal.app.runtime.codec.ArgumentsCodec;
@@ -191,8 +192,10 @@ public abstract class AbstractDistributedProgramRunner implements ProgramRunner 
 
           String yarnAppClassPath = hConf.get(YarnConfiguration.YARN_APPLICATION_CLASSPATH,
                                            Joiner.on(",").join(YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH));
+          Map<String, Class<?>> extDatasetModules = DatasetTypeManager.getExtensionClasses(cConf);
           TwillController twillController = twillPreparer
             .withDependencies(HBaseTableUtilFactory.getHBaseTableUtilClass())
+            .withDependencies(extDatasetModules.values())
             .addLogHandler(new PrinterLogHandler(new PrintWriter(System.out)))
             .addSecureStore(YarnSecureStore.create(HBaseTokenUtils.obtainToken(hConf, new Credentials())))
             .withClassPaths(Iterables.concat(extraClassPaths, Splitter.on(',').trimResults()

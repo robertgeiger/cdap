@@ -405,6 +405,41 @@ public class DatasetTypeManager extends AbstractIdleService {
   /**
    * HACKATHON
    */
+
+  public static Map<String, Class<?>> getExtensionClasses(CConfiguration cConf) {
+    Map<String, Class<?>> extClasses = Maps.newHashMap();
+    // Read from config for ext dataset modules.
+    String extDatasetModules = cConf.get(CDAP_DATASET_EXT_MODULES);
+    if (extDatasetModules == null) {
+      // LOG it for testing.
+      LOG.warn("UNABLE TO FIND DATASET EXT MODULE DEFINITION.");
+      return extClasses;
+    }
+
+    // else lets parse it.
+    for (Map.Entry<String, String> entry : Splitter.on(',').trimResults().withKeyValueSeparator(":").
+        split(extDatasetModules).entrySet()) {
+      try {
+        LOG.info("TRYING TO ADD EXT MODULE " + entry);
+
+        // Use the context classloader to check for the extension class
+        Class<?> clazz = Class.forName(entry.getValue());
+
+        // For each module check if it implements DatasetModule.
+        if (!DatasetModule.class.isAssignableFrom(clazz)) {
+          LOG.warn("DATASET EXT MODULE " + clazz + " DOES NOT IMPLEMENT DatasetModule INTERFACE.");
+          continue;
+        }
+
+        // if yes, then instantiate and add it to be added later.
+        extClasses.put(entry.getKey(), clazz);
+      } catch (Exception ex) {
+        LOG.warn("UNABLE TO LOAD DATASET EXT MODULE CLASS OF " + entry, ex);
+      }
+    }
+    return extClasses;
+  }
+
   private void deployExtensionModules() {
     // HACKATHON : Load from site configuration for classes extend the DatasetModule for dataset extension.
 
