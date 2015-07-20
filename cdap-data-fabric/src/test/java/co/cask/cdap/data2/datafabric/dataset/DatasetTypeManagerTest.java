@@ -92,7 +92,7 @@ public class DatasetTypeManagerTest extends DatasetServiceTestBase {
   }
 
   @Test
-  public void testExtDatesetModule() {
+  public void testExtDatasetModule() {
     datasetTypeManager = new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory,
                                                 Collections.<String, DatasetModule>emptyMap());
 
