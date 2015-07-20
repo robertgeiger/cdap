@@ -52,6 +52,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,8 +133,9 @@ public class DatasetTypeManagerTest {
     Locations.deleteQuietly(locationFactory.create(Constants.DEFAULT_NAMESPACE));
   }
 
+  @Test
   public void testExtDatesetModule() {
-    DatasetTypeManager datasetTypeManager = new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory,
+    datasetTypeManager = new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory,
                                                                    Collections.<String, DatasetModule>emptyMap());
 
     // start
