@@ -102,6 +102,7 @@ public abstract class DatasetServiceTestBase {
   protected TransactionManager txManager;
   protected RemoteDatasetFramework dsFramework;
   protected MDSDatasetsRegistry mdsDatasetsRegistry;
+  protected CConfiguration cConf;
 
   private int port = -1;
 
@@ -110,7 +111,7 @@ public abstract class DatasetServiceTestBase {
 
   @Before
   public void before() throws Exception {
-    CConfiguration cConf = CConfiguration.create();
+    cConf = CConfiguration.create();
     File dataDir = new File(tmpFolder.newFolder(), "data");
     cConf.set(Constants.CFG_LOCAL_DATA_DIR, dataDir.getAbsolutePath());
     if (!DirUtils.mkdirs(dataDir)) {
