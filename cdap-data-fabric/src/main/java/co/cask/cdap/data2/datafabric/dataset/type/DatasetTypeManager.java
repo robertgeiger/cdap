@@ -38,6 +38,7 @@ import co.cask.cdap.proto.DatasetTypeMeta;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionFailureException;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -67,7 +68,6 @@ import javax.annotation.Nullable;
 public class DatasetTypeManager extends AbstractIdleService {
 
   // HACKATHON
-  public static final String CDAP_DATASET_EXT_NAMES = "cdap.dataset.extension.names";
   public static final String CDAP_DATASET_EXT_MODULES = "cdap.dataset.extension.modules";
 
   private static final Logger LOG = LoggerFactory.getLogger(DatasetTypeManager.class);
@@ -410,22 +410,23 @@ public class DatasetTypeManager extends AbstractIdleService {
 
     // Read from config for ext dataset modules.
     String extDatasetModules = configuration.get(CDAP_DATASET_EXT_MODULES);
-    if (extDatasetModules != null) {
+    if (extDatasetModules == null) {
       // LOG it for testing.
       LOG.warn("UNABLE TO FIND DATASET EXT MODULE DEFINITION.");
       return;
     }
 
-    String[] extNames = configuration.get(CDAP_DATASET_EXT_NAMES).split(",");
-
     // else lets parse it.
-    int i = 0;
-    for (String moduleClassName : extDatasetModules.split(",")) {
+    for (String moduleClassName : Splitter.on(',').trimResults().split(extDatasetModules)) {
       try {
         LOG.info("TRYING TO ADD EXT MODULE " + moduleClassName);
 
+        Iterable<String> pairs = Splitter.on(':').trimResults().split(moduleClassName);
+        String name = pairs.iterator().next();
+        String className = pairs.iterator().next();
+
         // Use the context classloader to check for the extension class
-        Class<?> clazz = Class.forName(moduleClassName.trim());
+        Class<?> clazz = Class.forName(className);
 
         // For each module check if it implements DatasetModule.
         if (!DatasetModule.class.isAssignableFrom(clazz)) {
@@ -434,15 +435,11 @@ public class DatasetTypeManager extends AbstractIdleService {
         }
 
         // if yes, then instantiate and add it to be added later.
-        String name = extNames[i];
-
-        Id.DatasetModule defaultModule = Id.DatasetModule.from(Constants.SYSTEM_NAMESPACE_ID, name);
-        addModule(defaultModule, clazz.getName(), null);
+        Id.DatasetModule extDatasetModuleId = Id.DatasetModule.from(Constants.SYSTEM_NAMESPACE_ID, name);
+        addModule(extDatasetModuleId, clazz.getName(), null);
 
       } catch (Exception ex) {
         LOG.warn("UNABLE TO LOAD DATASET EXT MODULE CLASS OF " + moduleClassName, ex);
-      } finally {
-        i++;
       }
     }
   }

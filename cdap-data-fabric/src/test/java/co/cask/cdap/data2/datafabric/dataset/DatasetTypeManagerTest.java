@@ -80,8 +80,8 @@ public class DatasetTypeManagerTest extends DatasetServiceTestBase {
     cConf.setBoolean(Constants.Dangerous.UNRECOVERABLE_RESET, true);
 
     // Set dataset ext modules
-    cConf.set(DatasetTypeManager.CDAP_DATASET_EXT_NAMES, FakeExtDatasetModule.NAME);
-    cConf.set(DatasetTypeManager.CDAP_DATASET_EXT_MODULES, FakeExtDatasetModule.class.getName());
+    cConf.set(DatasetTypeManager.CDAP_DATASET_EXT_MODULES, FakeExtDatasetModule.NAME + ":" +
+      FakeExtDatasetModule.class.getName());
   }
 
   @After
