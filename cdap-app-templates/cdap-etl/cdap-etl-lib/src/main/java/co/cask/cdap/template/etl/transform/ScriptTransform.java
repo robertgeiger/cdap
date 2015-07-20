@@ -88,12 +88,14 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
   public void initialize(TransformContext context) {
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
+    engine.put("_global_ctx", createContext());
+
     try {
       // this is pretty ugly, but doing this so that we can pass the 'input' json into the transform function.
       // that is, we want people to implement
       // function transform(input) { ... }
       // rather than function transform() { ... } and have them access a global variable in the function
-      String script = String.format("function %s() { return transform(%s); }\n%s",
+      String script = String.format("function %s() { return transform(%s, _global_ctx); }\n%s",
                                     FUNCTION_NAME, VARIABLE_NAME, config.script);
       engine.eval(script);
     } catch (ScriptException e) {
@@ -112,6 +114,7 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) {
     try {
+      engine.put("_global_ctx", createContext());
       engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
       Map scriptOutput = (Map) invocable.invokeFunction(FUNCTION_NAME);
       StructuredRecord output = decodeRecord(scriptOutput, schema == null ? input.getSchema() : schema);
@@ -119,6 +122,10 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
     } catch (Exception e) {
       throw new IllegalArgumentException("Could not transform input: " + e.getMessage(), e);
     }
+  }
+
+  protected ScriptTransformContext createContext() {
+    return new ScriptTransformContext();
   }
 
   private Object decode(Object object, Schema schema) {

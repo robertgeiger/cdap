@@ -16,6 +16,7 @@
 
 package co.cask.cdap.internal.app.runtime.spark;
 
+import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.ServiceDiscoverer;
 import co.cask.cdap.api.common.RuntimeArguments;
 import co.cask.cdap.api.common.Scope;
@@ -28,6 +29,7 @@ import co.cask.cdap.api.spark.Spark;
 import co.cask.cdap.api.spark.SparkContext;
 import co.cask.cdap.api.spark.SparkProgram;
 import co.cask.cdap.api.spark.SparkSpecification;
+import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.logging.LoggingContext;
 import co.cask.cdap.internal.app.program.ProgramTypeMetricTag;
@@ -36,15 +38,18 @@ import co.cask.cdap.logging.context.SparkLoggingContext;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.spark.SparkConf;
 import org.apache.twill.api.RunId;
 import org.apache.twill.discovery.DiscoveryServiceClient;
 
 import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * An abstract implementation of {@link SparkContext} for common functionality that spread across
@@ -58,15 +63,19 @@ public abstract class AbstractSparkContext implements SparkContext, Closeable {
   private final ClassLoader programClassLoader;
   private final long logicalStartTime;
   private final Map<String, String> runtimeArguments;
-
   private final DiscoveryServiceClient discoveryServiceClient;
   private final MetricsContext metricsContext;
   private final LoggingContext loggingContext;
+  private final WorkflowToken workflowToken;
+
+  private Resources executorResources;
+  private SparkConf sparkConf;
 
   protected AbstractSparkContext(SparkSpecification specification, Id.Program programId, RunId runId,
                                  ClassLoader programClassLoader, long logicalStartTime,
                                  Map<String, String> runtimeArguments, DiscoveryServiceClient discoveryServiceClient,
-                                 MetricsContext metricsContext, LoggingContext loggingContext) {
+                                 MetricsContext metricsContext, LoggingContext loggingContext,
+                                 @Nullable WorkflowToken workflowToken) {
     this.specification = specification;
     this.programId = programId;
     this.runId = runId;
@@ -76,6 +85,9 @@ public abstract class AbstractSparkContext implements SparkContext, Closeable {
     this.discoveryServiceClient = discoveryServiceClient;
     this.metricsContext = metricsContext;
     this.loggingContext = loggingContext;
+    this.executorResources = Objects.firstNonNull(specification.getExecutorResources(), new Resources());
+    this.sparkConf = new SparkConf();
+    this.workflowToken = workflowToken;
   }
 
   @Override
@@ -116,6 +128,25 @@ public abstract class AbstractSparkContext implements SparkContext, Closeable {
   @Override
   public <T extends Dataset> T getDataset(String name) throws DatasetInstantiationException {
     return getDataset(name, RuntimeArguments.extractScope(Scope.DATASET, name, getRuntimeArguments()));
+  }
+
+  @Override
+  public void setExecutorResources(Resources resources) {
+    Preconditions.checkArgument(resources != null, "Resources must not be null");
+    this.executorResources = resources;
+  }
+
+  @Nullable
+  @Override
+  public WorkflowToken getWorkflowToken() {
+    return workflowToken;
+  }
+
+  @Override
+  public <T> void setSparkConf(T sparkConf) {
+    Preconditions.checkArgument(sparkConf instanceof SparkConf, "Invalid config type %s. Only accept %s.",
+                                sparkConf.getClass().getName(), SparkConf.class.getName());
+    this.sparkConf = (SparkConf) sparkConf;
   }
 
   @Override
@@ -166,6 +197,20 @@ public abstract class AbstractSparkContext implements SparkContext, Closeable {
    */
   public LoggingContext getLoggingContext() {
     return loggingContext;
+  }
+
+  /**
+   * Returns the {@link Resources} requirement for the executor.
+   */
+  public Resources getExecutorResources() {
+    return executorResources;
+  }
+
+  /**
+   * Returns the {@link SparkConf} for the spark program.
+   */
+  public SparkConf getSparkConf() {
+    return sparkConf;
   }
 
   /**

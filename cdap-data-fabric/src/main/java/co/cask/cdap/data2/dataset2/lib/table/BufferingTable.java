@@ -39,6 +39,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -231,7 +232,7 @@ public abstract class BufferingTable extends AbstractTable implements MeteredDat
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
     // releasing resources
     buff = null;
     toUndo = null;
@@ -247,6 +248,21 @@ public abstract class BufferingTable extends AbstractTable implements MeteredDat
     // starting with fresh buffer when tx starts
     buff.clear();
     toUndo = null;
+  }
+
+  @Override
+  public void updateTx(Transaction transaction) {
+    // TODO: transaction checkpoints are not yet supported
+    // This is safe, since this should only be called by TransactionContext.checkpoint(),
+    // which is not exposed through the application APIs.
+    //
+    // Supporting transaction checkpoints will require:
+    //   1. providing some application API that interacts with TransactionContext.checkpoint()
+    //   2. keying the buffered edits by timestamp, so that buffered writes at different
+    //      checkpoint timestamps can be correctly ordered during merge.
+    //   3. keying toUndo by timestamp, so that persisted changes can be rolled back using the
+    //      correct timestamp
+    throw new UnsupportedOperationException("Transaction checkpoints are not supported");
   }
 
   @Override

@@ -16,6 +16,7 @@
 
 package co.cask.cdap.api.spark;
 
+import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.RuntimeContext;
 import co.cask.cdap.api.ServiceDiscoverer;
 import co.cask.cdap.api.annotation.Beta;
@@ -24,8 +25,11 @@ import co.cask.cdap.api.data.stream.Stream;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.stream.StreamEventDecoder;
+import co.cask.cdap.api.workflow.Workflow;
+import co.cask.cdap.api.workflow.WorkflowToken;
 
 import java.io.Serializable;
+import javax.annotation.Nullable;
 
 /**
  * Spark job execution context. This context is shared between CDAP and User's Spark job.
@@ -146,4 +150,29 @@ public interface SparkContext extends RuntimeContext, DatasetContext {
    * @return {@link Serializable} {@link Metrics} for {@link Spark} programs
    */
   Metrics getMetrics();
+
+  /**
+   * Override the resources, such as memory and virtual cores, to use for each executor process for the Spark program.
+   * This method should be called in {@link Spark#beforeSubmit(SparkContext)} to take effect.
+   *
+   * @param resources Resources that each executor should use
+   */
+  void setExecutorResources(Resources resources);
+
+  /**
+   * Sets a
+   * <a href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.SparkConf">SparkConf</a>
+   * to be used for the Spark execution. Only configurations set inside the
+   * {@link Spark#beforeSubmit(SparkContext)} call will affect the Spark execution.
+   *
+   * @param <T> the SparkConf type
+   */
+  <T> void setSparkConf(T sparkConf);
+
+  /**
+   * @return the {@link WorkflowToken} associated with the current {@link Workflow},
+   * if the {@link Spark} program is executed as a part of the Workflow.
+   */
+  @Nullable
+  WorkflowToken getWorkflowToken();
 }

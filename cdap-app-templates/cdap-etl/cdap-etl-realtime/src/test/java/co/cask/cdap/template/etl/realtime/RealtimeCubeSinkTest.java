@@ -34,6 +34,7 @@ import co.cask.cdap.template.etl.realtime.sink.RealtimeTableSink;
 import co.cask.cdap.template.etl.realtime.sink.StreamSink;
 import co.cask.cdap.template.etl.realtime.source.JmsSource;
 import co.cask.cdap.template.etl.realtime.source.KafkaSource;
+import co.cask.cdap.template.etl.realtime.source.SqsSource;
 import co.cask.cdap.template.etl.realtime.source.TestSource;
 import co.cask.cdap.template.etl.realtime.source.TwitterSource;
 import co.cask.cdap.template.etl.transform.ProjectionTransform;
@@ -42,11 +43,13 @@ import co.cask.cdap.template.etl.transform.StructuredRecordToGenericRecordTransf
 import co.cask.cdap.test.AdapterManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestBase;
+import co.cask.cdap.test.TestConfiguration;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -59,6 +62,10 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public class RealtimeCubeSinkTest extends TestBase {
+
+  @ClassRule
+  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
+
   private static final Gson GSON = new Gson();
   private static final Id.Namespace NAMESPACE = Constants.DEFAULT_NAMESPACE_ID;
   private static final Id.ApplicationTemplate TEMPLATE_ID = Id.ApplicationTemplate.from("ETLRealtime");
@@ -67,7 +74,7 @@ public class RealtimeCubeSinkTest extends TestBase {
   public static void setupTests() throws IOException {
     // todo: should only deploy test source and cube sink
     addTemplatePlugins(TEMPLATE_ID, "realtime-sources-1.0.0.jar",
-                       TestSource.class, JmsSource.class, KafkaSource.class, TwitterSource.class);
+                       TestSource.class, JmsSource.class, KafkaSource.class, TwitterSource.class, SqsSource.class);
     addTemplatePlugins(TEMPLATE_ID, "realtime-sinks-1.0.0.jar",
                        RealtimeCubeSink.class, RealtimeTableSink.class, StreamSink.class);
     addTemplatePlugins(TEMPLATE_ID, "transforms-1.0.0.jar",

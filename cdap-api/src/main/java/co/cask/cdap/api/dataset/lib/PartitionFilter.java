@@ -141,6 +141,32 @@ public class PartitionFilter {
       Preconditions.checkState(!map.isEmpty(), "Partition filter cannot be empty.");
       return new PartitionFilter(map);
     }
+
+    /**
+     * @return <tt>true</tt> if no conditions have been set on this builder.
+     */
+    public boolean isEmpty() {
+      return map.isEmpty();
+    }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    PartitionFilter that = (PartitionFilter) o;
+
+    return conditions.equals(that.conditions);
+  }
+
+  @Override
+  public int hashCode() {
+    return conditions.hashCode();
   }
 
   /**
@@ -236,6 +262,42 @@ public class PartitionFilter {
         return fieldName + " in [" + (getLower() == null ? "null" : getLower().toString())
           + "..." + (getUpper() == null ? "null" : getUpper().toString()) + "]";
       }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      Condition condition = (Condition) o;
+
+      if (isSingleValue != condition.isSingleValue) {
+        return false;
+      }
+      if (!fieldName.equals(condition.fieldName)) {
+        return false;
+      }
+      if (lower != null ? !lower.equals(condition.lower) : condition.lower != null) {
+        return false;
+      }
+      if (upper != null ? !upper.equals(condition.upper) : condition.upper != null) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = fieldName.hashCode();
+      result = 31 * result + (lower != null ? lower.hashCode() : 0);
+      result = 31 * result + (upper != null ? upper.hashCode() : 0);
+      result = 31 * result + (isSingleValue ? 1 : 0);
+      return result;
     }
   }
 }

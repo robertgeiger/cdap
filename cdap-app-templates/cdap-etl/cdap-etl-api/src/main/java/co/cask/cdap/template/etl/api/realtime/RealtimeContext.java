@@ -18,13 +18,13 @@ package co.cask.cdap.template.etl.api.realtime;
 
 import co.cask.cdap.api.annotation.Beta;
 import co.cask.cdap.api.templates.AdapterContext;
-import co.cask.cdap.template.etl.api.TransformContext;
+import co.cask.cdap.template.etl.api.PluginContext;
 
 /**
  * Context passed to the Source and Sink stages of Realtime Adapter.
  */
 @Beta
-public interface RealtimeContext extends TransformContext, AdapterContext {
+public interface RealtimeContext extends PluginContext, AdapterContext {
 
   /**
    * Get Instance Id.
