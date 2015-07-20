@@ -145,6 +145,9 @@ set_classpath()
     CLASSPATH=$CP
   fi
 
+  # Add for dataset module extension.
+  CLASSPATH=`/opt/cdap/ext/lib/*`:$CLASSPATH
+
   export CLASSPATH
 }
 

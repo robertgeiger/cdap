@@ -23,7 +23,6 @@ import co.cask.cdap.api.data.batch.Split;
 import co.cask.cdap.api.data.batch.SplitReader;
 import co.cask.cdap.api.dataset.DatasetAdmin;
 import co.cask.cdap.api.dataset.DatasetContext;
-import co.cask.cdap.api.dataset.DatasetDefinition;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.DatasetSpecification;
 import co.cask.cdap.api.dataset.lib.AbstractDataset;
@@ -32,11 +31,10 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.module.DatasetDefinitionRegistry;
 import co.cask.cdap.api.dataset.module.DatasetModule;
-import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
-import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetServiceTestBase;
 import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
+import co.cask.cdap.data2.dataset2.lib.table.inmemory.InMemoryTableDefinition;
 import co.cask.cdap.proto.DatasetModuleMeta;
 import co.cask.cdap.proto.Id;
 import com.google.common.base.Preconditions;
@@ -48,7 +46,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -62,22 +59,10 @@ public class DatasetTypeManagerTest extends DatasetServiceTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(DatasetTypeManagerTest.class);
 
   private DatasetTypeManager datasetTypeManager;
-  private CConfiguration cConf;
 
   @Before
   public void before() throws Exception {
     super.before();
-
-    // Boiler plate setup for Dataset manager test.
-    cConf = CConfiguration.create();
-    File dataDir = new File(tmpFolder.newFolder(), "data");
-    cConf.set(Constants.CFG_LOCAL_DATA_DIR, dataDir.getAbsolutePath());
-    if (!DirUtils.mkdirs(dataDir)) {
-      throw new RuntimeException(String.format("Could not create DatasetFramework output dir %s", dataDir));
-    }
-    cConf.set(Constants.Dataset.Manager.OUTPUT_DIR, dataDir.getAbsolutePath());
-    cConf.set(Constants.Dataset.Manager.ADDRESS, "localhost");
-    cConf.setBoolean(Constants.Dangerous.UNRECOVERABLE_RESET, true);
 
     // Set dataset ext modules
     cConf.set(DatasetTypeManager.CDAP_DATASET_EXT_MODULES, FakeExtDatasetModule.NAME + ":" +
@@ -116,9 +101,9 @@ public class DatasetTypeManagerTest extends DatasetServiceTestBase {
 
     @Override
     public void register(DatasetDefinitionRegistry registry) {
-      DatasetDefinition<KeyValueTable, DatasetAdmin> kvTableDef = registry.get("keyValueTable");
-      registry.add(new FakeExtDatasetDefinition(FakeExtDataset.TYPE_NAME, kvTableDef));
-      registry.add(new FakeExtDatasetDefinition(FakeExtDataset.class.getName(), kvTableDef));
+      InMemoryTableDefinition definition = new InMemoryTableDefinition("keyValueTable");
+      registry.add(new FakeExtDatasetDefinition(FakeExtDataset.TYPE_NAME, definition));
+      registry.add(new FakeExtDatasetDefinition(FakeExtDataset.class.getName(), definition));
 
       LOG.info("HACK REGISTER FAKE EXT DATASETMODULE IS CALLED.");
     }
@@ -126,9 +111,9 @@ public class DatasetTypeManagerTest extends DatasetServiceTestBase {
 
   public static class FakeExtDatasetDefinition extends AbstractDatasetDefinition<FakeExtDataset, DatasetAdmin> {
 
-    private final DatasetDefinition<? extends KeyValueTable, ?> tableDef;
+    private final InMemoryTableDefinition tableDef;
 
-    public FakeExtDatasetDefinition(String name, DatasetDefinition<? extends KeyValueTable, ?> keyValueDef) {
+    public FakeExtDatasetDefinition(String name, InMemoryTableDefinition keyValueDef) {
       super(name);
       Preconditions.checkArgument(keyValueDef != null, "KeyValueTable definition is required");
       this.tableDef = keyValueDef;
@@ -151,10 +136,7 @@ public class DatasetTypeManagerTest extends DatasetServiceTestBase {
     @Override
     public FakeExtDataset getDataset(DatasetContext datasetContext, DatasetSpecification spec,
                                      Map<String, String> arguments, ClassLoader classLoader) throws IOException {
-      DatasetSpecification kvTableSpec = spec.getSpecification("objects");
-      KeyValueTable table = tableDef.getDataset(datasetContext, kvTableSpec, arguments, classLoader);
-
-      return new FakeExtDataset(spec.getName(), table);
+     return null;
     }
   }
 
