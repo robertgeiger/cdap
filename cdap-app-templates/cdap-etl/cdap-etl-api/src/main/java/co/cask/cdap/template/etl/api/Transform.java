@@ -25,9 +25,15 @@ import co.cask.cdap.api.annotation.Beta;
  * @param <OUT> Type of output object
  */
 @Beta
-public abstract class Transform<IN, OUT> implements StageLifecycle<TransformContext>, Transformation<IN, OUT> {
+public abstract class Transform<IN, OUT> implements PipelineConfigurable,
+  StageLifecycle<TransformContext>, Transformation<IN, OUT> {
 
   private TransformContext context;
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    // no-op
+  }
 
   /**
    * Initialize the Transform Stage.
