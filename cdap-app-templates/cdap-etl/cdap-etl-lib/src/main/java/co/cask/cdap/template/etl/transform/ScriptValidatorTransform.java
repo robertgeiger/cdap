@@ -20,9 +20,12 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.ObjectMappedTable;
+import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.templates.plugins.PluginConfig;
 import co.cask.cdap.template.etl.api.Emitter;
+import co.cask.cdap.template.etl.api.PipelineConfigurer;
 import co.cask.cdap.template.etl.api.Transform;
 import co.cask.cdap.template.etl.api.TransformContext;
 import co.cask.cdap.template.etl.common.StructuredRecordSerializer;
@@ -55,6 +58,7 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
   private ScriptEngine engine;
   private Invocable invocable;
   private String errorDatasetName;
+  private String schema;
   private final Config config;
 
   /**
@@ -70,19 +74,45 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
       "whose cost is more than or equal to 100 will be marked as invalid by returning result=false")
     private final String script;
 
+    @Description("Rules to generate the validation script. Note: the plugin does not generate the script!")
+    @Nullable
+    private final String rules;
+
     @Description("The Dataset to write the input objects that failed validation.")
     @Nullable
     private final String errorDataset;
 
-    public Config(String script, String errorDataset) {
+    @Description("Input/output schema")
+    @Nullable
+    private final String schema;
+
+    public Config(String script, String rules, String errorDataset, String schema) {
       this.script = script;
+      this.rules = rules;
       this.errorDataset = errorDataset;
+      this.schema = schema;
     }
   }
 
   // for unit tests, otherwise config is injected by plugin framework.
   public ScriptValidatorTransform(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    super.configurePipeline(pipelineConfigurer);
+    if (schema != null) {
+      pipelineConfigurer.createDataset(errorDatasetName,
+                                       Table.class.getName(),
+                                       DatasetProperties.builder()
+                                         .add(DatasetProperties.SCHEMA, config.schema)
+                                         .build()
+      );
+    } else {
+      pipelineConfigurer.createDataset(errorDatasetName, Table.class.getName(),
+                                       DatasetProperties.EMPTY);
+    }
   }
 
   @Override
