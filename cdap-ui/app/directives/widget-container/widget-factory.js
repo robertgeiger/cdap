@@ -105,7 +105,8 @@ angular.module(PKG.name + '.commons')
         attributes: {
           'ng-model': 'model',
           'data-config': 'myconfig',
-          'data-plugins': 'properties'
+          'data-properties': 'properties',
+          'data-inputschema': 'inputschema'
         }
       }
     };

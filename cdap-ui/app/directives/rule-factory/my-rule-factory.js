@@ -3,7 +3,8 @@ angular.module(PKG.name + '.commons')
     return {
       restrict: 'E',
       scope: {
-        inputFields: '='
+        inputFields: '=',
+        rules: '='
       },
       templateUrl: 'rule-factory/my-rule-factory.html',
       controller: 'MyRuleFactoryCtrl',

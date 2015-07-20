@@ -16,7 +16,6 @@ angular.module(PKG.name + '.commons')
           useWrapMode: true,
           newLineMode: 'unix'
         };
-
       }
     };
   });

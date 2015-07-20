@@ -6,7 +6,8 @@ angular.module(PKG.name + '.commons')
         name: '=',
         model: '=',
         myconfig: '=',
-        properties: '='
+        properties: '=',
+        inputschema: '='
       },
       replace: false,
       link: function (scope, element) {

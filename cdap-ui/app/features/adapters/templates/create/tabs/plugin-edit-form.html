@@ -22,7 +22,7 @@
     </div>
 
     <!-- MAIN WIDGET -->
-    <div ng-class="{ 'col-xs-10': isSink, 'col-xs-5': !isSink }">
+    <div ng-class="{ 'col-xs-10': isSink, 'col-xs-5': (!isSink && !hideOutput), 'col-xs-12': (hideInput && hideOutput)  }">
       <form plugin-property-edit-view>
         <fieldset ng-disabled="isDisabled">
           <div ng-if="PluginEditController.noconfig">
@@ -80,6 +80,7 @@
                           <div data-name="field"
                                class="my-widget-container"
                                data-model="plugin.properties[field]"
+                               data-inputschema="plugin.inputSchema"
                                data-myconfig="PluginEditController.groups[group].fields[field]"
                                data-properties="plugin.properties"
                                widget-container>
@@ -104,7 +105,8 @@
     </div>
 
     <!-- OUTPUT EDITOR -->
-    <div ng-class="{ 'col-xs-offset-2 col-xs-10': isSink, 'col-xs-5': !isSink && !hideInput, 'col-xs-7': hideInput }">
+    <div  ng-if="!hideOutput"
+        ng-class="{ 'col-xs-offset-2 col-xs-10': isSink, 'col-xs-5': !isSink && !hideInput, 'col-xs-7': hideInput }">
       <h4 ng-if="!isSink">Output Schema</h4>
       <h4 ng-if="isSink">Schema</h4>
       <fieldset ng-disabled="isDisabled">

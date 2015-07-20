@@ -5,12 +5,41 @@ angular.module(PKG.name + '.commons')
       scope: {
         model: '=ngModel',
         config: '=',
-        plugins: '='
+        properties: '=',
+        inputschema: '='
       },
       templateUrl: 'widget-container/widget-data-validator/widget-data-validator.html',
       controller: function($scope) {
-        console.info('From validator: ', $scope.inputSchema);
-        debugger;
+        $scope.properties.rules = $scope.properties.rules || [];
+        $scope.rules = $scope.properties.rules;
+
+        $scope.updateScript = function(rules) {
+          var fnSignature = 'function transform(input, context) {';
+
+          var ifExpression = 'if (';
+          var endIfExpression = ') {return {result: false}; }';
+          $scope.rules.forEach(function(field) {
+            fnSignature += ifExpression;
+            field.rules.forEach(function(rule, index, rules) {
+              fnSignature += '!context.' + rule.name + '(input.' + field.name;
+              rule.fields.forEach(function(arg) {
+                fnSignature += ', ' + arg;
+              });
+              fnSignature += ')';
+              if (index !== rules.length -1) {
+                fnSignature += ' && ';
+              }
+            });
+            fnSignature += endIfExpression;
+          });
+          fnSignature += 'return {result: true};}';
+          $scope.properties.script = fnSignature;
+          console.info($scope.properties);
+        };
+
+        $scope.$watch(function() {
+          return $scope.rules;
+        }, $scope.updateScript, true);
       }
     };
   });

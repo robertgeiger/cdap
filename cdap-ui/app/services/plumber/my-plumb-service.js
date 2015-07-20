@@ -166,6 +166,7 @@ angular.module(PKG.name + '.services')
                 input = null;
               }
               $scope.inputSchema = input ? input.fields : null;
+              $scope.plugin.inputSchema = $scope.inputSchema;
 
               if (!$scope.plugin.outputSchema && inputSchema) {
                 $scope.plugin.outputSchema = angular.copy(inputSchema) || null;
@@ -189,6 +190,11 @@ angular.module(PKG.name + '.services')
 
               if (AdapterModel.type === 'source') {
                 $scope.hideInput = true;
+              }
+
+              if (AdapterModel.name.indexOf('Validator') !== -1) {
+                $scope.hideInput = true;
+                $scope.hideOutput = true;
               }
 
               if (AdapterModel.type === 'sink') {

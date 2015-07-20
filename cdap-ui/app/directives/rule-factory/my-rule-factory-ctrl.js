@@ -1,7 +1,8 @@
 angular.module(PKG.name + '.commons')
   .controller('MyRuleFactoryCtrl', function($scope) {
     this.inputFields = $scope.inputFields;
-    this.fields = [];
+    $scope.rules = $scope.rules || [];
+    this.fields = $scope.rules;
     this.onFieldClicked = function(field) {
       var isFieldExist = this.fields.filter(function(f) {
         return f.name === field.name;
