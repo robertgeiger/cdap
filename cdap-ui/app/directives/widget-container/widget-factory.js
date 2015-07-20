@@ -99,6 +99,14 @@ angular.module(PKG.name + '.commons')
           'data-plugins': 'properties',
           'data-config': 'myconfig'
         }
+      },
+      'data-validator': {
+        element: '<my-data-validator></my-data-validator>',
+        attributes: {
+          'ng-model': 'model',
+          'data-config': 'myconfig',
+          'data-plugins': 'properties'
+        }
       }
     };
     this.registry['__default__'] = this.registry['textbox'];

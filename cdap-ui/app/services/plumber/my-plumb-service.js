@@ -41,7 +41,7 @@ angular.module(PKG.name + '.services')
         name: '',
         description: '',
         template: {
-          type: 'ETLBatch',
+          type: 'ETLRealtime',
           instance: '',
           schedule: {
             cron: ''
@@ -119,7 +119,7 @@ angular.module(PKG.name + '.services')
       // This needs to pass on a scope always. Right now there is no cleanup
       // happening
       var params = {
-        adapterType: 'ETLBatch'
+        adapterType: 'ETLRealtime'
       };
       if (scope) {
         params.scope = scope;
