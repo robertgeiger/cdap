@@ -4,7 +4,7 @@
     "position": [ "group1" ],
     "group1": {
       "display" : "Stream Configuration",
-      "position" : ["errorDataset", "script"],
+      "position" : ["errorDataset", "rules", "schema", "schema.row.field", "script"],
       "fields": {
         "errorDataset": {
           "widget": "textbox",
@@ -14,7 +14,24 @@
           }
         },
         "script": {
-          "widget": "data-validator"
+          "widget": "javascript-editor",
+          "label" : "Javascript"
+        },
+        "rules": {
+          "widget": "data-validator",
+          "description": "Data Validator"
+        },
+        "schema.row.field": {
+          "widget": "schema",
+          "description": "Schema Row Field",
+          "label": "Schema Row Field"
+        },
+        "schema": {
+          "widget": "schema",
+          "label": "Schema",
+          "description" : "Specify the schema for the table",
+          "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
+          "schema-default-type" : "string"
         }
       }
     }

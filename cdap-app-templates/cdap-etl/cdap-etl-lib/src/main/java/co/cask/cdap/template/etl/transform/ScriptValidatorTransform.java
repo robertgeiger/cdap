@@ -21,14 +21,19 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.api.dataset.lib.ObjectMappedTable;
+import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.templates.plugins.PluginConfig;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.PipelineConfigurer;
 import co.cask.cdap.template.etl.api.Transform;
 import co.cask.cdap.template.etl.api.TransformContext;
+import co.cask.cdap.template.etl.common.Properties;
+import co.cask.cdap.template.etl.common.RecordPutTransformer;
 import co.cask.cdap.template.etl.common.StructuredRecordSerializer;
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
@@ -55,11 +60,10 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
     .create();
   private static final String FUNCTION_NAME = "dont_name_your_function_this";
   private static final String VARIABLE_NAME = "dont_name_your_variable_this";
+  private final Config config;
   private ScriptEngine engine;
   private Invocable invocable;
-  private String errorDatasetName;
-  private String schema;
-  private final Config config;
+  private RecordPutTransformer recordPutTransformer;
 
   /**
    * Configuration for the script transform.
@@ -78,19 +82,38 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
     @Nullable
     private final String rules;
 
+//    @Name(Properties.Table.NAME)
     @Description("The Dataset to write the input objects that failed validation.")
     @Nullable
     private final String errorDataset;
 
+    @Name(Properties.Table.PROPERTY_SCHEMA)
     @Description("Input/output schema")
     @Nullable
     private final String schema;
 
-    public Config(String script, String rules, String errorDataset, String schema) {
+    @Name(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD)
+    @Description("The name of the record field to be used as row key")
+    private final String rowField;
+
+    public Config(String script, String rules, String errorDataset, String schema, String rowField) {
       this.script = script;
       this.rules = rules;
       this.errorDataset = errorDataset;
       this.schema = schema;
+      this.rowField = rowField;
+    }
+
+    @Override
+    public String toString() {
+      return Objects.toStringHelper(this)
+        .add("script", script)
+        .add("rules", rules)
+        .add("errorDataset", errorDataset)
+        .add("schema", schema)
+        .add("rowField", rowField)
+        .add("properties", getProperties())
+        .toString();
     }
   }
 
@@ -102,16 +125,15 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    if (schema != null) {
-      pipelineConfigurer.createDataset(errorDatasetName,
+    if (config.errorDataset != null) {
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(config.rowField),
+                                  "Field to be used as rowkey must be given.");
+      pipelineConfigurer.createDataset(config.errorDataset,
                                        Table.class.getName(),
                                        DatasetProperties.builder()
-                                         .add(DatasetProperties.SCHEMA, config.schema)
+                                         .addAll(config.getProperties().getProperties())
                                          .build()
       );
-    } else {
-      pipelineConfigurer.createDataset(errorDatasetName, Table.class.getName(),
-                                       DatasetProperties.EMPTY);
     }
   }
 
@@ -134,14 +156,16 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
       throw new IllegalArgumentException("Invalid script.", e);
     }
     invocable = (Invocable) engine;
-    if (config.errorDataset == null) {
-      throw new IllegalArgumentException("Dataset to write invalid input objects not provided.");
-    }
-    // Verify if we are able to access errorDatasetName
-    errorDatasetName = config.errorDataset;
-    ObjectMappedTable<Error> errorTable = getContext().getDataset(errorDatasetName);
-    if (errorTable == null) {
-      throw new IllegalArgumentException("Cannot access dataset " + errorDatasetName);
+
+    if (config.errorDataset != null) {
+      // Verify if we are able to access errorDatasetName
+      Table errorTable = getContext().getDataset(config.errorDataset);
+      if (errorTable == null) {
+        throw new IllegalArgumentException("Cannot access dataset " + config.errorDataset);
+      }
+      recordPutTransformer = new RecordPutTransformer(config.rowField);
+    } else {
+      LOG.warn("Dataset to write invalid input not provided. Invalid input will just be ignored, and not logged.");
     }
   }
 
@@ -157,11 +181,11 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
       if (result) {
         LOG.info("Emitting to sink...");
         emitter.emit(input);
-      } else {
+      } else if (config.errorDataset != null) {
         LOG.info("Writing to error data...");
-        ObjectMappedTable<Error> errorTable = getContext().getDataset(errorDatasetName);
-        Error error = new Error(System.currentTimeMillis(), GSON.toJson(input));
-        errorTable.write(String.valueOf(System.currentTimeMillis()), error);
+        Table errorTable = getContext().getDataset(config.errorDataset);
+        Put put = recordPutTransformer.toPut(input);
+        errorTable.put(put);
       }
     } catch (Exception e) {
       throw new IllegalArgumentException("Could not transform input: " + e.getMessage(), e);
@@ -171,5 +195,4 @@ public class ScriptValidatorTransform extends Transform<StructuredRecord, Struct
   protected ScriptTransformContext createContext() {
     return new ScriptTransformContext();
   }
-
 }

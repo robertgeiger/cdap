@@ -17,17 +17,16 @@
 package co.cask.cdap.template.etl.batch;
 
 import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.dataset.lib.CloseableIterator;
-import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
-import co.cask.cdap.api.dataset.lib.ObjectMappedTable;
-import co.cask.cdap.api.dataset.lib.ObjectMappedTableProperties;
+import co.cask.cdap.api.dataset.table.Row;
+import co.cask.cdap.api.dataset.table.Scanner;
+import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.proto.AdapterConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.template.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.template.etl.common.ETLStage;
 import co.cask.cdap.template.etl.common.Properties;
-import co.cask.cdap.template.etl.transform.Error;
 import co.cask.cdap.test.AdapterManager;
 import co.cask.cdap.test.DataSetManager;
 import com.google.common.collect.ImmutableMap;
@@ -49,20 +48,19 @@ public class ScriptValidatorTransformTest extends BaseETLBatchTest {
   public void testValidator() throws Exception {
     // kv table to kv table pipeline
     String invalidDataset = "invalidData";
+    Schema schema = Schema.recordOf("keyvalue",
+                                    Schema.Field.of("key", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("value", Schema.of(Schema.Type.STRING)));
     ETLStage source = new ETLStage("KVTable", ImmutableMap.of(Properties.BatchReadableWritable.NAME, "table1"));
     ETLStage sink = new ETLStage("KVTable", ImmutableMap.of(Properties.BatchReadableWritable.NAME, "table2"));
     ETLStage transform = new ETLStage("Validator",
-                                      ImmutableMap.of("script", script, "errorDataset", invalidDataset));
+                                      ImmutableMap.of("script", script,
+                                                      "errorDataset", invalidDataset,
+                                                      "schema", schema.toString(),
+                                                      "schema.row.field", "key"));
     List<ETLStage> transformList = Lists.newArrayList(transform);
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transformList);
     AdapterConfig adapterConfig = new AdapterConfig("", TEMPLATE_ID.getId(), GSON.toJsonTree(etlConfig));
-
-    addDatasetInstance(ObjectMappedTable.class.getName(),
-                       invalidDataset,
-                       ObjectMappedTableProperties
-                         .builder()
-                         .setType(Error.class)
-                         .build());
 
     Id.Adapter adapterId = Id.Adapter.from(NAMESPACE, "testValidator");
     AdapterManager manager = createAdapter(adapterId, adapterConfig);
@@ -79,15 +77,17 @@ public class ScriptValidatorTransformTest extends BaseETLBatchTest {
     manager.waitForOneRunToFinish(5, TimeUnit.MINUTES);
     manager.stop();
 
-    DataSetManager<ObjectMappedTable<Error>> invalids = getDataset(invalidDataset);
-    ObjectMappedTable<Error> errorTable = invalids.get();
-    CloseableIterator<KeyValue<byte[], Error>> scanner = errorTable.scan((String) null, null);
-    int index = 1;
-    while (scanner.hasNext()) {
-      KeyValue<byte[], Error> next = scanner.next();
-      System.out.println("Error = " + next.getValue());
-//      Assert.assertEquals("world" + index, next.getValue().getData());
-      index += 2;
+    DataSetManager<Table> invalids = getDataset(invalidDataset);
+    Table errorTable = invalids.get();
+    Scanner scanner = errorTable.scan(null, null);
+    try {
+      Row row = scanner.next();
+      while (row != null) {
+        System.out.println("Error = " + row.getColumns());
+        row = scanner.next();
+      }
+    } finally {
+      scanner.close();
     }
 
     DataSetManager<KeyValueTable> table2 = getDataset("table2");
