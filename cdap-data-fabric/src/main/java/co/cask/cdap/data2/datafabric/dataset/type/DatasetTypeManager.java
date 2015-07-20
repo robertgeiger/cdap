@@ -417,16 +417,13 @@ public class DatasetTypeManager extends AbstractIdleService {
     }
 
     // else lets parse it.
-    for (String moduleClassName : Splitter.on(',').trimResults().split(extDatasetModules)) {
+    for (Map.Entry<String, String> entry : Splitter.on(',').trimResults().withKeyValueSeparator(":").
+      split(extDatasetModules).entrySet()) {
       try {
-        LOG.info("TRYING TO ADD EXT MODULE " + moduleClassName);
-
-        Iterable<String> pairs = Splitter.on(':').trimResults().split(moduleClassName);
-        String name = pairs.iterator().next();
-        String className = pairs.iterator().next();
+        LOG.info("TRYING TO ADD EXT MODULE " + entry);
 
         // Use the context classloader to check for the extension class
-        Class<?> clazz = Class.forName(className);
+        Class<?> clazz = Class.forName(entry.getValue());
 
         // For each module check if it implements DatasetModule.
         if (!DatasetModule.class.isAssignableFrom(clazz)) {
@@ -435,11 +432,11 @@ public class DatasetTypeManager extends AbstractIdleService {
         }
 
         // if yes, then instantiate and add it to be added later.
-        Id.DatasetModule extDatasetModuleId = Id.DatasetModule.from(Constants.SYSTEM_NAMESPACE_ID, name);
+        Id.DatasetModule extDatasetModuleId = Id.DatasetModule.from(Constants.SYSTEM_NAMESPACE_ID, entry.getKey());
         addModule(extDatasetModuleId, clazz.getName(), null);
 
       } catch (Exception ex) {
-        LOG.warn("UNABLE TO LOAD DATASET EXT MODULE CLASS OF " + moduleClassName, ex);
+        LOG.warn("UNABLE TO LOAD DATASET EXT MODULE CLASS OF " + entry, ex);
       }
     }
   }
