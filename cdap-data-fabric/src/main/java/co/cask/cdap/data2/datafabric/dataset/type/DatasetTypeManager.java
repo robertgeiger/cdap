@@ -65,6 +65,11 @@ import javax.annotation.Nullable;
  * Manages dataset types and modules metadata
  */
 public class DatasetTypeManager extends AbstractIdleService {
+
+  // HACKATHON
+  public static final String CDAP_DATASET_EXT_NAMES = "cdap.dataset.extension.names";
+  public static final String CDAP_DATASET_EXT_MODULES = "cdap.dataset.extension.modules";
+
   private static final Logger LOG = LoggerFactory.getLogger(DatasetTypeManager.class);
 
   private final MDSDatasetsRegistry mdsDatasets;
@@ -72,6 +77,9 @@ public class DatasetTypeManager extends AbstractIdleService {
 
   private final Map<String, DatasetModule> defaultModules;
   private final boolean allowDatasetUncheckedUpgrade;
+
+  // HACKATHON
+  private final CConfiguration configuration;
 
   @Inject
   public DatasetTypeManager(CConfiguration configuration, MDSDatasetsRegistry mdsDatasets,
@@ -81,12 +89,14 @@ public class DatasetTypeManager extends AbstractIdleService {
     this.locationFactory = locationFactory;
     this.defaultModules = Maps.newLinkedHashMap(defaultModules);
     this.allowDatasetUncheckedUpgrade = configuration.getBoolean(Constants.Dataset.DATASET_UNCHECKED_UPGRADE);
+    this.configuration = configuration; // HACKATHON
   }
 
   @Override
   protected void startUp() throws Exception {
     deleteSystemModules();
     deployDefaultModules();
+    deployExtensionModules();
   }
 
   @Override
@@ -388,6 +398,49 @@ public class DatasetTypeManager extends AbstractIdleService {
       } catch (Throwable th) {
         LOG.error("Failed to add {} module. Aborting.", module.getKey(), th);
         throw Throwables.propagate(th);
+      }
+    }
+  }
+
+  /**
+   * HACKATHON
+   */
+  private void deployExtensionModules() {
+    // HACKATHON : Load from site configuration for classes extend the DatasetModule for dataset extension.
+
+    // Read from config for ext dataset modules.
+    String extDatasetModules = configuration.get(CDAP_DATASET_EXT_MODULES);
+    if (extDatasetModules != null) {
+      // LOG it for testing.
+      LOG.warn("UNABLE TO FIND DATASET EXT MODULE DEFINITION.");
+      return;
+    }
+
+    String[] extNames = configuration.get(CDAP_DATASET_EXT_NAMES).split(",");
+
+    // else lets parse it.
+    int i = 0;
+    for (String moduleClassName : extDatasetModules.split(",")) {
+      try {
+        // Use the context classloader to check for the extension class
+        Class<?> clazz = Class.forName(moduleClassName);
+
+        // For each module check if it implements DatasetModule.
+        if (!DatasetModule.class.isAssignableFrom(clazz)) {
+          LOG.warn("DATASET EXT MODULE " + clazz + " DOES NOT IMPLEMENT DatasetModule INTERFACE.");
+          continue;
+        }
+
+        // if yes, then instantiate and add it to be added later.
+        String name = extNames[i];
+
+        Id.DatasetModule defaultModule = Id.DatasetModule.from(Constants.SYSTEM_NAMESPACE_ID, name);
+        addModule(defaultModule, clazz.getName(), null);
+
+      } catch (Exception ex) {
+        LOG.warn("UNABLE TO LOAD DATASET EXT MODULE CLASS OF " + moduleClassName, ex);
+      } finally {
+        i++;
       }
     }
   }
