@@ -22,12 +22,12 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.apache.commons.validator.routines.UrlValidator;
 
 /**
- * Context for {@link ValidatorTransform}.
+ * Context for {@link ScriptValidatorTransform}.
  */
 public class ScriptValidatorTransformContext extends GenericValidator {
-  private final static CreditCardValidator ccv = new CreditCardValidator();
-  private final static UrlValidator urlv = new UrlValidator();
-  private final static EmailValidator email = EmailValidator.getInstance();
+  private static final CreditCardValidator ccv = new CreditCardValidator();
+  private static final UrlValidator urlv = new UrlValidator();
+  private static final EmailValidator email = EmailValidator.getInstance();
 
   /**
    * Checks for a valid credit card number.
