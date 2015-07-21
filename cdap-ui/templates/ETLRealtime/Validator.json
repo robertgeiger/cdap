@@ -8,7 +8,7 @@
       "fields": {
         "errorDataset": {
           "widget": "textbox",
-          "label" : "Data Field Name",
+          "label" : "Error Dataset",
           "properties": {
             "width": "medium"
           }
@@ -22,7 +22,7 @@
           "description": "Data Validator"
         },
         "schema.row.field": {
-          "widget": "schema",
+          "widget": "textbox",
           "description": "Schema Row Field",
           "label": "Schema Row Field"
         },
