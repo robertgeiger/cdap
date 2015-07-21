@@ -11,6 +11,9 @@ angular.module(PKG.name + '.commons')
       templateUrl: 'widget-container/widget-data-validator/widget-data-validator.html',
       controller: function($scope) {
         $scope.properties.rules = $scope.properties.rules || [];
+        if (typeof $scope.properties.rules === 'string') {
+          $scope.properties.rules = JSON.parse($scope.properties.rules);
+        } 
         $scope.rules = $scope.properties.rules;
 
         $scope.updateScript = function(rules) {

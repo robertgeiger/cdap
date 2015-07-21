@@ -279,6 +279,11 @@ angular.module(PKG.name + '.services')
       config.transforms.forEach(function(t) {
         delete t._backendProperties;
         delete t.id;
+        angular.forEach(t.properties, function(prop, key) {
+          if (typeof prop !== 'string') {
+            t.properties[key] = JSON.stringify(prop);
+          }
+        });
       });
     }
 
