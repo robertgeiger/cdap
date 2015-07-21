@@ -14,14 +14,43 @@ angular.module(PKG.name + '.commons')
         $scope.rules = $scope.properties.rules;
 
         $scope.updateScript = function(rules) {
+
+          function isGreaterThan(input, value) {
+            return input > value;
+          }
+
+          function isLessThan(input, value) {
+            return input < value;
+          }
+
+          function isBlankOrNull(input) {
+            return input === null || (typeof input === 'string' && !input.length);
+          }
+
+          function isEqualTo(input, value) {
+            return input === value;
+          }
+
+          function isNumber(input) {
+            return isNaN(input);
+          }
+
+          function isPositive(input) {
+            return input > 0;
+          }
+
           var fnSignature = 'function transform(input, context) {';
+          var inbuiltFn = [isGreaterThan, isLessThan, isBlankOrNull, isEqualTo, isPositive, isNumber];
+          inbuiltFn.forEach(function(fn) {
+            fnSignature += fn.toString();
+          });
 
           var ifExpression = 'if (';
           var endIfExpression = ') {return {result: false}; }';
           $scope.rules.forEach(function(field) {
             fnSignature += ifExpression;
             field.rules.forEach(function(rule, index, rules) {
-              fnSignature += '!context.' + rule.name + '(input.' + field.name;
+              fnSignature += '!' + rule.name + '(input.' + field.name;
               rule.fields.forEach(function(arg) {
                 fnSignature += ', ' + arg;
               });

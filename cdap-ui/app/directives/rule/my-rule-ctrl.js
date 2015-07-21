@@ -4,12 +4,12 @@ angular.module(PKG.name + '.commons')
       isBlankOrNull: {
         numFields: []
       },
-      isValidEmail: {
-        numFields: []
-      },
-      isMaxLength: {
-        numFields: ['text']
-      },
+      // isValidEmail: {
+      //   numFields: []
+      // },
+      // isMaxLength: {
+      //   numFields: ['text']
+      // },
       isGreaterThan: {
         numFields: ['text']
       },
