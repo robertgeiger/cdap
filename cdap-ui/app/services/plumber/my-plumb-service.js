@@ -281,7 +281,8 @@ angular.module(PKG.name + '.services')
         delete t.id;
         angular.forEach(t.properties, function(prop, key) {
           if (typeof prop !== 'string') {
-            t.properties[key] = JSON.stringify(prop);
+            var p = prop.replace('\n', '');
+            t.properties[key] = JSON.stringify(p);
           }
         });
       });
