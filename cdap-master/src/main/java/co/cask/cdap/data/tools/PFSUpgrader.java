@@ -36,9 +36,11 @@ import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,7 +131,7 @@ public class PFSUpgrader {
         Map<MDSKey, DatasetSpecification> dsSpecs = dsInstancesMDS.listKV(key, DatasetSpecification.class);
 
         // first, upgrade all the specifications, while keeping track of the tables that need migrating
-        Map<Id.Namespace, DatasetSpecification> partitionDatasetsToMigrate = Maps.newHashMap();
+        Multimap<Id.Namespace, DatasetSpecification> partitionDatasetsToMigrate = HashMultimap.create();
         for (Map.Entry<MDSKey, DatasetSpecification> entry : dsSpecs.entrySet()) {
           DatasetSpecification dsSpec = entry.getValue();
           if (!needsConverting(dsSpec)) {
@@ -142,7 +144,7 @@ public class PFSUpgrader {
 
         // migrate the necessary tables
         LOG.info("Tables to migrate: {}", partitionDatasetsToMigrate);
-        for (Map.Entry<Id.Namespace, DatasetSpecification> entry : partitionDatasetsToMigrate.entrySet()) {
+        for (Map.Entry<Id.Namespace, DatasetSpecification> entry : partitionDatasetsToMigrate.entries()) {
           pfsTableMigrator.upgrade(entry.getKey(), entry.getValue());
         }
       }
@@ -171,7 +173,7 @@ public class PFSUpgrader {
    * @return recursively migrated dsSpec
    */
   DatasetSpecification recursivelyMigrateSpec(Id.Namespace namespaceId, String dsName, DatasetSpecification dsSpec,
-                                              Map<Id.Namespace, DatasetSpecification> addTo) throws Exception {
+                                              Multimap<Id.Namespace, DatasetSpecification> addTo) throws Exception {
     if (isPartitionedFileSet(dsSpec)) {
       if (alreadyUpgraded(dsSpec)) {
         LOG.info("The partitions table of Dataset '{}' has already been upgraded to an IndexedTable.",

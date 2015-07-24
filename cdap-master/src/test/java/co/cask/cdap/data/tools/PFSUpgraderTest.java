@@ -36,9 +36,10 @@ import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -136,7 +137,7 @@ public class PFSUpgraderTest {
 
     Assert.assertTrue(pfsUpgrader.needsConverting(embeddingDsSpec));
 
-    Map<Id.Namespace, DatasetSpecification> datasetInstances = Maps.newHashMap();
+    Multimap<Id.Namespace, DatasetSpecification> datasetInstances = HashMultimap.create();
     DatasetSpecification convertedSpec =
       pfsUpgrader.recursivelyMigrateSpec(Constants.DEFAULT_NAMESPACE_ID, embeddingDsSpec.getName(),
                                          embeddingDsSpec, datasetInstances);
