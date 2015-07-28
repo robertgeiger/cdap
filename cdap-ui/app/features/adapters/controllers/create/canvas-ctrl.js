@@ -9,15 +9,18 @@ angular.module(PKG.name + '.feature.adapters')
     this.pluginTypes = [
       {
         name: 'source',
-        icon: 'icon-ETLsources'
+        icon: 'icon-ETLsources',
+        open: false
       },
       {
         name: 'transform',
-        icon: 'icon-ETLtransforms'
+        icon: 'icon-ETLtransforms',
+        open: false
       },
       {
         name: 'sink',
-        icon: 'icon-ETLsinks'
+        icon: 'icon-ETLsinks',
+        open: false
       }
     ];
 
