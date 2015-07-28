@@ -17,7 +17,10 @@
 package co.cask.cdap.explore.security;
 
 import co.cask.cdap.explore.service.ExploreServiceUtils;
+import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
 import org.apache.hadoop.hive.thrift.DelegationTokenIdentifier;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.security.Credentials;
@@ -27,6 +30,8 @@ import org.apache.hive.service.auth.HiveAuthFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 
 /**
@@ -41,6 +46,11 @@ public final class HiveTokenUtils {
     Thread.currentThread().setContextClassLoader(hiveClassloader);
 
     try {
+      InputStream hiveSiteInputStream = hiveClassloader.getResourceAsStream("hive-site.xml");
+      try (InputStreamReader reader = new InputStreamReader(hiveSiteInputStream, Charsets.UTF_8)) {
+        LOG.info("REMOVE: hive-site.xml: {}", CharStreams.toString(reader));
+      }
+
       LOG.info("Obtaining delegation token for Hive");
       Class hiveConfClass = hiveClassloader.loadClass("org.apache.hadoop.hive.conf.HiveConf");
       Object hiveConf = hiveConfClass.newInstance();
@@ -51,6 +61,9 @@ public final class HiveTokenUtils {
       Object hiveObject = hiveGet.invoke(null, hiveConf);
 
       String user = UserGroupInformation.getCurrentUser().getShortUserName();
+
+      LOG.info("REMOVE: user: {}", user);
+
       @SuppressWarnings("unchecked")
       Method getDelegationToken = hiveClass.getMethod("getDelegationToken", String.class, String.class);
       String tokenStr = (String) getDelegationToken.invoke(hiveObject, user, user);
