@@ -21,8 +21,8 @@ my-side-panel {
       .btn.btn-info.btn-block {
         text-align: left;
       }
-      .item .item-heading {
-        &.item-open {
+      .item-open {
+        .item-heading {
           color: white;
         }
       }
@@ -113,6 +113,7 @@ my-side-panel {
       color: @cdap-lightgray;
       cursor: pointer;
       font-size: 11px;
+
       .item-heading {
         height: 40px;
         line-height: 40px;
@@ -126,7 +127,14 @@ my-side-panel {
             font-size: 8px;
           }
         }
-        &.item-open {
+        .name, .description {
+          display: none;
+        }
+      }
+
+      &.item-open {
+        border-bottom: 1px solid #9A9EAA;
+        .item-heading {
           &.source {
             background-color: @adapter-source;
             + .item-body .plugin-item {
@@ -146,12 +154,7 @@ my-side-panel {
             }
           }
         }
-        .name, .description {
-          display: none;
-        }
-
       }
-
       .item-body {
         padding: 15px;
         background-color: #9A9EAA;

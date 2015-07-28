@@ -8,6 +8,12 @@ angular.module(PKG.name + '.commons')
     this.isExpanded = $scope.isExpanded === 'true';
 
     this.openGroup = function (group) {
+      group.open = !group.open
+
+      if (!group.open) {
+        return;
+      }
+
       if (this.openedGroup === group.name && this.showGroupItems) {
         this.showGroupItems = false;
         this.openedGroup = null;
@@ -26,6 +32,7 @@ angular.module(PKG.name + '.commons')
         fn.call($scope.onPanelItemClickContext, event, item);
       }
     };
+
     if (this.isSubMenu) {
       this.openGroup(this.groups[0]);
     }
