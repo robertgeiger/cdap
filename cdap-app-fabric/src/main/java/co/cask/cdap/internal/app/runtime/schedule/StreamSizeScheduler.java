@@ -140,7 +140,7 @@ public class StreamSizeScheduler implements Scheduler {
     initializeScheduleStore();
   }
 
-  void lazyStart() throws SchedulerException {
+  void start() throws SchedulerException {
     schedulerStarted = true;
   }
 

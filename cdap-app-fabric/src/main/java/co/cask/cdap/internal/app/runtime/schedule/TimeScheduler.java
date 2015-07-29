@@ -96,7 +96,7 @@ final class TimeScheduler implements Scheduler {
     }
   }
 
-  void lazyStart() throws SchedulerException {
+  void start() throws SchedulerException {
     try {
       scheduler.start();
       schedulerStarted = true;
