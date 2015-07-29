@@ -38,7 +38,9 @@ import org.apache.twill.filesystem.LocationFactory;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.Calendar;
 import java.util.List;
@@ -56,8 +58,10 @@ public class SchedulerServiceTest {
                                                            AppWithWorkflow.SampleWorkflow.NAME);
   private static final SchedulableProgramType programType = SchedulableProgramType.WORKFLOW;
   private static final Id.Stream STREAM_ID = Id.Stream.from(namespace, "stream");
-  private static final Schedule TIME_SCHEDULE_1 =
-    Schedules.createTimeSchedule("Schedule1", "Next hour", getCron(1, TimeUnit.HOURS));
+  private static final Schedule TIME_SCHEDULE_0 =
+    Schedules.createTimeSchedule("Schedule0", "Next 10 minutes", getCron(10, TimeUnit.MINUTES));
+  private static final Schedule TIME_SCHEDULE_1 = Schedules.createTimeSchedule("Schedule1", "Next hour",
+                                                                               getCron(1, TimeUnit.HOURS));
   private static final Schedule TIME_SCHEDULE_2 =
     Schedules.createTimeSchedule("Schedule2", "Next day", getCron(1, TimeUnit.DAYS));
   private static final Schedule DATA_SCHEDULE_1 =
@@ -68,6 +72,9 @@ public class SchedulerServiceTest {
     Schedules.createTimeSchedule("Schedule1", "Next 10 Minutes", getCron(10, TimeUnit.MINUTES));
   private static final Schedule UPDATED_DATA_SCHEDULE_2 =
     Schedules.createDataSchedule("Schedule4", "Every 5M", Schedules.Source.STREAM, STREAM_ID.getId(), 5);
+
+  @Rule
+  public final ExpectedException exception = ExpectedException.none();
 
   @BeforeClass
   public static void set() throws Exception {
@@ -220,16 +227,39 @@ public class SchedulerServiceTest {
     AppFabricTestHelper.deployApplication(namespace, AppWithWorkflow.class);
     ApplicationSpecification applicationSpecification = store.getApplication(appId);
 
-    schedulerService.schedule(program, programType, ImmutableList.of(TIME_SCHEDULE_1));
+    schedulerService.schedule(program, programType, ImmutableList.of(TIME_SCHEDULE_1, TIME_SCHEDULE_2));
     List<String> scheduleIds = schedulerService.getScheduleIds(program, programType);
     applicationSpecification = createNewSpecification(applicationSpecification, program, programType, TIME_SCHEDULE_1);
     store.addApplication(appId, applicationSpecification, locationFactory.create("app"));
-    Assert.assertEquals(1, scheduleIds.size());
+    applicationSpecification = createNewSpecification(applicationSpecification, program, programType, TIME_SCHEDULE_2);
+    store.addApplication(appId, applicationSpecification, locationFactory.create("app"));
+    Assert.assertEquals(2, scheduleIds.size());
+
+    // both the schedules should be in suspended state
     checkState(Scheduler.ScheduleState.SUSPENDED, scheduleIds);
+
+    // schedule1 should go in scheduled state on resume
     schedulerService.resumeSchedule(program, programType, "Schedule1");
-    checkState(Scheduler.ScheduleState.SCHEDULED, scheduleIds);
+    checkState(Scheduler.ScheduleState.SCHEDULED, "Schedule1");
+
+    // adding the schedule again which has been resumed and moved to default group should fail and throw an exception
+    exception.expect(SchedulerException.class);
+    schedulerService.schedule(program, programType, ImmutableList.of(TIME_SCHEDULE_1));
+
+    // schedule2 should still be in suspended state
+    checkState(Scheduler.ScheduleState.SUSPENDED, "Schedule2");
+
+    // add a new schedule and verify its in suspended state
+    schedulerService.schedule(program, programType, ImmutableList.of(TIME_SCHEDULE_0));
+    applicationSpecification = createNewSpecification(applicationSpecification, program, programType, TIME_SCHEDULE_0);
+    store.addApplication(appId, applicationSpecification, locationFactory.create("app"));
+    checkState(Scheduler.ScheduleState.SUSPENDED, "Schedule0");
+
+    // after adding a new schedule in paused state the resumed schedule should still be in resumed state
+    checkState(Scheduler.ScheduleState.SCHEDULED, "Schedule1");
+
     schedulerService.suspendSchedule(program, SchedulableProgramType.WORKFLOW, "Schedule1");
-    checkState(Scheduler.ScheduleState.SUSPENDED, scheduleIds);
+    checkState(Scheduler.ScheduleState.SUSPENDED, schedulerService.getScheduleIds(program, programType));
     schedulerService.deleteSchedules(program, programType);
     Assert.assertEquals(0, schedulerService.getScheduleIds(program, programType).size());
     applicationSpecification = deleteSchedulesFromSpec(applicationSpecification);
@@ -263,10 +293,14 @@ public class SchedulerServiceTest {
 
   private void checkState(Scheduler.ScheduleState expectedState, List<String> scheduleIds) throws Exception {
     for (String scheduleId : scheduleIds) {
-      int i = scheduleId.lastIndexOf(':');
-      Assert.assertEquals(expectedState, schedulerService.scheduleState(program, SchedulableProgramType.WORKFLOW,
-                                                                        scheduleId.substring(i + 1)));
+      checkState(expectedState, scheduleId);
     }
+  }
+
+  private void checkState(Scheduler.ScheduleState expectedState, String scheduleId) throws SchedulerException {
+    int i = scheduleId.lastIndexOf(':');
+    Assert.assertEquals(expectedState, schedulerService.scheduleState(program, SchedulableProgramType.WORKFLOW,
+                                                                      scheduleId.substring(i + 1)));
   }
 
   private ApplicationSpecification createNewSpecification(ApplicationSpecification spec, Id.Program programId,
