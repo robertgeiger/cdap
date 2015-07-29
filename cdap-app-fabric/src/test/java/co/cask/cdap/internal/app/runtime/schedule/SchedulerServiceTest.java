@@ -213,7 +213,23 @@ public class SchedulerServiceTest {
     schedulerService.updateSchedule(program, programType, oldSchedule);
     scheduleIds = schedulerService.getScheduleIds(program, programType);
     checkState(Scheduler.ScheduleState.SCHEDULED, scheduleIds);
+  }
 
+  @Test
+  public void testPausedTriggers() throws Exception {
+    AppFabricTestHelper.deployApplication(namespace, AppWithWorkflow.class);
+    ApplicationSpecification applicationSpecification = store.getApplication(appId);
+
+    schedulerService.schedule(program, programType, ImmutableList.of(TIME_SCHEDULE_1));
+    List<String> scheduleIds = schedulerService.getScheduleIds(program, programType);
+    applicationSpecification = createNewSpecification(applicationSpecification, program, programType, TIME_SCHEDULE_1);
+    store.addApplication(appId, applicationSpecification, locationFactory.create("app"));
+    Assert.assertEquals(1, scheduleIds.size());
+    checkState(Scheduler.ScheduleState.SUSPENDED, scheduleIds);
+    schedulerService.resumeSchedule(program, programType, "Schedule1");
+    checkState(Scheduler.ScheduleState.SCHEDULED, scheduleIds);
+    schedulerService.suspendSchedule(program, SchedulableProgramType.WORKFLOW, "Schedule1");
+    checkState(Scheduler.ScheduleState.SUSPENDED, scheduleIds);
     schedulerService.deleteSchedules(program, programType);
     Assert.assertEquals(0, schedulerService.getScheduleIds(program, programType).size());
     applicationSpecification = deleteSchedulesFromSpec(applicationSpecification);
