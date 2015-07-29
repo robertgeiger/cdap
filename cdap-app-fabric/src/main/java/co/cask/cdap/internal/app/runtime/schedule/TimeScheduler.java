@@ -45,8 +45,10 @@ import org.quartz.JobKey;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
+import org.quartz.impl.matchers.GroupMatcher;
 import org.quartz.spi.JobFactory;
 import org.quartz.spi.TriggerFiredBundle;
+import org.quartz.utils.Key;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +88,9 @@ final class TimeScheduler implements Scheduler {
         Executors.newCachedThreadPool(Threads.createDaemonThreadFactory("time-schedule-task")));
       scheduler = schedulerSupplier.get();
       scheduler.setJobFactory(createJobFactory(store));
+      // All our triggers are added without any group name which puts them in the DEFAULT_GROUP
+      // pausing the group guarantees that any new trigger added to this group will be paused too.
+      scheduler.pauseTriggers(GroupMatcher.triggerGroupEquals(Key.DEFAULT_GROUP));
     } catch (org.quartz.SchedulerException e) {
       throw new SchedulerException(e);
     }
