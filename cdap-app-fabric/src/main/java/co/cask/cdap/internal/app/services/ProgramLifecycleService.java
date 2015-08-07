@@ -162,6 +162,7 @@ public class ProgramLifecycleService extends AbstractIdleService {
           LOG.debug("Program {} {} {} completed successfully.", id.getNamespaceId(), id.getApplicationId(), id.getId());
           store.setStop(id, runId, TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()),
                         ProgramController.State.COMPLETED.getRunStatus());
+          // Write to new dataset here
         }
 
         @Override

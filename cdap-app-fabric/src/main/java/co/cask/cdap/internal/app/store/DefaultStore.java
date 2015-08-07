@@ -50,6 +50,7 @@ import co.cask.cdap.proto.AdapterStatus;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramRunStatus;
+import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.templates.AdapterDefinition;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
@@ -87,8 +88,12 @@ import javax.annotation.Nullable;
 public class DefaultStore implements Store {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultStore.class);
   public static final String APP_META_TABLE = "app.meta";
+  public static final String WORKFLOW_STATS_TABLE = "workflow.stats";
   private static final Id.DatasetInstance APP_META_INSTANCE_ID =
     Id.DatasetInstance.from(Id.Namespace.SYSTEM, APP_META_TABLE);
+  private static final Id.DatasetInstance WORKFLOW_STATS_INSTANCE_ID =
+    Id.DatasetInstance.from(Id.Namespace.SYSTEM, WORKFLOW_STATS_TABLE);
+
 
   private final LocationFactory locationFactory;
   private final NamespacedLocationFactory namespacedLocationFactory;
@@ -96,6 +101,7 @@ public class DefaultStore implements Store {
   private final DatasetFramework dsFramework;
 
   private Transactional<AppMds, AppMetadataStore> txnl;
+  private Transactional<WFD,  WorkflowDataset> txnlWorkflow;
 
   @Inject
   public DefaultStore(CConfiguration conf,
@@ -121,6 +127,19 @@ public class DefaultStore implements Store {
         }
       }
     });
+    txnlWorkflow = Transactional.of(txExecutorFactory, new Supplier<WFD>() {
+      @Override
+      public WFD get() {
+        try {
+          Table mdsTable = DatasetsUtil.getOrCreateDataset(dsFramework, WORKFLOW_STATS_INSTANCE_ID, "table",
+                                                           DatasetProperties.EMPTY,
+                                                           DatasetDefinition.NO_ARGUMENTS, null);
+          return new WFD(mdsTable);
+        } catch (Exception e) {
+          throw Throwables.propagate(e);
+        }
+      }
+    });
   }
 
   /**
@@ -130,6 +149,8 @@ public class DefaultStore implements Store {
    */
   public static void setupDatasets(DatasetFramework framework) throws IOException, DatasetManagementException {
     framework.addInstance(Table.class.getName(), Id.DatasetInstance.from(Id.Namespace.SYSTEM, APP_META_TABLE),
+                          DatasetProperties.EMPTY);
+    framework.addInstance(Table.class.getName(), Id.DatasetInstance.from(Id.Namespace.SYSTEM, WORKFLOW_STATS_TABLE),
                           DatasetProperties.EMPTY);
   }
 
@@ -224,6 +245,18 @@ public class DefaultStore implements Store {
         return null;
       }
     });
+
+    if (runStatus == ProgramRunStatus.COMPLETED) {
+      RunRecordMeta run = getRun(id, pid);
+
+      txnlWorkflow.executeUnchecked(new TransactionExecutor.Function<WFD, Void>() {
+        @Override
+        public Void apply(WFD dataset) {
+          dataset.wf.write(run.getProperties());
+        }
+      });
+    }
+
 
 
     // todo: delete old history data
@@ -954,6 +987,10 @@ public class DefaultStore implements Store {
     if (admin != null) {
       admin.truncate();
     }
+    admin = dsFramework.getAdmin(WORKFLOW_STATS_INSTANCE_ID, null);
+    if (admin != null) {
+      admin.truncate();
+    }
   }
 
   /**
@@ -1201,6 +1238,19 @@ public class DefaultStore implements Store {
     @Override
     public Iterator<AppMetadataStore> iterator() {
       return Iterators.singletonIterator(apps);
+    }
+  }
+
+  private static final class WFD implements Iterable<WorkflowDataset> {
+    private final WorkflowDataset wf;
+
+    private WFD(Table mdsTable) {
+      this.wf = new WorkflowDataset(mdsTable);
+    }
+
+    @Override
+    public Iterator<WorkflowDataset> iterator() {
+      return Iterators.singletonIterator(wf);
     }
   }
 }
