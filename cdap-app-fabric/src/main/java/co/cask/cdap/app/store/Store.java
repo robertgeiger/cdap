@@ -27,6 +27,7 @@ import co.cask.cdap.app.program.Program;
 import co.cask.cdap.common.ApplicationNotFoundException;
 import co.cask.cdap.common.ProgramNotFoundException;
 import co.cask.cdap.internal.app.store.RunRecordMeta;
+import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.AdapterStatus;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -486,4 +487,15 @@ public interface Store {
    * @return the {@link WorkflowToken} for the specified workflow run
    */
   WorkflowToken getWorkflowToken(Id.Workflow workflowId, String workflowRunId);
+
+  /**
+   * Used by {@link co.cask.cdap.gateway.handlers.WorkflowStatsSlaHttpHandler} to get the list of all the completed
+   * workflow runs within a time range
+   * @param programId
+   * @param startTime
+   * @param endTime
+   * @return the list of {@link co.cask.cdap.internal.app.store.WorkflowDataset.WorkflowRunRecord} for a given workflow
+   */
+  List<WorkflowDataset.WorkflowRunRecord> getWorkflowRuns(final Id.Program programId,
+                                                          final long startTime, final long endTime);
 }

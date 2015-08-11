@@ -28,6 +28,9 @@ import co.cask.cdap.api.flow.FlowletDefinition;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.service.ServiceSpecification;
 import co.cask.cdap.api.worker.WorkerSpecification;
+import co.cask.cdap.api.workflow.WorkflowActionNode;
+import co.cask.cdap.api.workflow.WorkflowNode;
+import co.cask.cdap.api.workflow.WorkflowSpecification;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.ApplicationSpecification;
 import co.cask.cdap.app.program.Program;
@@ -74,7 +77,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -180,7 +185,7 @@ public class DefaultStore implements Store {
     // todo: this should not be checked here but in start()
     Preconditions.checkArgument(appMeta.getLastUpdateTs() >= programLocation.lastModified(),
                                 "Newer program update time than the specification update time. " +
-                                "Application must be redeployed");
+                                  "Application must be redeployed");
 
     return Programs.create(programLocation);
   }
@@ -246,13 +251,31 @@ public class DefaultStore implements Store {
       }
     });
 
-    if (runStatus == ProgramRunStatus.COMPLETED) {
-      RunRecordMeta run = getRun(id, pid);
+    if (id.getType() == ProgramType.WORKFLOW && runStatus == ProgramRunStatus.COMPLETED) {
+      final RunRecordMeta run = getRun(id, pid);
+      Id.Application app = id.getApplication();
+      ApplicationSpecification appSpec = getApplication(app);
+      WorkflowSpecification workflowSpec = appSpec.getWorkflows().get(id.getId());
+      final Map<String, WorkflowNode> nodeIdMap = workflowSpec.getNodeIdMap();
+
+      final List<WorkflowDataset.ActionRuns> actionRunsList = new ArrayList<>();
+
+      for (Map.Entry<String, String> entry : run.getProperties().entrySet()) {
+        if (!entry.getKey().equals("workflowToken")) {
+          WorkflowActionNode workflowNode = (WorkflowActionNode) nodeIdMap.get(entry.getKey());
+          ProgramType programType = ProgramType.valueOfSchedulableType(workflowNode.getProgram().getProgramType());
+          Id.Program innerProgram = Id.Program.from(app.getNamespaceId(), app.getId(), programType, entry.getKey());
+          RunRecordMeta innerProgramRun = getRun(innerProgram, entry.getValue());
+          actionRunsList.add(new WorkflowDataset.ActionRuns(entry.getKey(), entry.getValue(),
+                                                            innerProgramRun.getStopTs() - innerProgramRun.getStartTs()));
+        }
+      }
 
       txnlWorkflow.executeUnchecked(new TransactionExecutor.Function<WFD, Void>() {
         @Override
         public Void apply(WFD dataset) {
-          dataset.wf.write(run.getProperties());
+          dataset.wf.write(id, run, actionRunsList);
+          return null;
         }
       });
     }
@@ -280,6 +303,18 @@ public class DefaultStore implements Store {
       public Void apply(AppMds mds) throws Exception {
         mds.apps.recordProgramResumed(id, pid);
         return null;
+      }
+    });
+  }
+
+  public List<WorkflowDataset.WorkflowRunRecord> getWorkflowRuns(final Id.Program id,
+                                                                 final long startTime,
+                                                                 final long endTime) {
+    return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
+      <WFD, List<WorkflowDataset.WorkflowRunRecord>>() {
+      @Override
+      public List<WorkflowDataset.WorkflowRunRecord> apply(WFD dataset) throws Exception {
+        return dataset.wf.scan(id, startTime, endTime);
       }
     });
   }

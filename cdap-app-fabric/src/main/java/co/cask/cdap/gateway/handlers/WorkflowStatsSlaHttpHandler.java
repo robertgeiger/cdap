@@ -21,6 +21,8 @@ import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.app.runtime.ProgramRuntimeService;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.common.utils.TimeMathParser;
+import co.cask.cdap.internal.app.store.DefaultStore;
 import co.cask.cdap.internal.app.store.RunRecordMeta;
 import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
@@ -35,6 +37,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +61,6 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
    * Store manages non-runtime lifecycle.
    */
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowStatsSlaHttpHandler.class);
-  protected final WorkflowDataset workflowDataset;
   protected final Store store;
   // protected final Table table;
   private final MetricStore metricStore;
@@ -69,10 +71,9 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
 
   @Inject
   public WorkflowStatsSlaHttpHandler(MetricStore metricStore,
-                                Store store, WorkflowDataset workflowDataset) {
+                                Store store) {
     this.metricStore = metricStore;
     this.store = store;
-    this.workflowDataset = workflowDataset;
   }
 
   @GET
@@ -81,19 +82,20 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
                             @PathParam("namespace-id") String namespaceId,
                             @PathParam("app-id") String appId,
                             @PathParam("workflow-id") String workflowId,
-                            @QueryParam("start") long start,
-                            @QueryParam("end") long end) throws Exception {
+                            @QueryParam("start") String start,
+                            @QueryParam("end") String end) throws Exception {
 
     int limit = Integer.MAX_VALUE;
-    start = 0;
-    end = Long.MAX_VALUE;
-    List<RunRecordMeta> runRecordMetas;
+    long startTime = TimeMathParser.parseTimeInSeconds(start);
+    long endTime = TimeMathParser.parseTimeInSeconds(end);
+
+    List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords;
 
     Id.Program programId = Id.Program.from(namespaceId, appId, ProgramType.WORKFLOW, workflowId);
     try {
       try {
-        // change this
-        runRecordMetas = store.getRuns(programId, ProgramRunStatus.COMPLETED, start, end, limit);
+        workflowRunRecords = store.getWorkflowRuns(programId, startTime, endTime);
+
       } catch (IllegalArgumentException exception) {
         responder.sendJson(HttpResponseStatus.BAD_REQUEST, "Bad request");
         return;
@@ -103,30 +105,21 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
       return;
     }
 
-    long avgTimeToComplete = 0;
-    int count = 0;
-    Map<ProgramRunStatus, Integer> statusCount = Maps.newHashMap();
-    for (ProgramRunStatus value : ProgramRunStatus.values()) {
-      statusCount.put(value, 0);
+    responder.sendJson(HttpResponseStatus.OK, workflowRunRecords);
+    return;
+
+    int count = workflowRunRecords.size();
+
+    if (count == 0) {
+      responder.sendJson(HttpResponseStatus.OK, "There were no completed runs for this workflow.");
     }
 
-    List<RunRecord> filteredRunRecords = Lists.newArrayList();
-    for (RunRecord runRecord : runRecordMetas) {
-      if (runRecord.getStatus().equals(ProgramRunStatus.COMPLETED)) {
-        avgTimeToComplete += runRecord.getStopTs() - runRecord.getStartTs();
-        count++;
-        filteredRunRecords.add(runRecord);
-      }
-      statusCount.put(runRecord.getStatus(), statusCount.get(runRecord.getStatus()) + 1);
-    }
-
-    avgTimeToComplete = avgTimeToComplete / count;
-    Collections.sort(filteredRunRecords, new Comparator<RunRecord>() {
+    Collections.sort(workflowRunRecords, new Comparator<WorkflowDataset.WorkflowRunRecord>() {
       @Override
-      public int compare(RunRecord o1, RunRecord o2) {
-        if ((o1.getStopTs() - o1.getStartTs()) > (o2.getStopTs() - o2.getStartTs())) {
+      public int compare(WorkflowDataset.WorkflowRunRecord o1, WorkflowDataset.WorkflowRunRecord o2) {
+        if (o1.getTimeTaken() > o2.getTimeTaken()) {
           return 1;
-        } else if ((o1.getStopTs() - o1.getStartTs()) < (o2.getStopTs() - o2.getStartTs())) {
+        } else if (o1.getTimeTaken() < o2.getTimeTaken()) {
           return -1;
         } else {
           return 0;
@@ -137,32 +130,14 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
     List<String> slowest10PercentileRuns = Lists.newArrayList();
     int percentile90 = (int) (count * .9);
     for (int i = percentile90; i < count; i++) {
-      slowest10PercentileRuns.add(filteredRunRecords.get(i).getPid());
+      slowest10PercentileRuns.add(workflowRunRecords.get(i).getWorkflowRunId());
     }
 
-    // Binary search to find the set of runs that are above/below average
-    int startIndex = 0, endIndex = filteredRunRecords.size() - 1, midIndex = (startIndex + endIndex) / 2;
-    while (startIndex < endIndex) {
-      midIndex = (startIndex + endIndex) / 2;
-      RunRecord midRunRecord = filteredRunRecords.get(midIndex);
-      if (avgTimeToComplete > (midRunRecord.getStopTs() - midRunRecord.getStartTs())) {
-        startIndex = midIndex;
-        continue;
-      } else if (avgTimeToComplete < (midRunRecord.getStopTs() - midRunRecord.getStartTs())) {
-        endIndex = midIndex;
-        continue;
-      } else {
-        break;
-      }
-    }
-    int countBelowAverage = midIndex, countAboveAverage = filteredRunRecords.size() - midIndex;
     // Return countBelowAverage, countAboveAverage, slowest10PercentileRuns, avgTime, count
     Map<String, Object> response = Maps.newHashMap();
     response.put("count", count);
     response.put("avg.time.to.complete", avgTimeToComplete);
     response.put("slowest.ten.percentile", slowest10PercentileRuns);
-    response.put("count.below.avg", countBelowAverage);
-    response.put("count.above.avg", countAboveAverage);
     responder.sendJson(HttpResponseStatus.OK, response);
   }
 
