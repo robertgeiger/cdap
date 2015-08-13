@@ -65,13 +65,9 @@ public class WorkflowDataset extends AbstractDataset {
 
     String value = GSON.toJson(actionRunsList, new TypeToken<List<ActionRuns>>() { }.getType());
 
-    System.out.println("Going to write");
-
     table.put(rowKey, Bytes.toBytes(RUNID), Bytes.toBytes(runRecordMeta.getPid()));
     table.put(rowKey, Bytes.toBytes(TIME_TAKEN), Bytes.toBytes(timeTaken));
     table.put(rowKey, Bytes.toBytes(NODES), Bytes.toBytes(value));
-
-    System.out.println("Written");
   }
 
   public List<WorkflowRunRecord> scan(Id.Program id, long timeRangeStart, long timeRangeEnd) {
@@ -83,7 +79,7 @@ public class WorkflowDataset extends AbstractDataset {
     byte[] startRowKey = createRowKey(key, timeRangeStart);
     byte[] endRowKey = createRowKey(key, timeRangeEnd);
     Scan scan = new Scan(startRowKey, endRowKey);
-    // Scan scan = new Scan(null, null);
+
     Scanner scanner = table.scan(scan);
     Row indexRow;
     List<WorkflowRunRecord> workflowRunRecordList = new ArrayList<>();
@@ -95,7 +91,6 @@ public class WorkflowDataset extends AbstractDataset {
       List<ActionRuns> actionRunsList = GSON.fromJson(Bytes.toString(columns.get(Bytes.toBytes(NODES))),
                                                       new TypeToken<List<ActionRuns>>() { }.getType());
       WorkflowRunRecord workflowRunRecord = new WorkflowRunRecord(workflowRunId, timeTaken, actionRunsList);
-      LOG.info(workflowRunRecord.toString());
       workflowRunRecordList.add(workflowRunRecord);
     }
     return workflowRunRecordList;
@@ -116,7 +111,7 @@ public class WorkflowDataset extends AbstractDataset {
       return timeTaken;
     }
 
-    public List<ActionRuns> getActionRunsMap() {
+    public List<ActionRuns> getActionRuns() {
       return actionRuns;
     }
 

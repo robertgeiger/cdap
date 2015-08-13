@@ -41,6 +41,7 @@ import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -83,11 +84,16 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
                             @PathParam("app-id") String appId,
                             @PathParam("workflow-id") String workflowId,
                             @QueryParam("start") String start,
-                            @QueryParam("end") String end) throws Exception {
+                            @QueryParam("end") String end,
+                            @QueryParam("percentile") List<Integer> percentiles) throws Exception {
 
-    int limit = Integer.MAX_VALUE;
     long startTime = TimeMathParser.parseTimeInSeconds(start);
     long endTime = TimeMathParser.parseTimeInSeconds(end);
+
+    if (endTime < startTime || startTime < 0 || endTime < 0) {
+      responder.sendJson(HttpResponseStatus.BAD_REQUEST, "Wrong start or end time.");
+      return;
+    }
 
     List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords;
 
@@ -105,13 +111,18 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
       return;
     }
 
-    responder.sendJson(HttpResponseStatus.OK, workflowRunRecords);
-    return;
-
     int count = workflowRunRecords.size();
+
+    for (int i : percentiles) {
+      if (i > 100) {
+        responder.sendJson(HttpResponseStatus.BAD_REQUEST, "Wrong percentile values");
+        return;
+      }
+    }
 
     if (count == 0) {
       responder.sendJson(HttpResponseStatus.OK, "There were no completed runs for this workflow.");
+      return;
     }
 
     Collections.sort(workflowRunRecords, new Comparator<WorkflowDataset.WorkflowRunRecord>() {
@@ -127,17 +138,48 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
       }
     });
 
-    List<String> slowest10PercentileRuns = Lists.newArrayList();
-    int percentile90 = (int) (count * .9);
-    for (int i = percentile90; i < count; i++) {
-      slowest10PercentileRuns.add(workflowRunRecords.get(i).getWorkflowRunId());
+    Map<String, List<String>> slowestPercentileRuns = Maps.newHashMap();
+    for (int i : percentiles) {
+      List<String> percentileRun = new ArrayList();
+      int percentileStart = (i * count) / 100;
+      for (int j = percentileStart; j < count; j++) {
+        percentileRun.add(workflowRunRecords.get(j).getWorkflowRunId());
+      }
+      slowestPercentileRuns.put(Integer.toString(i), percentileRun);
     }
 
-    // Return countBelowAverage, countAboveAverage, slowest10PercentileRuns, avgTime, count
     Map<String, Object> response = Maps.newHashMap();
+
     response.put("count", count);
-    response.put("avg.time.to.complete", avgTimeToComplete);
-    response.put("slowest.ten.percentile", slowest10PercentileRuns);
+    response.put("slowest.percentiles", slowestPercentileRuns);
+
+    final Map<String, List<Long>> actionToRunRecord = Maps.newHashMap();
+    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord: workflowRunRecords) {
+      for (WorkflowDataset.ActionRuns runs: workflowRunRecord.getActionRuns()) {
+        if (actionToRunRecord.get(runs.getName()) == null) {
+          List<Long> runList = Lists.newArrayList();
+          runList.add(runs.getTimeTaken());
+          actionToRunRecord.put(runs.getName(), runList);
+        } else {
+          List<Long> runList = actionToRunRecord.get(runs.getName());
+          runList.add(runs.getTimeTaken());
+          actionToRunRecord.put(runs.getName(), runList);
+        }
+      }
+    }
+
+    Map<Integer, Long> percentileToValue = Maps.newHashMap();
+    for (Map.Entry<String, List<Long>> entry : actionToRunRecord.entrySet()) {
+      List<Long> runList = entry.getValue();
+      Collections.sort(runList);
+      for (int percentile : percentiles) {
+        long percentileValue = runList.get((percentile * count) / 100);
+        percentileToValue.put(percentile, percentileValue);
+      }
+      response.put("test" + entry.getKey(), runList);
+      response.put(entry.getKey(), percentileToValue);
+    }
+
     responder.sendJson(HttpResponseStatus.OK, response);
   }
 
