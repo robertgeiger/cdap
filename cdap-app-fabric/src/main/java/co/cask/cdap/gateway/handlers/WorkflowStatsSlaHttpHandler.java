@@ -170,29 +170,4 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
 
     responder.sendJson(HttpResponseStatus.OK, response);
   }
-
-  @GET
-  @Path("apps/{app-id}/workflows/{workflow-id}/runs/{run-id}/stats")
-  public void workflowSingleRunStats(HttpRequest request, HttpResponder responder,
-                                     @PathParam("namespace-id") String namespaceId,
-                                     @PathParam("app-id") String appId,
-                                     @PathParam("workflow-id") String workflowId,
-                                     @PathParam("run-id") String runId,
-                                     @QueryParam("start") long start,
-                                     @QueryParam("end") long end,
-                                     @QueryParam("limit") long limit) {
-    return;
-  }
-
-  @GET
-  @Path("apps/{app-id}/workflows/{workflow-id}/run/{run-id}/compare")
-  public void comparer(HttpRequest request, HttpResponder responder,
-                       @PathParam("namespace-id") String namespaceId,
-                       @PathParam("app-id") String appId,
-                       @PathParam("workflow-id") String workflowId,
-                       @PathParam("run-id") String runId,
-                       @QueryParam("other-run") String otherRun
-                       ) {
-    return;
-  }
 }
