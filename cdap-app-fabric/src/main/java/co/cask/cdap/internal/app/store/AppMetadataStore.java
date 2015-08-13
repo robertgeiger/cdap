@@ -579,8 +579,6 @@ public class AppMetadataStore extends MetadataStoreDataset {
   public void recordWorkflowProgramStart(Id.Program program, String programRunId, String workflow,
                                          String workflowRunId, String workflowNodeId, long startTimeInSeconds,
                                          String adapter, String twillRunId) {
-    // key: 'mymapreduce'
-    // key: 'mapreduce.mymapreduce'
     // Get the run record of the Workflow which started this program
     MDSKey key = getWorkflowRunRecordKey(Id.Workflow.from(program.getApplication(), workflow), workflowRunId);
 
