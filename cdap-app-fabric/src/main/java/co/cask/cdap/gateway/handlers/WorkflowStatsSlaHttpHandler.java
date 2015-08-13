@@ -51,17 +51,10 @@ import javax.ws.rs.QueryParam;
 @Singleton
 @Path(Constants.Gateway.API_VERSION_3 + "/namespaces/{namespace-id}")
 public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
-  /**
-   * Store manages non-runtime lifecycle.
-   */
+
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowStatsSlaHttpHandler.class);
   protected final Store store;
-  // protected final Table table;
   private final MetricStore metricStore;
-
-  /**
-   * Runtime program service for running and managing programs.
-   */
 
   @Inject
   public WorkflowStatsSlaHttpHandler(MetricStore metricStore,
