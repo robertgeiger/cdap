@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2015 Cask Data, Inc.
+ * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,19 +16,13 @@
 
 package co.cask.cdap.gateway.handlers;
 
-import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.metrics.MetricStore;
-import co.cask.cdap.app.runtime.ProgramRuntimeService;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.utils.TimeMathParser;
-import co.cask.cdap.internal.app.store.DefaultStore;
-import co.cask.cdap.internal.app.store.RunRecordMeta;
 import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramType;
-import co.cask.cdap.proto.RunRecord;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.common.collect.Lists;
@@ -37,7 +31,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +71,7 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
   }
 
   @GET
-  @Path("apps/{app-id}/workflows/{workflow-id}/stats")
+  @Path("apps/{app-id}/workflows/{workflow-id}/statistics")
   public void workflowStats(HttpRequest request, HttpResponder responder,
                             @PathParam("namespace-id") String namespaceId,
                             @PathParam("app-id") String appId,
@@ -138,6 +131,7 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
       }
     });
 
+    Map<String, Long> workflowPercentileToTimeTaken = Maps.newHashMap();
     Map<String, List<String>> slowestPercentileRuns = Maps.newHashMap();
     for (int i : percentiles) {
       List<String> percentileRun = new ArrayList();
@@ -146,12 +140,13 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
         percentileRun.add(workflowRunRecords.get(j).getWorkflowRunId());
       }
       slowestPercentileRuns.put(Integer.toString(i), percentileRun);
+      workflowPercentileToTimeTaken.put(Integer.toString(i), workflowRunRecords.get(percentileStart).getTimeTaken());
     }
 
     Map<String, Object> response = Maps.newHashMap();
-
     response.put("count", count);
-    response.put("slowest.percentiles", slowestPercentileRuns);
+    response.put("percentile.completion", workflowPercentileToTimeTaken);
+    response.put("slowest.percentiles.runids", slowestPercentileRuns);
 
     final Map<String, List<Long>> actionToRunRecord = Maps.newHashMap();
     for (WorkflowDataset.WorkflowRunRecord workflowRunRecord: workflowRunRecords) {
@@ -193,6 +188,7 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
                                      @QueryParam("start") long start,
                                      @QueryParam("end") long end,
                                      @QueryParam("limit") long limit) {
+    return;
   }
 
   @GET
@@ -204,6 +200,6 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
                        @PathParam("run-id") String runId,
                        @QueryParam("other-run") String otherRun
                        ) {
-
+    return;
   }
 }

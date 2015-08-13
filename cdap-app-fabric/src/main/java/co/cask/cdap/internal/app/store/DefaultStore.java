@@ -265,8 +265,8 @@ public class DefaultStore implements Store {
           ProgramType programType = ProgramType.valueOfSchedulableType(workflowNode.getProgram().getProgramType());
           Id.Program innerProgram = Id.Program.from(app.getNamespaceId(), app.getId(), programType, entry.getKey());
           RunRecordMeta innerProgramRun = getRun(innerProgram, entry.getValue());
-          actionRunsList.add(new WorkflowDataset.ActionRuns(entry.getKey(), entry.getValue(),
-                                                            innerProgramRun.getStopTs() - innerProgramRun.getStartTs()));
+          actionRunsList.add(new WorkflowDataset.ActionRuns(
+            entry.getKey(), entry.getValue(), innerProgramRun.getStopTs() - innerProgramRun.getStartTs()));
         }
       }
 
