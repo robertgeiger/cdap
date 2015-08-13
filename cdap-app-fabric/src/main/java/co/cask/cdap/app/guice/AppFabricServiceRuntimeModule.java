@@ -291,11 +291,9 @@ public final class AppFabricServiceRuntimeModule extends RuntimeModule {
       );
       install(
         new FactoryModuleBuilder()
-          .implement(new TypeLiteral<Manager<AdapterDeploymentInfo, AdapterDefinition>>() {
-          },
+          .implement(new TypeLiteral<Manager<AdapterDeploymentInfo, AdapterDefinition>>() { },
                      LocalAdapterManager.class)
-          .build(Key.get(new TypeLiteral<ManagerFactory<AdapterDeploymentInfo, AdapterDefinition>>() {
-          },
+          .build(Key.get(new TypeLiteral<ManagerFactory<AdapterDeploymentInfo, AdapterDefinition>>() { },
                          Names.named("adapters")))
       );
 
