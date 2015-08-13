@@ -22,7 +22,8 @@ var pkg = require('../package.json'),
     bodyParser = require('body-parser'),
     DIST_PATH = require('path').normalize(
       __dirname + '/../dist'
-    );
+    ),
+    fs = require('fs');
 
 var log = log4js.getLogger('default');
 
@@ -47,8 +48,10 @@ function makeApp (authAddress, cdapConfig) {
       authorization: req.headers.authorization,
       cdap: {
         routerServerUrl: cdapConfig['router.server.address'],
-        routerServerPort: cdapConfig['router.server.port']
+        routerServerPort: cdapConfig['router.server.port'],
+        routerSSLServerPort: cdapConfig['router.ssl.bind.port']
       },
+      sslEnabled: cdapConfig['ssl.enabled'] === 'true',
       securityEnabled: authAddress.enabled,
       isEnterprise: process.env.NODE_ENV === 'production'
     });
@@ -71,6 +74,7 @@ function makeApp (authAddress, cdapConfig) {
 
     fs.mkdir(path, function (err) {
       if (err && err.code === 'EEXIST') {
+        console.log('Suppressing "folder aleady exists" error for download query');
         // means the folder already exist. We can ignore it
       }
     });
@@ -114,12 +118,29 @@ function makeApp (authAddress, cdapConfig) {
     For now it handles file upload POST /namespaces/:namespace/apps API
   */
   app.post('/namespaces/:namespace/:path(*)', function (req, res) {
-    var url = 'http://' + cdapConfig['router.server.address'] +
-              ':' +
-              cdapConfig['router.server.port'] +
-              '/v3/namespaces/' +
-              req.param('namespace') +
-              '/' + req.param('path');
+    var protocol,
+        port;
+    if (cdapConfig['ssl.enabled'] === 'true') {
+      protocol = 'https://';
+    } else {
+      protocol = 'http://';
+    }
+    if (cdapConfig['ssl.enabled'] === 'true') {
+      port = cdapConfig['router.ssl.bind.port'];
+    } else {
+      port = cdapConfig['router.server.port'];
+    }
+
+    var url = [
+      protocol,
+      cdapConfig['router.server.address'],
+      ':',
+      port,
+      '/v3/namespaces/',
+      req.param('namespace'),
+      '/',
+      req.param('path')
+    ];
 
     var opts = {
       method: 'POST',
@@ -175,11 +196,27 @@ function makeApp (authAddress, cdapConfig) {
 
   app.get('/backendstatus', [
     function (req, res) {
+      var protocol,
+          port;
+      if (cdapConfig['ssl.enabled'] === 'true') {
+        protocol = 'https://';
+      } else {
+        protocol = 'http://';
+      }
 
-      var link = 'http://' + cdapConfig['router.server.address'] +
-              ':' +
-              cdapConfig['router.server.port'] +
-              '/v3/namespaces';
+      if (cdapConfig['ssl.enabled'] === 'true') {
+        port = cdapConfig['router.ssl.bind.port'];
+      } else {
+        port = cdapConfig['router.server.port'];
+      }
+
+      var link = [
+        protocol,
+        cdapConfig['router.server.address'],
+        ':',
+        port,
+        '/v3/namespaces'
+      ].join('');
 
       request({
         method: 'GET',
@@ -195,6 +232,61 @@ function makeApp (authAddress, cdapConfig) {
           res.status(response.statusCode).send();
         }
       });
+    }
+  ]);
+
+  app.get('/predefinedapps/:apptype', [
+      function (req, res) {
+        var apptype = req.params.apptype;
+        var dirPath = __dirname + '/../templates/apps/predefined/' + apptype;
+        fs.readdir( dirPath ,function(err,files){
+            if (err) {
+              res.status(404).send({
+                error: err.code,
+                message: 'Unable to file template type: ' + apptype
+              });
+              log.debug('Unable to file template type: ' + apptype);
+            }
+            files = files.map(function(file) {
+              var config = {
+                name: file.substr(0, file.indexOf('.'))
+              }, fileJson;
+              try {
+                fileJson = JSON.parse(fs.readFileSync( dirPath +'/' + file, 'utf8'));
+              } catch(e) {
+                fileJson = {};
+              }
+              config.description = fileJson.description;
+              return config;
+            });
+            res.send(files);
+        });
+      }
+  ]);
+
+  app.get('/predefinedapps/:apptype/:appname', [
+    function (req, res) {
+      var apptype = req.params.apptype;
+      var appname = req.params.appname;
+
+      var filePath = [
+        __dirname,
+        '/../templates/apps/predefined/',
+        apptype,
+        '/',
+        appname,
+        '.json'
+      ].join('');
+      var config = {};
+      try {
+        config = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        res.send(config);
+      } catch(e) {
+        config.error = e.code;
+        config.message = 'Error reading template - ' + appname + ' of type - ' + apptype ;
+        log.debug(config.message);
+        res.status(404).send(config);
+      }
     }
   ]);
 

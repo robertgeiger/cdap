@@ -39,7 +39,7 @@ public final class WorkflowSpecification implements ProgramSpecification, Proper
   private final Map<String, WorkflowNode> nodeIdMap;
 
   public WorkflowSpecification(String className, String name, String description,
-                                      Map<String, String> properties, List<WorkflowNode> nodes) {
+                               Map<String, String> properties, List<WorkflowNode> nodes) {
     this.className = className;
     this.name = name;
     this.description = description;
