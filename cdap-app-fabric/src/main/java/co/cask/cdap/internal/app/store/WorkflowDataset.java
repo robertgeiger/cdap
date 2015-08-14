@@ -22,37 +22,30 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scan;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.common.utils.ImmutablePair;
-import co.cask.cdap.data2.dataset2.lib.table.FuzzyRowFilter;
 import co.cask.cdap.proto.Id;
-import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
-import org.apache.avro.generic.GenericData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
- *
+ * Dataset for Completed Workflows
  */
 public class WorkflowDataset extends AbstractDataset {
 
   private static final Gson GSON = new Gson();
-  private static final String RUNID = "runId";
-  private static final String TIME_TAKEN = "timeTaken";
-  private static final String NODES = "nodes";
+  private static final byte[] RUNID = Bytes.toBytes("runId");
+  private static final byte[] TIME_TAKEN = Bytes.toBytes("timeTaken");
+  private static final byte[] NODES = Bytes.toBytes("nodes");
   private static final String DELIMITER = ":";
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowDataset.class);
+  private static final Type ACTION_RUNS_TYPE = new TypeToken<List<ActionRuns>>() { }.getType();
 
   private final Table table;
 
@@ -79,11 +72,11 @@ public class WorkflowDataset extends AbstractDataset {
 
     long timeTaken = runRecordMeta.getStopTs() - start;
 
-    String value = GSON.toJson(actionRunsList, new TypeToken<List<ActionRuns>>() { }.getType());
+    String value = GSON.toJson(actionRunsList, ACTION_RUNS_TYPE);
 
-    table.put(rowKey, Bytes.toBytes(RUNID), Bytes.toBytes(runRecordMeta.getPid()));
-    table.put(rowKey, Bytes.toBytes(TIME_TAKEN), Bytes.toBytes(timeTaken));
-    table.put(rowKey, Bytes.toBytes(NODES), Bytes.toBytes(value));
+    table.put(rowKey, RUNID, Bytes.toBytes(runRecordMeta.getPid()));
+    table.put(rowKey, TIME_TAKEN, Bytes.toBytes(timeTaken));
+    table.put(rowKey, NODES, Bytes.toBytes(value));
   }
 
   public List<WorkflowRunRecord> scan(Id.Program id, long timeRangeStart, long timeRangeEnd) {
@@ -101,11 +94,10 @@ public class WorkflowDataset extends AbstractDataset {
     List<WorkflowRunRecord> workflowRunRecordList = new ArrayList<>();
     while ((indexRow = scanner.next()) != null) {
       Map<byte[], byte[]> columns = indexRow.getColumns();
-      String workflowRunId = Bytes.toString(columns.get(Bytes.toBytes(RUNID)));
-      long timeTaken = Bytes.toLong(columns.get(Bytes.toBytes(TIME_TAKEN)));
+      String workflowRunId = Bytes.toString(columns.get(RUNID));
+      long timeTaken = Bytes.toLong(columns.get(TIME_TAKEN));
 
-      List<ActionRuns> actionRunsList = GSON.fromJson(Bytes.toString(columns.get(Bytes.toBytes(NODES))),
-                                                      new TypeToken<List<ActionRuns>>() { }.getType());
+      List<ActionRuns> actionRunsList = GSON.fromJson(Bytes.toString(columns.get(NODES)), ACTION_RUNS_TYPE);
       WorkflowRunRecord workflowRunRecord = new WorkflowRunRecord(workflowRunId, timeTaken, actionRunsList);
       workflowRunRecordList.add(workflowRunRecord);
     }

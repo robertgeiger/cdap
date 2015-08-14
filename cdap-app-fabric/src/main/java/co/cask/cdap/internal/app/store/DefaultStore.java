@@ -273,7 +273,7 @@ public class DefaultStore implements Store {
       txnlWorkflow.executeUnchecked(new TransactionExecutor.Function<WFD, Void>() {
         @Override
         public Void apply(WFD dataset) {
-          dataset.wf.write(id, run, actionRunsList);
+          dataset.workflowDataset.write(id, run, actionRunsList);
           return null;
         }
       });
@@ -313,7 +313,7 @@ public class DefaultStore implements Store {
       <WFD, List<WorkflowDataset.WorkflowRunRecord>>() {
       @Override
       public List<WorkflowDataset.WorkflowRunRecord> apply(WFD dataset) throws Exception {
-        return dataset.wf.scan(id, startTime, endTime);
+        return dataset.workflowDataset.scan(id, startTime, endTime);
       }
     });
   }
@@ -1276,15 +1276,15 @@ public class DefaultStore implements Store {
   }
 
   private static final class WFD implements Iterable<WorkflowDataset> {
-    private final WorkflowDataset wf;
+    private final WorkflowDataset workflowDataset;
 
     private WFD(Table mdsTable) {
-      this.wf = new WorkflowDataset(mdsTable);
+      this.workflowDataset = new WorkflowDataset(mdsTable);
     }
 
     @Override
     public Iterator<WorkflowDataset> iterator() {
-      return Iterators.singletonIterator(wf);
+      return Iterators.singletonIterator(workflowDataset);
     }
   }
 }

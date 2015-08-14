@@ -18,6 +18,7 @@ package co.cask.cdap.gateway.handlers;
 
 import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.app.store.Store;
+import co.cask.cdap.common.BadRequestException;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.utils.TimeMathParser;
 import co.cask.cdap.internal.app.store.WorkflowDataset;
@@ -25,6 +26,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
@@ -45,9 +47,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
 /**
- *
+ * Workflow Statistics Handler
  */
-
 @Singleton
 @Path(Constants.Gateway.API_VERSION_3 + "/namespaces/{namespace-id}")
 public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
@@ -57,8 +58,7 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
   private final MetricStore metricStore;
 
   @Inject
-  public WorkflowStatsSlaHttpHandler(MetricStore metricStore,
-                                Store store) {
+  public WorkflowStatsSlaHttpHandler(MetricStore metricStore, Store store) {
     this.metricStore = metricStore;
     this.store = store;
   }
@@ -71,14 +71,19 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
                             @PathParam("workflow-id") String workflowId,
                             @QueryParam("start") String start,
                             @QueryParam("end") String end,
-                            @QueryParam("percentile") List<Integer> percentiles) throws Exception {
+                            @QueryParam("percentile") List<Double> percentiles) throws Exception {
 
     long startTime = TimeMathParser.parseTimeInSeconds(start);
     long endTime = TimeMathParser.parseTimeInSeconds(end);
 
     if (endTime < startTime || startTime < 0 || endTime < 0) {
-      responder.sendJson(HttpResponseStatus.BAD_REQUEST, "Wrong start or end time.");
-      return;
+      throw new BadRequestException("Wrong start or end time.");
+    }
+
+    for (double i : percentiles) {
+      if (i < 0 || i > 100) {
+        throw new BadRequestException("Percentile values have to be greater than 0 and less than 100");
+      }
     }
 
     List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords;
@@ -99,18 +104,61 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
 
     int count = workflowRunRecords.size();
 
-    for (int i : percentiles) {
-      if (i > 100) {
-        responder.sendJson(HttpResponseStatus.BAD_REQUEST, "Wrong percentile values");
-        return;
-      }
-    }
-
     if (count == 0) {
       responder.sendJson(HttpResponseStatus.OK, "There were no completed runs for this workflow.");
       return;
     }
 
+    long average = 0;
+    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord: workflowRunRecords) {
+      average += workflowRunRecord.getTimeTaken();
+    }
+    average /= count;
+
+    workflowRunRecords = sort(workflowRunRecords);
+
+    Map<String, Long> percentileToTime = Maps.newHashMap();
+    Map<String, List<String>> percentileToRunids = Maps.newHashMap();
+    for (double i : percentiles) {
+      List<String> percentileRun = new ArrayList();
+      int percentileStart = (int) ((i * count) / 100);
+      for (int j = percentileStart; j < count; j++) {
+        percentileRun.add(workflowRunRecords.get(j).getWorkflowRunId());
+      }
+      percentileToRunids.put(Double.toString(i), percentileRun);
+      percentileToTime.put(Double.toString(i), workflowRunRecords.get(percentileStart).getTimeTaken());
+    }
+
+    Map<String, List<Long>> actionToRunRecord = getActionRuns(workflowRunRecords);
+
+    Map<String, Map<String, Long>> actionToPercentile = Maps.newHashMap();
+    for (Map.Entry<String, List<Long>> entry : actionToRunRecord.entrySet()) {
+      long mean = 0;
+      for (long iterator: entry.getValue()) {
+        mean += iterator;
+      }
+      mean /= entry.getValue().size();
+      Map temp = Maps.newHashMap();
+      temp.put("mean", mean);
+      actionToPercentile.put(entry.getKey(), temp);
+    }
+
+    for (Map.Entry<String, List<Long>> entry : actionToRunRecord.entrySet()) {
+      List<Long> runList = entry.getValue();
+      Collections.sort(runList);
+      for (double percentile : percentiles) {
+        long percentileValue = runList.get((int) ((percentile * runList.size()) / 100));
+        actionToPercentile.get(entry.getKey()).put(Double.toString(percentile), percentileValue);
+      }
+    }
+    
+    BasicStatistics basicStatistics = new BasicStatistics(startTime, endTime, count, average, percentileToTime,
+                                                          percentileToRunids, actionToPercentile);
+
+    responder.sendJson(HttpResponseStatus.OK, basicStatistics);
+  }
+
+  private List<WorkflowDataset.WorkflowRunRecord> sort(List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords) {
     Collections.sort(workflowRunRecords, new Comparator<WorkflowDataset.WorkflowRunRecord>() {
       @Override
       public int compare(WorkflowDataset.WorkflowRunRecord o1, WorkflowDataset.WorkflowRunRecord o2) {
@@ -123,51 +171,75 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
         }
       }
     });
+    return workflowRunRecords;
+  }
 
-    Map<String, Long> workflowPercentileToTimeTaken = Maps.newHashMap();
-    Map<String, List<String>> slowestPercentileRuns = Maps.newHashMap();
-    for (int i : percentiles) {
-      List<String> percentileRun = new ArrayList();
-      int percentileStart = (i * count) / 100;
-      for (int j = percentileStart; j < count; j++) {
-        percentileRun.add(workflowRunRecords.get(j).getWorkflowRunId());
-      }
-      slowestPercentileRuns.put(Integer.toString(i), percentileRun);
-      workflowPercentileToTimeTaken.put(Integer.toString(i), workflowRunRecords.get(percentileStart).getTimeTaken());
-    }
-
-    Map<String, Object> response = Maps.newHashMap();
-    response.put("count", count);
-    response.put("percentile.completion", workflowPercentileToTimeTaken);
-    response.put("slowest.percentiles.runids", slowestPercentileRuns);
-
-    final Map<String, List<Long>> actionToRunRecord = Maps.newHashMap();
+  private Map<String, List<Long>> getActionRuns(List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords) {
+    Map<String, List<Long>> actionToRunRecord = Maps.newHashMap();
     for (WorkflowDataset.WorkflowRunRecord workflowRunRecord: workflowRunRecords) {
       for (WorkflowDataset.ActionRuns runs: workflowRunRecord.getActionRuns()) {
+        List<Long> runList;
         if (actionToRunRecord.get(runs.getName()) == null) {
-          List<Long> runList = Lists.newArrayList();
-          runList.add(runs.getTimeTaken());
-          actionToRunRecord.put(runs.getName(), runList);
+          runList = Lists.newArrayList();
         } else {
-          List<Long> runList = actionToRunRecord.get(runs.getName());
-          runList.add(runs.getTimeTaken());
-          actionToRunRecord.put(runs.getName(), runList);
+          runList = actionToRunRecord.get(runs.getName());
         }
+        runList.add(runs.getTimeTaken());
+        actionToRunRecord.put(runs.getName(), runList);
       }
     }
+    return actionToRunRecord;
+  }
 
-    Map<Integer, Long> percentileToValue = Maps.newHashMap();
-    for (Map.Entry<String, List<Long>> entry : actionToRunRecord.entrySet()) {
-      List<Long> runList = entry.getValue();
-      Collections.sort(runList);
-      for (int percentile : percentiles) {
-        long percentileValue = runList.get((percentile * count) / 100);
-        percentileToValue.put(percentile, percentileValue);
-      }
-      response.put("test" + entry.getKey(), runList);
-      response.put(entry.getKey(), percentileToValue);
+  @VisibleForTesting
+  public static class BasicStatistics {
+    private long startTime;
+    private long endTime;
+    private int runs;
+    private double avgRunTime;
+    private Map<String, Long> percentileToTime;
+    private Map<String, List<String>> percentileToRunids;
+    private Map<String, Map<String, Long>> actionToPercentile;
+
+    public BasicStatistics(long startTime, long endTime, int runs, double avgRunTime,
+                           Map<String, Long> percentileToTime,
+                           Map<String, List<String>> percentileToRunids,
+                           Map<String, Map<String, Long>> actionToPercentile) {
+      this.startTime = startTime;
+      this.endTime = endTime;
+      this.runs = runs;
+      this.avgRunTime = avgRunTime;
+      this.percentileToTime = percentileToTime;
+      this.percentileToRunids = percentileToRunids;
+      this.actionToPercentile = actionToPercentile;
     }
 
-    responder.sendJson(HttpResponseStatus.OK, response);
+    public int getRuns() {
+      return runs;
+    }
+
+    public double getAvgRunTime() {
+      return avgRunTime;
+    }
+
+    public long getStartTime() {
+      return startTime;
+    }
+
+    public long getEndTime() {
+      return endTime;
+    }
+
+    public Map<String, Long> getPercentileToTime() {
+      return percentileToTime;
+    }
+
+    public Map<String, List<String>> getPercentileToRunids() {
+      return percentileToRunids;
+    }
+
+    public Map<String, Map<String, Long>> getActionToPercentile() {
+      return actionToPercentile;
+    }
   }
 }

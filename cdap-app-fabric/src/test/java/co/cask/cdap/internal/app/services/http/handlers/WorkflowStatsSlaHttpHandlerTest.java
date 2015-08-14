@@ -16,15 +16,125 @@
 
 package co.cask.cdap.internal.app.services.http.handlers;
 
+import co.cask.cdap.WorkflowApp;
+import co.cask.cdap.app.program.Program;
+import co.cask.cdap.app.store.Store;
+import co.cask.cdap.common.app.RunIds;
+import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.gateway.handlers.WorkflowStatsSlaHttpHandler;
+import co.cask.cdap.internal.AppFabricTestHelper;
+import co.cask.cdap.internal.app.deploy.pipeline.ApplicationWithPrograms;
+import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
+import co.cask.cdap.internal.app.store.DefaultStore;
+import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.ProgramRunStatus;
+import co.cask.cdap.proto.ProgramType;
+import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.http.HttpResponse;
+import org.apache.twill.api.RunId;
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for {@link co.cask.cdap.gateway.handlers.WorkflowStatsSlaHttpHandler}
  */
-public class WorkflowStatsSlaHttpHandlerTest {
+public class WorkflowStatsSlaHttpHandlerTest extends AppFabricTestBase {
+
+  private static final Gson GSON = new Gson();
+  public static final Supplier<File> TEMP_FOLDER_SUPPLIER = new Supplier<File>() {
+
+    @Override
+    public File get() {
+      try {
+        return tmpFolder.newFolder();
+      } catch (IOException e) {
+        throw Throwables.propagate(e);
+      }
+    }
+  };
 
   @Test
-  public void testStatistics() {
+  public void testStatistics() throws Exception {
+
+    Store store = getInjector().getInstance(DefaultStore.class);
+    final ApplicationWithPrograms app = AppFabricTestHelper.deployApplicationWithManager(WorkflowApp.class,
+                                                                                         TEMP_FOLDER_SUPPLIER);
+    Iterable<Program> programs = app.getPrograms();
+    String workflowName = null;
+    String mapreduceName = null;
+    String sparkName = null;
+
+    for (Program program : programs) {
+      if (program.getType() == ProgramType.WORKFLOW) {
+        workflowName = program.getName();
+      } else if (program.getType() == ProgramType.MAPREDUCE) {
+        mapreduceName = program.getName();
+      } else if (program.getType() == ProgramType.SPARK) {
+        sparkName = program.getName();
+      }
+    }
+
+    Assert.assertNotNull(workflowName);
+    Assert.assertNotNull(mapreduceName);
+    Assert.assertNotNull(sparkName);
+
+    Id.Program workflowProgram =
+      Id.Workflow.from(Id.Namespace.DEFAULT, "WorkflowApp", ProgramType.WORKFLOW, workflowName);
+    Id.Program mapreduceProgram =
+      Id.Program.from(Id.Namespace.DEFAULT, "WorkflowApp", ProgramType.MAPREDUCE, mapreduceName);
+    Id.Program sparkProgram =
+      Id.Program.from(Id.Namespace.DEFAULT, "WorkflowApp", ProgramType.SPARK, sparkName);
+
+    for (long i = 0; i < 100; i++) {
+      RunId workflowRunId = RunIds.generate();
+      store.setStart(workflowProgram, workflowRunId.getId(), RunIds.getTime(workflowRunId, TimeUnit.SECONDS));
+
+      long randomValue = (long) (Math.random() * 50);
+      Thread.sleep(randomValue);
+
+      RunId mapreduceRunid = RunIds.generate();
+      store.setWorkflowProgramStart(mapreduceProgram, mapreduceRunid.getId(), workflowProgram.getId(),
+                                    workflowRunId.getId(), mapreduceProgram.getId(),
+                                    RunIds.getTime(mapreduceRunid, TimeUnit.SECONDS), null, null);
+      store.setStop(mapreduceProgram, mapreduceRunid.getId(),
+                    RunIds.getTime(workflowRunId, TimeUnit.SECONDS) + randomValue, ProgramRunStatus.COMPLETED);
+      Thread.sleep(randomValue);
+
+      if ((Math.random() * 3) == 0) {
+        RunId sparkRunid = RunIds.generate();
+        store.setWorkflowProgramStart(sparkProgram, sparkRunid.getId(), workflowProgram.getId(),
+                                      workflowRunId.getId(), sparkProgram.getId(),
+                                      RunIds.getTime(sparkRunid, TimeUnit.SECONDS), null, null);
+        store.setStop(sparkProgram, sparkRunid.getId(),
+                      RunIds.getTime(sparkRunid, TimeUnit.SECONDS) + 50 + randomValue, ProgramRunStatus.COMPLETED);
+        Thread.sleep(randomValue);
+      }
+      store.setStop(workflowProgram, workflowRunId.getId(),
+                    RunIds.getTime(workflowRunId, TimeUnit.SECONDS) + 150, ProgramRunStatus.COMPLETED);
+    }
+    System.out.println("Tell him Rohan sends his regards");
+
+    String request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/statistics?start=%s&end=%s" +
+                                     "&percentile=%s&percentile=%s",
+                                   Constants.Gateway.API_VERSION_3, app.getId().getNamespaceId(),
+                                   app.getId().getId(), workflowProgram.getId(), "0", "now", "90", "95");
+
+    try {
+      HttpResponse response = doGet(request);
+      WorkflowStatsSlaHttpHandler.BasicStatistics basicStatistics =
+        readResponse(response, new TypeToken<WorkflowStatsSlaHttpHandler.BasicStatistics>() { }.getType());
+      Assert.assertEquals(10, basicStatistics.getPercentileToRunids().get("90.0").size());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
   }
 }
