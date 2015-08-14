@@ -192,6 +192,9 @@ public class WorkflowStatsSlaHttpHandler extends AbstractHttpHandler {
   }
 
   @VisibleForTesting
+  /**
+   * Internal class to create Statistics
+   */
   public static class BasicStatistics {
     private long startTime;
     private long endTime;
