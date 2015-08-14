@@ -16,10 +16,10 @@
 
 package co.cask.cdap.data2.dataset2.lib.table;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.data.batch.Split;
 import co.cask.cdap.api.data.batch.SplitReader;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.lib.IntegerStore;
@@ -66,7 +66,7 @@ public class ObjectStoreDatasetTest {
 
   private static final byte[] a = { 'a' };
 
-  private static final Id.DatasetModule integerStore = 
+  private static final Id.DatasetModule integerStore =
     Id.DatasetModule.from(DatasetFrameworkTestUtil.NAMESPACE_ID, "integerStore");
 
   @BeforeClass
@@ -87,7 +87,7 @@ public class ObjectStoreDatasetTest {
   public void testStringStore() throws Exception {
     Id.DatasetInstance strings = Id.DatasetInstance.from(DatasetFrameworkTestUtil.NAMESPACE_ID, "strings");
     createObjectStoreInstance(strings, String.class);
-    
+
     ObjectStoreDataset<String> stringStore = dsFrameworkUtil.getInstance(strings);
     String string = "this is a string";
     stringStore.write(a, string);
@@ -447,7 +447,7 @@ public class ObjectStoreDatasetTest {
   }
 
   private void createObjectStoreInstance(Id.DatasetInstance datasetInstanceId, Type type) throws Exception {
-    dsFrameworkUtil.createInstance("objectStore", datasetInstanceId, 
+    dsFrameworkUtil.createInstance("objectStore", datasetInstanceId,
                                    ObjectStores.objectStoreProperties(type, DatasetProperties.EMPTY));
   }
 

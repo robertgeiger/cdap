@@ -19,12 +19,12 @@ package co.cask.cdap.api.spark;
 import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.RuntimeContext;
 import co.cask.cdap.api.ServiceDiscoverer;
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.data.stream.Stream;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metrics.Metrics;
-import co.cask.cdap.api.stream.StreamEventDecoder;
+import co.cask.cdap.core.stream.StreamEventDecoder;
 import co.cask.cdap.api.workflow.Workflow;
 import co.cask.cdap.api.workflow.WorkflowToken;
 

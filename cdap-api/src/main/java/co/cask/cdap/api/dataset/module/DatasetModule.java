@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.dataset.module;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 /**
  * Implementation of {@link DatasetModule} announces dataset types and other components to the system.

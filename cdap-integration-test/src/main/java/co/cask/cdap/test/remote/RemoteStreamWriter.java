@@ -16,7 +16,7 @@
 
 package co.cask.cdap.test.remote;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.test.StreamWriter;
 import com.google.common.base.Charsets;
 

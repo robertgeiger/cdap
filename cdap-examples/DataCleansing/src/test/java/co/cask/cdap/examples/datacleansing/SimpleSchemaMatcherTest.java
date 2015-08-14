@@ -16,7 +16,7 @@
 
 package co.cask.cdap.examples.datacleansing;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import com.google.gson.JsonObject;
 import org.junit.Assert;
 import org.junit.Test;

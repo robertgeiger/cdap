@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.common;
 
-import co.cask.cdap.api.data.format.UnexpectedFormatException;
+import co.cask.cdap.core.data.format.UnexpectedFormatException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.avro.Schema;

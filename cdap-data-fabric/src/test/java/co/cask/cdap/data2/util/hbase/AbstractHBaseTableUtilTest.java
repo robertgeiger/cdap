@@ -16,7 +16,7 @@
 
 package co.cask.cdap.data2.util.hbase;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.utils.Tasks;

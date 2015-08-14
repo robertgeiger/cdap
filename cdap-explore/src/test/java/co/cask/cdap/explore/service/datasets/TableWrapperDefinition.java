@@ -20,7 +20,7 @@ import co.cask.cdap.api.data.batch.RecordScannable;
 import co.cask.cdap.api.data.batch.RecordScanner;
 import co.cask.cdap.api.data.batch.RecordWritable;
 import co.cask.cdap.api.data.batch.Split;
-import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.core.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.DatasetAdmin;
 import co.cask.cdap.api.dataset.DatasetContext;
 import co.cask.cdap.api.dataset.DatasetDefinition;

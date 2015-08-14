@@ -16,20 +16,20 @@
 
 package co.cask.cdap.internal.io;
 
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 /**
-   * Helper class to represent a type parameter in a serializable form. It would be simple if we could just use 
+   * Helper class to represent a type parameter in a serializable form. It would be simple if we could just use
    * the class name, but we would lose the type parameters of generic classes. If we'd use java.lang.reflect.Type,
-   * we'd not be able to serialize easily. So here we implement our own representation of the type: it supports 
-   * classes and parametrized classes, it also supports static inner classes. However, it does not support 
-   * interfaces (yet). 
-   * 
+   * we'd not be able to serialize easily. So here we implement our own representation of the type: it supports
+   * classes and parametrized classes, it also supports static inner classes. However, it does not support
+   * interfaces (yet).
+   *
    * This class can be serialized to Json and deserialized back without loss. Because it implements ParametrizedType,
-   * this class is compatible with TypeToken and we can use it to decode an encoded object of this type. 
+   * this class is compatible with TypeToken and we can use it to decode an encoded object of this type.
  */
 public final class TypeRepresentation implements ParameterizedType {
 

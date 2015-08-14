@@ -18,7 +18,7 @@ package co.cask.cdap.api.spark;
 
 import co.cask.cdap.api.ProgramSpecification;
 import co.cask.cdap.api.Resources;
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.common.PropertyProvider;
 
 import java.util.Collections;

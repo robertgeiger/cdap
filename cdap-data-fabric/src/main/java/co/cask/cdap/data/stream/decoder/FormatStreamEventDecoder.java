@@ -16,10 +16,10 @@
 
 package co.cask.cdap.data.stream.decoder;
 
-import co.cask.cdap.api.data.format.RecordFormat;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
-import co.cask.cdap.api.stream.GenericStreamEventData;
-import co.cask.cdap.api.stream.StreamEventDecoder;
+import co.cask.cdap.core.data.format.RecordFormat;
+import co.cask.cdap.core.stream.GenericStreamEventData;
+import co.cask.cdap.core.stream.StreamEvent;
+import co.cask.cdap.core.stream.StreamEventDecoder;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.io.LongWritable;

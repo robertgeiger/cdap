@@ -16,7 +16,7 @@
 
 package co.cask.cdap.common.conf;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import com.google.common.io.Closeables;
 import org.junit.Assert;
 import org.junit.Test;

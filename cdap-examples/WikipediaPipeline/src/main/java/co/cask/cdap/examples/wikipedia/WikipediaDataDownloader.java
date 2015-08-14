@@ -17,7 +17,7 @@
 package co.cask.cdap.examples.wikipedia;
 
 import co.cask.cdap.api.Resources;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.mapreduce.AbstractMapReduce;
 import co.cask.cdap.api.mapreduce.MapReduceContext;
 import co.cask.cdap.api.workflow.Value;

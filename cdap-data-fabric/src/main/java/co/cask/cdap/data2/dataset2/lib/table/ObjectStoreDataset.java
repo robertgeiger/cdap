@@ -16,13 +16,13 @@
 
 package co.cask.cdap.data2.dataset2.lib.table;
 
-import co.cask.cdap.api.annotation.Beta;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.data.batch.RecordScanner;
 import co.cask.cdap.api.data.batch.Scannables;
 import co.cask.cdap.api.data.batch.Split;
 import co.cask.cdap.api.data.batch.SplitReader;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.dataset.DataSetException;
 import co.cask.cdap.api.dataset.lib.AbstractCloseableIterator;
 import co.cask.cdap.api.dataset.lib.AbstractDataset;

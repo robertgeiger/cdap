@@ -16,7 +16,7 @@
 
 package co.cask.cdap.data.stream.service.upload;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.http.BodyConsumer;
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;

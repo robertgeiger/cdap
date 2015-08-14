@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.metrics.process;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.metrics.MetricType;
 import co.cask.cdap.api.metrics.MetricValue;

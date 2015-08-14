@@ -16,7 +16,7 @@
 
 package co.cask.cdap.internal.app.verification;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.flow.FlowSpecification;
 import co.cask.cdap.api.flow.FlowletConnection;
 import co.cask.cdap.api.flow.FlowletDefinition;

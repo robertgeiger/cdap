@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.data2.transaction.stream;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.data.stream.StreamFileOffset;
 import co.cask.cdap.data.stream.StreamUtils;
 import co.cask.cdap.proto.Id;

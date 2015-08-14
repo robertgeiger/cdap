@@ -16,7 +16,7 @@
 
 package co.cask.cdap.security.auth;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.common.io.BinaryDecoder;
 import co.cask.cdap.common.io.BinaryEncoder;
 import co.cask.cdap.common.io.Codec;

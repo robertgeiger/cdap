@@ -16,8 +16,8 @@
 
 package co.cask.cdap.template.etl.common;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.format.StructuredRecord;
+import co.cask.cdap.core.data.schema.Schema;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.BytesWritable;

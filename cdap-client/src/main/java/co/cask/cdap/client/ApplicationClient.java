@@ -17,7 +17,7 @@
 package co.cask.cdap.client;
 
 import co.cask.cdap.api.Config;
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.client.config.ClientConfig;
 import co.cask.cdap.client.util.RESTClient;
 import co.cask.cdap.common.ApplicationNotFoundException;
@@ -44,7 +44,6 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;

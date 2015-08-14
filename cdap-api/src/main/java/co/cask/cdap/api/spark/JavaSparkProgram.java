@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.spark;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 /**
  * Defines an interface for User's Spark job written in Java

@@ -17,7 +17,7 @@
 package co.cask.cdap;
 
 import co.cask.cdap.api.app.AbstractApplication;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.data.stream.Stream;
 import co.cask.cdap.api.dataset.lib.ObjectStores;
 import co.cask.cdap.api.mapreduce.AbstractMapReduce;

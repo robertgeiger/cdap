@@ -16,11 +16,9 @@
 
 package co.cask.cdap.api.dataset.lib;
 
-import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.batch.RecordScanner;
 import co.cask.cdap.api.data.batch.Split;
 import co.cask.cdap.api.data.batch.SplitReader;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.table.Delete;
 import co.cask.cdap.api.dataset.table.Get;
 import co.cask.cdap.api.dataset.table.Increment;
@@ -30,6 +28,8 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scan;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.format.StructuredRecord;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
@@ -86,7 +86,7 @@ import javax.annotation.Nullable;
  *   }
  * }</code></pre>
  * </p>
- * 
+ *
  * <p>
  * Note that this means that the column names which should be indexed cannot contain the comma character,
  * as it would break parsing of the configuration property.
@@ -113,7 +113,7 @@ public class IndexedTable extends AbstractDataset implements Table {
 
   /**
    * Configuration time constructor.
-   * 
+   *
    * @param name the name of the table
    * @param table table to use as the table
    * @param index table to use as the index
@@ -193,7 +193,7 @@ public class IndexedTable extends AbstractDataset implements Table {
   /**
    * Reads table rows by the given secondary index key.  If no rows are indexed by the given key, then a
    * {@link co.cask.cdap.api.dataset.table.Scanner} with no results will be returned.
-   * 
+   *
    * @return a Scanner returning rows from the data table, whose stored value for the given column matches the
    * given value.
    * @throws java.lang.IllegalArgumentException if the given column is not configured for indexing.
@@ -240,7 +240,7 @@ public class IndexedTable extends AbstractDataset implements Table {
   /**
    * Writes a put to the data table. If any of the columns in the {@link Put} are configured to be indexed, the
    * appropriate indexes will be updated with the indexed values referencing the data table row.
-   * 
+   *
    * @param put The put operation to store
    */
   @Override
@@ -299,7 +299,7 @@ public class IndexedTable extends AbstractDataset implements Table {
 
   /**
    * Perform a delete on the data table.  Any index entries referencing the deleted row will also be removed.
-   * 
+   *
    * @param delete The delete operation identifying the row and optional columns to remove
    */
   @Override

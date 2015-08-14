@@ -16,8 +16,8 @@
 
 package co.cask.cdap.internal.app;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.flow.FlowSpecification;
 import co.cask.cdap.api.flow.FlowletDefinition;
 import co.cask.cdap.api.flow.flowlet.FlowletSpecification;
@@ -31,7 +31,7 @@ import co.cask.cdap.api.workflow.WorkflowNode;
 import co.cask.cdap.api.workflow.WorkflowSpecification;
 import co.cask.cdap.app.ApplicationSpecification;
 import co.cask.cdap.internal.io.SchemaGenerator;
-import co.cask.cdap.internal.io.SchemaTypeAdapter;
+import co.cask.cdap.core.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.codec.FlowSpecificationCodec;
 import co.cask.cdap.proto.codec.FlowletSpecificationCodec;
 import co.cask.cdap.proto.codec.MapReduceSpecificationCodec;

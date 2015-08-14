@@ -17,7 +17,7 @@
 package co.cask.cdap.api.templates;
 
 import co.cask.cdap.api.Resources;
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.data.stream.Stream;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.dataset.DatasetProperties;

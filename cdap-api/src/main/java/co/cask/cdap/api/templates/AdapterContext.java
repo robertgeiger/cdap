@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.templates;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.templates.plugins.PluginConfig;
 import co.cask.cdap.api.templates.plugins.PluginProperties;
 

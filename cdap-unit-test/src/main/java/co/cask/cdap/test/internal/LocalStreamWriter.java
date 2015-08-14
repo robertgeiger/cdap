@@ -18,7 +18,7 @@ package co.cask.cdap.test.internal;
 
 import co.cask.cdap.api.data.stream.StreamBatchWriter;
 import co.cask.cdap.api.data.stream.StreamWriter;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.proto.Id;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;

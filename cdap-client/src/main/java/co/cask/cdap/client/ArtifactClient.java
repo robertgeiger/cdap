@@ -16,18 +16,17 @@
 
 package co.cask.cdap.client;
 
-import co.cask.cdap.api.annotation.Beta;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.client.config.ClientConfig;
 import co.cask.cdap.client.util.RESTClient;
 import co.cask.cdap.common.ArtifactAlreadyExistsException;
 import co.cask.cdap.common.ArtifactNotFoundException;
 import co.cask.cdap.common.ArtifactRangeNotFoundException;
 import co.cask.cdap.common.BadRequestException;
-import co.cask.cdap.common.NamespaceNotFoundException;
 import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.UnauthorizedException;
-import co.cask.cdap.internal.io.SchemaTypeAdapter;
+import co.cask.cdap.core.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactInfo;
 import co.cask.cdap.proto.artifact.ArtifactRange;

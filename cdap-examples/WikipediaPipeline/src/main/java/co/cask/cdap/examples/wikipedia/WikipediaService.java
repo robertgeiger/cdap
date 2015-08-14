@@ -17,7 +17,7 @@
 package co.cask.cdap.examples.wikipedia;
 
 import co.cask.cdap.api.annotation.UseDataSet;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;

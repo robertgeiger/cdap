@@ -18,7 +18,7 @@ package co.cask.cdap.examples.datacleansing;
 
 import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.data.DatasetContext;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.BatchPartitionConsumer;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.lib.PartitionKey;

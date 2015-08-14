@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.data2.dataset2.lib.table.leveldb;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 
 import java.io.DataOutput;
 import java.io.IOException;
@@ -846,7 +846,7 @@ public class KeyValue {
       int lfamilylength = left[lfamilyoffset - 1];
       int rfamilylength = right[rfamilyoffset - 1];
       // If left family size is not equal to right family size, we need not
-      // compare the qualifiers. 
+      // compare the qualifiers.
       boolean sameFamilySize = (lfamilylength == rfamilylength);
       int common = 0;
       if (commonPrefix > 0) {

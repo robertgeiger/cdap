@@ -16,7 +16,7 @@
 
 package co.cask.cdap.internal.io;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.common.io.Decoder;
 import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;

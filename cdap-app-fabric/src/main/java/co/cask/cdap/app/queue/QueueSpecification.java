@@ -16,7 +16,7 @@
 
 package co.cask.cdap.app.queue;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.common.queue.QueueName;
 
 /**

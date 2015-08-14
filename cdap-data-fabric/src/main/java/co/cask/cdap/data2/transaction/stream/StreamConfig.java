@@ -15,9 +15,9 @@
  */
 package co.cask.cdap.data2.transaction.stream;
 
-import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.format.Formats;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.format.FormatSpecification;
+import co.cask.cdap.core.data.format.Formats;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.proto.Id;
 import com.google.common.base.Objects;
 import org.apache.twill.filesystem.Location;

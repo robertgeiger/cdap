@@ -16,9 +16,9 @@
 
 package co.cask.cdap.template.etl.common;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.data.format.StructuredRecord;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.io.Writable;

@@ -16,8 +16,8 @@
 
 package co.cask.cdap.data2.dataset2.lib.table.hbase;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.dataset.DataSetException;
 import co.cask.cdap.api.dataset.DatasetContext;
 import co.cask.cdap.api.dataset.DatasetSpecification;

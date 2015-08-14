@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.common.zookeeper.coordination;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.common.io.Codec;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

@@ -16,7 +16,7 @@
 
 package co.cask.cdap.security.auth;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.common.io.Codec;
 import co.cask.cdap.common.utils.ImmutablePair;
 import com.google.common.collect.Lists;

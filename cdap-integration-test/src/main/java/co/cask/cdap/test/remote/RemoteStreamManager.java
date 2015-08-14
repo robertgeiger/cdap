@@ -16,8 +16,8 @@
 
 package co.cask.cdap.test.remote;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.client.StreamClient;
 import co.cask.cdap.client.config.ClientConfig;
 import co.cask.cdap.client.util.RESTClient;

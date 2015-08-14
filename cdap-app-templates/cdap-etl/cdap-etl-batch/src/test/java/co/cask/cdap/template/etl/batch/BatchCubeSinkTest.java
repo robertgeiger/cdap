@@ -16,8 +16,8 @@
 
 package co.cask.cdap.template.etl.batch;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.cube.AggregationFunction;
 import co.cask.cdap.api.dataset.lib.cube.Cube;
 import co.cask.cdap.api.dataset.lib.cube.CubeQuery;

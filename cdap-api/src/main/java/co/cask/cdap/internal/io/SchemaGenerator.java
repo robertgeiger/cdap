@@ -16,8 +16,8 @@
 
 package co.cask.cdap.internal.io;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
 
 import java.lang.reflect.Type;
 

@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.data2.dataset2.lib.timeseries;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.data2.dataset2.lib.table.MetricsTable;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;

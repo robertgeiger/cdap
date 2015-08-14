@@ -16,9 +16,9 @@
 
 package co.cask.cdap.hive.serde;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.format.StructuredRecord;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.internal.io.ReflectionSchemaGenerator;
 import co.cask.cdap.internal.io.SchemaGenerator;
 import com.google.common.collect.ImmutableMap;

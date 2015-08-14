@@ -16,8 +16,8 @@
 
 package co.cask.cdap.format;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.format.StructuredRecord;
+import co.cask.cdap.core.data.schema.Schema;
 import com.google.common.collect.Lists;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.io.DatumReader;

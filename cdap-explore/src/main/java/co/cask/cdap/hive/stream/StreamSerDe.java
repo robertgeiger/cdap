@@ -16,17 +16,17 @@
 
 package co.cask.cdap.hive.stream;
 
-import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.core.data.format.FormatSpecification;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
 import co.cask.cdap.format.RecordFormats;
-import co.cask.cdap.format.StreamEventRecordFormat;
 import co.cask.cdap.hive.context.ContextManager;
 import co.cask.cdap.hive.serde.ObjectDeserializer;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.spi.stream.StreamEventRecordFormat;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.serde2.SerDe;

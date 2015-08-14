@@ -17,7 +17,7 @@
 package co.cask.cdap.api.app;
 
 import co.cask.cdap.api.Config;
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 /**
  * Provides access to the environment, application configuration, and application (deployment) arguments.

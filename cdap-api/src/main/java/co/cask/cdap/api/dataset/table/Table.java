@@ -16,14 +16,14 @@
 
 package co.cask.cdap.api.dataset.table;
 
-import co.cask.cdap.api.annotation.Beta;
 import co.cask.cdap.api.data.batch.BatchReadable;
 import co.cask.cdap.api.data.batch.BatchWritable;
 import co.cask.cdap.api.data.batch.RecordScannable;
 import co.cask.cdap.api.data.batch.Split;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.data.format.StructuredRecord;
 
 import java.util.List;
 import javax.annotation.Nullable;
@@ -299,7 +299,7 @@ public interface Table extends BatchReadable<byte[], Row>, BatchWritable<byte[],
 
   /**
    * Returns splits for a range of keys in the table.
-   * 
+   *
    * @param numSplits Desired number of splits. If greater than zero, at most this many splits will be returned.
    *                  If less than or equal to zero, any number of splits can be returned.
    * @param start if non-null, the returned splits will only cover keys that are greater or equal

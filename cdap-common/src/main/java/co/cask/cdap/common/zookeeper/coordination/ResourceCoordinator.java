@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.common.zookeeper.coordination;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.common.zookeeper.ZKExtOperations;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -265,7 +265,7 @@ public final class ResourceCoordinator extends AbstractService {
   /**
    * Performs resource assignment based on the resource requirement.
    * This method should only be called from the single thread executor owned by this class.
-   * 
+   *
    * @param requirement The resource requirement that needs to be fulfilled.
    * @param serviceDiscovered The set of handlers available.
    */

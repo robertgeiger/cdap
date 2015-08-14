@@ -17,7 +17,7 @@
 package co.cask.cdap.examples.profiles;
 
 import co.cask.cdap.api.app.AbstractApplication;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.data.stream.Stream;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;

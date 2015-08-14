@@ -33,7 +33,7 @@ import co.cask.cdap.api.metrics.MetricsContext;
 import co.cask.cdap.api.spark.SparkContext;
 import co.cask.cdap.api.spark.SparkProgram;
 import co.cask.cdap.api.spark.SparkSpecification;
-import co.cask.cdap.api.stream.StreamEventDecoder;
+import co.cask.cdap.core.stream.StreamEventDecoder;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.common.logging.LoggingContext;
 import co.cask.cdap.data.dataset.DatasetInstantiator;
@@ -65,7 +65,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

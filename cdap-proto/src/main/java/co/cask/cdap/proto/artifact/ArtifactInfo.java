@@ -16,7 +16,7 @@
 
 package co.cask.cdap.proto.artifact;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.artifact.ArtifactClasses;
 
 import java.util.Objects;

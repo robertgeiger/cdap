@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.dataset.module;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

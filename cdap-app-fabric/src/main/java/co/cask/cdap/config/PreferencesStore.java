@@ -16,7 +16,7 @@
 
 package co.cask.cdap.config;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 

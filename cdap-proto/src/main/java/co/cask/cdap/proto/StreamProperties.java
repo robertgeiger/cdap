@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.proto;
 
-import co.cask.cdap.api.data.format.FormatSpecification;
+import co.cask.cdap.core.data.format.FormatSpecification;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.SerializedName;
 

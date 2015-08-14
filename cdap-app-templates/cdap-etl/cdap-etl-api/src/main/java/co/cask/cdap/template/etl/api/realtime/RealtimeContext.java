@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.api.realtime;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.templates.AdapterContext;
 import co.cask.cdap.template.etl.api.TransformContext;
 

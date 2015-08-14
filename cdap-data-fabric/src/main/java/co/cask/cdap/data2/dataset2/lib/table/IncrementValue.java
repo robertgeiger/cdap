@@ -16,7 +16,7 @@
 
 package co.cask.cdap.data2.dataset2.lib.table;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 
 /**
  * Represents an incremental write to a datastore for in-memory buffering.  To read the current value, all

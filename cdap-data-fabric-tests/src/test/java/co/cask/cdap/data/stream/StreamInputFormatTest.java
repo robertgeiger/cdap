@@ -15,14 +15,14 @@
  */
 package co.cask.cdap.data.stream;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
-import co.cask.cdap.api.stream.GenericStreamEventData;
-import co.cask.cdap.api.stream.StreamEventData;
-import co.cask.cdap.api.stream.StreamEventDecoder;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.format.FormatSpecification;
+import co.cask.cdap.core.data.format.StructuredRecord;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.stream.GenericStreamEventData;
+import co.cask.cdap.core.stream.StreamEvent;
+import co.cask.cdap.core.stream.StreamEventData;
+import co.cask.cdap.core.stream.StreamEventDecoder;
 import co.cask.cdap.data.stream.decoder.BytesStreamEventDecoder;
 import co.cask.cdap.data.stream.decoder.IdentityStreamEventDecoder;
 import co.cask.cdap.data.stream.decoder.StringStreamEventDecoder;

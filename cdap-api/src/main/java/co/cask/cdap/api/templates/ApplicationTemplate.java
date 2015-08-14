@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.templates;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.app.Application;
 
 import javax.annotation.Nullable;

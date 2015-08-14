@@ -16,8 +16,8 @@
 
 package co.cask.cdap.template.etl.realtime.kafka;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.format.StructuredRecord;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.template.etl.api.realtime.SourceState;

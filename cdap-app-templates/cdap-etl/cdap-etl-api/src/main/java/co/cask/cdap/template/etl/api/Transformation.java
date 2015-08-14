@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.api;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 /**
  * Transforms an input object into zero or more output objects.

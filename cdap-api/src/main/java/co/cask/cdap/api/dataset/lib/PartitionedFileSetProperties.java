@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.dataset.lib;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import com.google.common.base.Joiner;
 
 import java.util.Map;

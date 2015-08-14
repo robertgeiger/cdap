@@ -17,7 +17,7 @@
 package co.cask.cdap.template.etl.realtime;
 
 import co.cask.cdap.api.TxRunnable;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.lib.KeyValue;

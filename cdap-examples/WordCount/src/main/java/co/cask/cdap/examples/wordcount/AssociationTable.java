@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.examples.wordcount;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.dataset.DatasetSpecification;
 import co.cask.cdap.api.dataset.lib.AbstractDataset;
 import co.cask.cdap.api.dataset.module.EmbeddedDataset;
@@ -90,7 +90,7 @@ public class AssociationTable extends AbstractDataset {
     Row result = this.table.get(new Get(word));
     TopKCollector collector = new TopKCollector(limit);
     if (!result.isEmpty()) {
-      
+
       // Iterate over all columns
       for (Map.Entry<byte[], byte[]> entry : result.getColumns().entrySet()) {
         collector.add(Bytes.toLong(entry.getValue()),

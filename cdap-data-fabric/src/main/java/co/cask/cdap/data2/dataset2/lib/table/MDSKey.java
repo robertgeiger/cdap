@@ -16,7 +16,7 @@
 
 package co.cask.cdap.data2.dataset2.lib.table;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 

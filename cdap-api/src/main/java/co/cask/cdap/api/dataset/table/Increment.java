@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.dataset.table;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -29,7 +29,7 @@ import java.util.TreeMap;
  *     The operation fails if a column's existing value is
  *     not exactly 8 bytes long (with {@link NumberFormatException}).
  *   </li><li>
- *     If a column to increment does not exist prior to the operation, then the column is created and 
+ *     If a column to increment does not exist prior to the operation, then the column is created and
  *     the column's value is set to the increment value.
  *   </li><li>
  *     An increment operation should at least change the value of one column.
@@ -37,11 +37,11 @@ import java.util.TreeMap;
  * </ul>
  */
 public class Increment {
-  /** 
-   * Row to change. 
+  /**
+   * Row to change.
    */
   private final byte[] row;
-  /** 
+  /**
    * Map of columns/values to increment each column's values by.
    */
   private final Map<byte[], Long> values;

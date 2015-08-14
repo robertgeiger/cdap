@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.metrics.process;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.data2.dataset2.lib.table.MetricsTable;
 import com.google.common.collect.Maps;
 import org.apache.twill.kafka.client.TopicPartition;

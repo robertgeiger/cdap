@@ -17,7 +17,7 @@
 package co.cask.cdap.api.app;
 
 import co.cask.cdap.api.Config;
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.data.stream.Stream;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.dataset.DatasetProperties;
@@ -250,8 +250,8 @@ public abstract class AbstractApplication<T extends Config> implements Applicati
    * @param cronTab the crontab entry for the Schedule
    * @param workflowName the name of the Workflow
    * @param properties properties to be added for the Schedule
-   * @deprecated As of version 2.8.0, replaced by 
-   *            {@link #scheduleWorkflow(Schedule, String, Map) 
+   * @deprecated As of version 2.8.0, replaced by
+   *            {@link #scheduleWorkflow(Schedule, String, Map)
    *             scheduleWorkflow(Schedule, String, Map&lt;String, String&gt;)}
    */
   @Deprecated

@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.common.zookeeper.coordination;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import com.google.common.primitives.Ints;
 import org.apache.twill.discovery.Discoverable;
 

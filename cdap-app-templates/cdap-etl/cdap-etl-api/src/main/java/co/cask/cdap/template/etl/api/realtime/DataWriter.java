@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.api.realtime;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.data.stream.StreamWriter;
 

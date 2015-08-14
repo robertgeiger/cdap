@@ -23,7 +23,7 @@ import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.metrics.MetricsCollectionService;
 import co.cask.cdap.api.metrics.MetricsContext;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.api.templates.AdapterSpecification;
 import co.cask.cdap.api.worker.WorkerContext;
 import co.cask.cdap.api.worker.WorkerSpecification;

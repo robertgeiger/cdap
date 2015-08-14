@@ -20,7 +20,7 @@ import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.data.DatasetInstantiationException;
 import co.cask.cdap.api.data.stream.StreamBatchWriter;
 import co.cask.cdap.api.dataset.Dataset;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.api.worker.WorkerContext;
 import co.cask.cdap.template.etl.api.realtime.DataWriter;
 

@@ -18,7 +18,7 @@ package co.cask.cdap.test.app;
 
 import co.cask.cdap.ConfigTestApp;
 import co.cask.cdap.api.app.Application;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -27,7 +27,7 @@ import co.cask.cdap.api.dataset.lib.cube.AggregationFunction;
 import co.cask.cdap.api.dataset.table.Get;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.api.metrics.MetricDataQuery;
 import co.cask.cdap.api.metrics.MetricTimeSeries;
 import co.cask.cdap.api.metrics.RuntimeMetrics;

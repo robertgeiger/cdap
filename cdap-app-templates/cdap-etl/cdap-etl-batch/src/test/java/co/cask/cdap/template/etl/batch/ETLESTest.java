@@ -16,12 +16,12 @@
 
 package co.cask.cdap.template.etl.batch;
 
-import co.cask.cdap.api.data.format.Formats;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.utils.Networks;
+import co.cask.cdap.core.data.format.Formats;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.proto.AdapterConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.template.etl.batch.config.ETLBatchConfig;

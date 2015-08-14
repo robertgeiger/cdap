@@ -18,7 +18,7 @@ package co.cask.cdap.app.stream;
 
 import co.cask.cdap.api.data.stream.StreamBatchWriter;
 import co.cask.cdap.api.data.stream.StreamWriter;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.discovery.EndpointStrategy;
 import co.cask.cdap.common.discovery.RandomEndpointStrategy;

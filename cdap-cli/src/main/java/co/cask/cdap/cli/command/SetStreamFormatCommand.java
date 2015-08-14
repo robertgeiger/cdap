@@ -16,9 +16,9 @@
 
 package co.cask.cdap.cli.command;
 
-import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.format.Formats;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.format.FormatSpecification;
+import co.cask.cdap.core.data.format.Formats;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.cli.ArgumentName;
 import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;

@@ -16,11 +16,11 @@
 
 package co.cask.cdap.common.stream;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.SchemaHash;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.data.schema.SchemaHash;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.stream.StreamEvent;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.common.io.BinaryDecoder;
 import co.cask.cdap.common.io.BinaryEncoder;
 import co.cask.cdap.common.io.Decoder;

@@ -16,7 +16,7 @@
 
 package co.cask.cdap.cli.util;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.exception.CommandInputError;
 import co.cask.cdap.proto.Id;

@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.dataset.lib;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import com.google.common.base.Preconditions;
 
 import java.nio.ByteBuffer;

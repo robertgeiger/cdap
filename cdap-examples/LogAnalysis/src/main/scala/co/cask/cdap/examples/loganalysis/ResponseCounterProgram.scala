@@ -19,7 +19,7 @@ package co.cask.cdap.examples.loganalysis
 import java.util
 import java.util.concurrent.TimeUnit
 
-import co.cask.cdap.api.common.Bytes
+import co.cask.cdap.core.common.Bytes
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments
 import co.cask.cdap.api.spark.{ScalaSparkProgram, SparkContext}
 import org.apache.hadoop.io.{LongWritable, Text}

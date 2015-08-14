@@ -16,7 +16,7 @@
 
 package co.cask.cdap.internal.app.runtime.flow;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.flow.flowlet.OutputEmitter;
 import co.cask.cdap.common.io.BinaryEncoder;
 import co.cask.cdap.data2.queue.QueueEntry;

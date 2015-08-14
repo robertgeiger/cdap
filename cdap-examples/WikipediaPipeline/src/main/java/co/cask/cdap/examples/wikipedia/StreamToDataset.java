@@ -17,10 +17,10 @@
 package co.cask.cdap.examples.wikipedia;
 
 import co.cask.cdap.api.Resources;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.data.stream.StreamBatchReadable;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.api.mapreduce.AbstractMapReduce;
 import co.cask.cdap.api.mapreduce.MapReduceContext;
 import co.cask.cdap.api.workflow.Value;

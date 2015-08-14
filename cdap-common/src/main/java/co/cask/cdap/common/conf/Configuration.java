@@ -16,7 +16,7 @@
 
 package co.cask.cdap.common.conf;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.common.utils.DirUtils;
 import com.google.common.base.Preconditions;
 import com.google.gson.stream.JsonWriter;

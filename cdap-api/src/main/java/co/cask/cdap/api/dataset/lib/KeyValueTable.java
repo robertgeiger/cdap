@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.dataset.lib;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.data.batch.BatchReadable;
 import co.cask.cdap.api.data.batch.BatchWritable;
 import co.cask.cdap.api.data.batch.RecordScannable;
@@ -191,7 +191,7 @@ public class KeyValueTable extends AbstractDataset implements
 
   /**
   * Returns splits for a range of keys in the table.
-  * 
+  *
   * @param numSplits Desired number of splits. If greater than zero, at most this many splits will be returned.
   *                  If less than or equal to zero, any number of splits can be returned.
   * @param start if non-null, the returned splits will only cover keys that are greater or equal

@@ -16,7 +16,7 @@
 
 package co.cask.cdap.proto;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import com.google.gson.JsonElement;
 

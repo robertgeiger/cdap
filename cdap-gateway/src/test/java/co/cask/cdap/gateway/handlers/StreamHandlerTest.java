@@ -16,10 +16,10 @@
 
 package co.cask.cdap.gateway.handlers;
 
-import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.format.Formats;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.data.format.FormatSpecification;
+import co.cask.cdap.core.data.format.Formats;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.stream.StreamEventTypeAdapter;
 import co.cask.cdap.common.utils.Tasks;
@@ -27,7 +27,7 @@ import co.cask.cdap.data2.transaction.stream.StreamConfig;
 import co.cask.cdap.format.TextRecordFormat;
 import co.cask.cdap.gateway.GatewayFastTestsSuite;
 import co.cask.cdap.gateway.GatewayTestBase;
-import co.cask.cdap.internal.io.SchemaTypeAdapter;
+import co.cask.cdap.core.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.MetricQueryResult;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -120,7 +120,7 @@ public class StreamHandlerTest extends GatewayTestBase {
     urlConn = openURL(createURL("streams/non_existent_stream"), HttpMethod.POST);
     Assert.assertEquals(HttpResponseStatus.NOT_FOUND.getCode(), urlConn.getResponseCode());
     urlConn.disconnect();
-    
+
     // Now, create the new stream.
     urlConn = openURL(createURL("streams/test_stream1"), HttpMethod.PUT);
     Assert.assertEquals(HttpResponseStatus.OK.getCode(), urlConn.getResponseCode());

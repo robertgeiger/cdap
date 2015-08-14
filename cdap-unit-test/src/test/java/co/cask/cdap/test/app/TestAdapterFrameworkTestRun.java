@@ -16,7 +16,7 @@
 
 package co.cask.cdap.test.app;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.proto.AdapterConfig;
 import co.cask.cdap.proto.Id;
@@ -58,7 +58,7 @@ public class TestAdapterFrameworkTestRun extends TestFrameworkTestBase {
     DataSetManager<KeyValueTable> inputManager = getDataset(Id.Namespace.DEFAULT, WorkflowTemplate.INPUT);
     inputManager.get().write(Bytes.toBytes(1L), Bytes.toBytes(10L));
     inputManager.flush();
-    
+
     manager.start();
     // TODO: CDAP-2281 test schedules in a better way
     // perhaps we get a special schedule that lets you trigger jobs on command

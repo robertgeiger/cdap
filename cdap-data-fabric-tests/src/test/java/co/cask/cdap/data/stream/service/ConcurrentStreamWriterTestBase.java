@@ -16,8 +16,8 @@
 
 package co.cask.cdap.data.stream.service;
 
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.stream.StreamEvent;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;

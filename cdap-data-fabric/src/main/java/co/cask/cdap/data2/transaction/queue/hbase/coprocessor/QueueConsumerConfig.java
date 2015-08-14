@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.data2.transaction.queue.hbase.coprocessor;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 
 import java.util.Map;
 

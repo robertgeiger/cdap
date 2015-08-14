@@ -15,14 +15,14 @@
  */
 package co.cask.cdap.data.stream;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.common.conf.PropertyChangeListener;
 import co.cask.cdap.common.conf.PropertyStore;
 import co.cask.cdap.common.conf.SyncPropertyUpdater;
 import co.cask.cdap.common.io.Codec;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
-import co.cask.cdap.internal.io.SchemaTypeAdapter;
+import co.cask.cdap.core.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import com.google.common.base.Objects;
 import com.google.common.util.concurrent.AbstractIdleService;

@@ -16,7 +16,7 @@
 
 package co.cask.cdap.data.stream.service;
 
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.common.io.ByteBuffers;
 import com.google.common.collect.ImmutableMap;
 

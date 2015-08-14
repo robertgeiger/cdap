@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.dataset.lib.cube;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 import javax.annotation.Nullable;
 

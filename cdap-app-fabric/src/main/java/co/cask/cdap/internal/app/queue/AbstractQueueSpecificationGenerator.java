@@ -16,7 +16,7 @@
 
 package co.cask.cdap.internal.app.queue;
 
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.api.flow.FlowletConnection;
 import co.cask.cdap.api.flow.FlowletDefinition;
 import co.cask.cdap.app.queue.QueueSpecification;

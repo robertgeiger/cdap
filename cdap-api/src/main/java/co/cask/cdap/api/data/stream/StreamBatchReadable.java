@@ -15,17 +15,17 @@
  */
 package co.cask.cdap.api.data.stream;
 
-import co.cask.cdap.api.annotation.Beta;
 import co.cask.cdap.api.data.batch.BatchReadable;
 import co.cask.cdap.api.data.batch.Split;
 import co.cask.cdap.api.data.batch.SplitReader;
-import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.api.mapreduce.MapReduceContext;
-import co.cask.cdap.api.stream.GenericStreamEventData;
-import co.cask.cdap.api.stream.StreamEventDecoder;
-import co.cask.cdap.internal.io.SchemaTypeAdapter;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.data.format.FormatSpecification;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.internal.io.SchemaTypeAdapter;
+import co.cask.cdap.core.stream.GenericStreamEventData;
+import co.cask.cdap.core.stream.StreamEvent;
+import co.cask.cdap.core.stream.StreamEventDecoder;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;

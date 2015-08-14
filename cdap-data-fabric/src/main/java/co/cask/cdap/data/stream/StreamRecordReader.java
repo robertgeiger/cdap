@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.data.stream;
 
-import co.cask.cdap.api.stream.StreamEventDecoder;
+import co.cask.cdap.core.stream.StreamEventDecoder;
 import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.data.file.ReadFilter;
 import com.google.common.collect.Lists;

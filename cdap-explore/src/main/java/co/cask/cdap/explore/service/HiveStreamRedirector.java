@@ -16,7 +16,7 @@
 
 package co.cask.cdap.explore.service;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.slf4j.Logger;

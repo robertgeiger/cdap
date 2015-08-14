@@ -19,7 +19,7 @@ package co.cask.cdap.template.etl.realtime.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.core.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.cube.Cube;
 import co.cask.cdap.template.etl.api.PipelineConfigurer;
@@ -41,7 +41,7 @@ import java.util.Map;
 /**
  * A {@link RealtimeSink} that writes data to a {@link Cube} dataset.
  * <p/>
- * This {@link RealtimeCubeSink} takes a {@link co.cask.cdap.api.data.format.StructuredRecord} in, maps it to a
+ * This {@link RealtimeCubeSink} takes a {@link co.cask.cdap.core.data.format.StructuredRecord} in, maps it to a
  * {@link co.cask.cdap.api.dataset.lib.cube.CubeFact}, and writes it to a {@link Cube} dataset identified by the
  * {@link co.cask.cdap.template.etl.common.Properties.Cube#DATASET_NAME} property.
  * <p/>
@@ -49,7 +49,7 @@ import java.util.Map;
  * information on available {@link Cube} dataset configuration properties at
  * {@link co.cask.cdap.data2.dataset2.lib.cube.CubeDatasetDefinition}.
  * <p/>
- * To configure transformation from a {@link co.cask.cdap.api.data.format.StructuredRecord} to a
+ * To configure transformation from a {@link co.cask.cdap.core.data.format.StructuredRecord} to a
  * {@link co.cask.cdap.api.dataset.lib.cube.CubeFact}, the
  * mapping configuration is required, following {@link StructuredRecordToCubeFact} documentation.
  */

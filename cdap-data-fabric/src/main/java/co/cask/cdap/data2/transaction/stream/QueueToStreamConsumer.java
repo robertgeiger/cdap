@@ -15,8 +15,8 @@
  */
 package co.cask.cdap.data2.transaction.stream;
 
-import co.cask.cdap.api.data.schema.SchemaHash;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.data.schema.SchemaHash;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.common.io.BinaryDecoder;
 import co.cask.cdap.common.io.Decoder;
 import co.cask.cdap.common.stream.StreamEventCodec;

@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.data.batch;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 import java.io.Closeable;
 import java.io.IOException;

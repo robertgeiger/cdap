@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.workflow;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 import java.util.List;
 import java.util.Map;

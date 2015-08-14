@@ -16,11 +16,11 @@
 
 package co.cask.cdap.common.lang;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.annotation.Property;
 import co.cask.cdap.api.app.Application;
 import co.cask.cdap.api.app.ApplicationConfigurer;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.common.lang.jar.BundleJarUtil;
 import co.cask.cdap.internal.io.SchemaGenerator;
 import co.cask.cdap.internal.test.AppJarHelper;

@@ -16,8 +16,8 @@
 
 package co.cask.cdap.api.dataset.table;
 
-import co.cask.cdap.api.annotation.Beta;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.common.Bytes;
 
 import javax.annotation.Nullable;
 

@@ -16,8 +16,8 @@
 
 package co.cask.cdap.api.artifact;
 
-import co.cask.cdap.api.annotation.Beta;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.data.schema.Schema;
 
 import java.util.Objects;
 import javax.annotation.Nullable;

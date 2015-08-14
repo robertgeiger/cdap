@@ -16,7 +16,7 @@
 
 package co.cask.cdap.examples.wikipedia
 
-import co.cask.cdap.api.common.Bytes
+import co.cask.cdap.core.common.Bytes
 import co.cask.cdap.api.dataset.table.Table
 import co.cask.cdap.api.dataset.table.Put
 import co.cask.cdap.api.spark.{SparkContext, ScalaSparkProgram}

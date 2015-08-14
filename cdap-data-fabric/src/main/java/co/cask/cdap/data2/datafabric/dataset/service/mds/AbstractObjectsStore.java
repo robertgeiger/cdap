@@ -16,7 +16,7 @@
 
 package co.cask.cdap.data2.datafabric.dataset.service.mds;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.dataset.DatasetSpecification;
 import co.cask.cdap.api.dataset.lib.AbstractDataset;
 import co.cask.cdap.api.dataset.table.Row;

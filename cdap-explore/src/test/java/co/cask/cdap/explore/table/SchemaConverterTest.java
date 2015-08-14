@@ -16,7 +16,7 @@
 
 package co.cask.cdap.explore.table;
 
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
 import com.google.common.base.Objects;
 import com.google.common.reflect.TypeToken;
 import org.junit.Assert;

@@ -18,7 +18,7 @@ package co.cask.cdap.examples.profiles;
 
 import co.cask.cdap.api.annotation.ProcessInput;
 import co.cask.cdap.api.annotation.UseDataSet;
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Get;
 import co.cask.cdap.api.dataset.table.Put;
@@ -26,7 +26,7 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.flow.AbstractFlow;
 import co.cask.cdap.api.flow.flowlet.AbstractFlowlet;
 import co.cask.cdap.api.flow.flowlet.OutputEmitter;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.stream.StreamEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

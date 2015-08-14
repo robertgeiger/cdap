@@ -16,8 +16,8 @@
 
 package co.cask.cdap.cli.command;
 
-import co.cask.cdap.api.annotation.Beta;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.cli.ArgumentName;
 import co.cask.cdap.cli.CLIConfig;
 import co.cask.cdap.cli.ElementType;

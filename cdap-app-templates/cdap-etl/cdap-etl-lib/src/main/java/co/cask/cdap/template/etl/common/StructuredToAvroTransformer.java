@@ -17,7 +17,7 @@
 
 package co.cask.cdap.template.etl.common;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.core.data.format.StructuredRecord;
 import com.google.common.collect.Maps;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -40,7 +40,7 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
   }
 
   public GenericRecord transform(StructuredRecord structuredRecord) throws IOException {
-    co.cask.cdap.api.data.schema.Schema structuredRecordSchema = structuredRecord.getSchema();
+    co.cask.cdap.core.data.schema.Schema structuredRecordSchema = structuredRecord.getSchema();
 
     int hashCode = structuredRecordSchema.hashCode();
     Schema avroSchema;

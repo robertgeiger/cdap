@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.api.batch;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.StageLifecycle;

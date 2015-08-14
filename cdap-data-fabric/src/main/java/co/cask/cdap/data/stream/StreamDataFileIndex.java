@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.data.stream;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.common.io.BinaryDecoder;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;

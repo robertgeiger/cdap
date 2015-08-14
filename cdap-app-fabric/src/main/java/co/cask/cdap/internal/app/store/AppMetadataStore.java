@@ -16,7 +16,7 @@
 
 package co.cask.cdap.internal.app.store;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.workflow.WorkflowToken;

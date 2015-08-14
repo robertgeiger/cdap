@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.common.zookeeper.store;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.common.conf.AbstractPropertyStore;
 import co.cask.cdap.common.conf.PropertyUpdater;
 import co.cask.cdap.common.io.Codec;

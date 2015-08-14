@@ -16,14 +16,14 @@
 
 package co.cask.cdap.api.data.batch;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 import java.util.List;
 
 /**
  * Interface for datasets that can be input to a batch job.
  * <p>
- *   In order to feed a dataset into a batch job, the dataset must be splittable into chunks so that it's possible 
+ *   In order to feed a dataset into a batch job, the dataset must be splittable into chunks so that it's possible
  *   to process every part of the dataset in parallel. Every chunk must be readable as a collection of {key,value}
  *   records.
  * </p>

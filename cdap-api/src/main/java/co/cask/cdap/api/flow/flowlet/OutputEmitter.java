@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.flow.flowlet;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 import java.util.Map;
 

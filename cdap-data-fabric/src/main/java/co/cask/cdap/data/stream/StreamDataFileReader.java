@@ -15,9 +15,9 @@
  */
 package co.cask.cdap.data.stream;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.common.Bytes;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.common.io.BinaryDecoder;
 import co.cask.cdap.common.io.ByteBuffers;
 import co.cask.cdap.common.io.Decoder;
@@ -25,7 +25,7 @@ import co.cask.cdap.common.io.SeekableInputStream;
 import co.cask.cdap.common.stream.StreamEventDataCodec;
 import co.cask.cdap.data.file.FileReader;
 import co.cask.cdap.data.file.ReadFilter;
-import co.cask.cdap.internal.io.SchemaTypeAdapter;
+import co.cask.cdap.core.internal.io.SchemaTypeAdapter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;

@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.realtime.source;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.core.data.format.StructuredRecord;
 import co.cask.cdap.common.utils.Networks;
 import co.cask.cdap.template.etl.api.realtime.SourceState;
 import co.cask.cdap.template.etl.common.MockEmitter;

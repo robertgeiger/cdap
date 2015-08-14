@@ -16,8 +16,8 @@
 
 package co.cask.cdap.api.data.stream;
 
-import co.cask.cdap.api.annotation.Beta;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.stream.StreamEventData;
 
 import java.io.File;
 import java.io.IOException;

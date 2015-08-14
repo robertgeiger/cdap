@@ -16,7 +16,7 @@
 
 package co.cask.cdap.api.artifact;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

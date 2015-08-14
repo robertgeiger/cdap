@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.api.batch;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.templates.AdapterContext;
 import co.cask.cdap.template.etl.api.TransformContext;

@@ -15,9 +15,9 @@
  */
 package co.cask.cdap.common.stream;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.stream.StreamEventData;
+import co.cask.cdap.core.data.schema.Schema;
+import co.cask.cdap.core.data.schema.UnsupportedTypeException;
+import co.cask.cdap.core.stream.StreamEventData;
 import co.cask.cdap.common.io.Decoder;
 import co.cask.cdap.common.io.Encoder;
 import co.cask.cdap.internal.io.ReflectionSchemaGenerator;
@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
- * Utility class for encode/decode {@link co.cask.cdap.api.stream.StreamEventData}.
+ * Utility class for encode/decode {@link StreamEventData}.
  *
  * The StreamEventData is encoded using Avro binary encoding, with the schema:
  *
@@ -92,7 +92,7 @@ public final class StreamEventDataCodec {
    * Decodes from the given {@link Decoder} to reconstruct a {@link StreamEventData}.
    *
    * @param decoder the decoder to read data from
-   * @return A new instance of {@link co.cask.cdap.api.stream.StreamEventData}.
+   * @return A new instance of {@link StreamEventData}.
    * @throws IOException If there is any IO error during decoding.
    */
   public static StreamEventData decode(Decoder decoder) throws IOException {
@@ -105,7 +105,7 @@ public final class StreamEventDataCodec {
    *
    * @param decoder the decoder to read data from
    * @param defaultHeaders A map of headers available by default.
-   * @return A new instance of {@link co.cask.cdap.api.stream.StreamEventData}.
+   * @return A new instance of {@link StreamEventData}.
    * @throws IOException If there is any IO error during decoding.
    */
   public static StreamEventData decode(Decoder decoder, Map<String, String> defaultHeaders) throws IOException {
@@ -135,7 +135,7 @@ public final class StreamEventDataCodec {
   }
 
   /**
-   * Skips an encoded {@link co.cask.cdap.api.stream.StreamEventData}.
+   * Skips an encoded {@link StreamEventData}.
    *
    * @param decoder Decoder to skip data from.
    * @throws IOException If there is any IO error during decoding.

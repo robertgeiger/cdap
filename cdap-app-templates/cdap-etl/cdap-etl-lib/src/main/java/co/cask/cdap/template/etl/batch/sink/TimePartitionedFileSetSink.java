@@ -16,7 +16,7 @@
 
 package co.cask.cdap.template.etl.batch.sink;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.core.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
 import co.cask.cdap.template.etl.api.batch.BatchSink;

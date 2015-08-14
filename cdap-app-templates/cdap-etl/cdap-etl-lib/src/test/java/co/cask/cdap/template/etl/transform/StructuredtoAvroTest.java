@@ -16,8 +16,8 @@
 
 package co.cask.cdap.template.etl.transform;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.core.data.format.StructuredRecord;
+import co.cask.cdap.core.data.schema.Schema;
 import co.cask.cdap.template.etl.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;

@@ -21,7 +21,7 @@ import co.cask.cdap.InvalidFlowOutputApp;
 import co.cask.cdap.WordCountApp;
 import co.cask.cdap.api.dataset.lib.cube.AggregationFunction;
 import co.cask.cdap.api.dataset.lib.cube.TimeValue;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.core.stream.StreamEvent;
 import co.cask.cdap.api.metrics.MetricDataQuery;
 import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.metrics.MetricTimeSeries;

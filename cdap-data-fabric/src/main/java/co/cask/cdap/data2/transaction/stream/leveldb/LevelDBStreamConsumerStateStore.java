@@ -15,7 +15,7 @@
  */
 package co.cask.cdap.data2.transaction.stream.leveldb;
 
-import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.core.common.Bytes;
 import co.cask.cdap.data2.dataset2.lib.table.leveldb.LevelDBTableCore;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
 import co.cask.cdap.data2.transaction.stream.StreamConsumerStateStore;

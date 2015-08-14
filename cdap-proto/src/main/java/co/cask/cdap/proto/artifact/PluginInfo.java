@@ -16,7 +16,7 @@
 
 package co.cask.cdap.proto.artifact;
 
-import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.core.annotation.Beta;
 import co.cask.cdap.api.templates.plugins.PluginPropertyField;
 
 import java.util.Map;

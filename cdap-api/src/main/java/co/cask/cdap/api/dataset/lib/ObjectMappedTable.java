@@ -16,12 +16,12 @@
 
 package co.cask.cdap.api.dataset.lib;
 
-import co.cask.cdap.api.annotation.Beta;
 import co.cask.cdap.api.data.batch.BatchReadable;
 import co.cask.cdap.api.data.batch.BatchWritable;
 import co.cask.cdap.api.data.batch.RecordScannable;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.Dataset;
+import co.cask.cdap.core.annotation.Beta;
+import co.cask.cdap.core.data.format.StructuredRecord;
 
 import javax.annotation.Nullable;
 
