@@ -489,13 +489,14 @@ public interface Store {
   WorkflowToken getWorkflowToken(Id.Workflow workflowId, String workflowRunId);
 
   /**
-   * Used by {@link co.cask.cdap.gateway.handlers.WorkflowStatsSlaHttpHandler} to get the list of all the completed
-   * workflow runs within a time range
-   * @param programId
+   * Used by {@link co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler} to get the statistics of all completed
+   * workflows in a time range
+   * @param workflowId
    * @param startTime
    * @param endTime
-   * @return the list of {@link co.cask.cdap.internal.app.store.WorkflowDataset.WorkflowRunRecord} for a given workflow
+   * @param percentiles
+   * @return the statistics for a given workflow
    */
-  List<WorkflowDataset.WorkflowRunRecord> getWorkflowRuns(final Id.Program programId,
-                                                          final long startTime, final long endTime);
+  WorkflowDataset.BasicStatistics getWorkflowStatistics(final Id.Workflow workflowId, final long startTime,
+                                                          final long endTime, List<Double> percentiles);
 }

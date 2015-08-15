@@ -135,10 +135,11 @@ public class DefaultStore implements Store {
       @Override
       public WFD get() {
         try {
-          Table mdsTable = DatasetsUtil.getOrCreateDataset(dsFramework, WORKFLOW_STATS_INSTANCE_ID, "table",
+          Table workflowTable = DatasetsUtil.getOrCreateDataset(dsFramework, WORKFLOW_STATS_INSTANCE_ID, "table",
                                                            DatasetProperties.EMPTY,
                                                            DatasetDefinition.NO_ARGUMENTS, null);
-          return new WFD(mdsTable);
+          // TODO change var name
+          return new WFD(workflowTable);
         } catch (Exception e) {
           throw Throwables.propagate(e);
         }
@@ -306,14 +307,15 @@ public class DefaultStore implements Store {
     });
   }
 
-  public List<WorkflowDataset.WorkflowRunRecord> getWorkflowRuns(final Id.Program id,
+  public WorkflowDataset.BasicStatistics getWorkflowStatistics(final Id.Workflow id,
                                                                  final long startTime,
-                                                                 final long endTime) {
+                                                                 final long endTime,
+                                                                 final List<Double> percentiles) {
     return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
-      <WFD, List<WorkflowDataset.WorkflowRunRecord>>() {
+      <WFD, WorkflowDataset.BasicStatistics>() {
       @Override
-      public List<WorkflowDataset.WorkflowRunRecord> apply(WFD dataset) throws Exception {
-        return dataset.workflowDataset.scan(id, startTime, endTime);
+      public WorkflowDataset.BasicStatistics apply(WFD dataset) throws Exception {
+        return dataset.workflowDataset.statistics(id, startTime, endTime, percentiles);
       }
     });
   }

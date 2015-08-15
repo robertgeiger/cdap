@@ -17,15 +17,13 @@
 package co.cask.cdap.internal.app.services.http.handlers;
 
 import co.cask.cdap.WorkflowApp;
-import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.Constants;
-import co.cask.cdap.gateway.handlers.WorkflowStatsSlaHttpHandler;
-import co.cask.cdap.internal.AppFabricTestHelper;
-import co.cask.cdap.internal.app.deploy.pipeline.ApplicationWithPrograms;
+import co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
 import co.cask.cdap.internal.app.store.DefaultStore;
+import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramType;
@@ -40,11 +38,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests for {@link co.cask.cdap.gateway.handlers.WorkflowStatsSlaHttpHandler}
+ * Tests for {@link co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler}
  */
 public class WorkflowStatsSlaHttpHandlerTest extends AppFabricTestBase {
 
@@ -65,26 +62,11 @@ public class WorkflowStatsSlaHttpHandlerTest extends AppFabricTestBase {
   public void testStatistics() throws Exception {
 
     Store store = getInjector().getInstance(DefaultStore.class);
-    final ApplicationWithPrograms app = AppFabricTestHelper.deployApplicationWithManager(WorkflowApp.class,
-                                                                                         TEMP_FOLDER_SUPPLIER);
-    Iterable<Program> programs = app.getPrograms();
-    String workflowName = null;
-    String mapreduceName = null;
-    String sparkName = null;
 
-    for (Program program : programs) {
-      if (program.getType() == ProgramType.WORKFLOW) {
-        workflowName = program.getName();
-      } else if (program.getType() == ProgramType.MAPREDUCE) {
-        mapreduceName = program.getName();
-      } else if (program.getType() == ProgramType.SPARK) {
-        sparkName = program.getName();
-      }
-    }
-
-    Assert.assertNotNull(workflowName);
-    Assert.assertNotNull(mapreduceName);
-    Assert.assertNotNull(sparkName);
+    deploy(WorkflowApp.class);
+    String workflowName = "FunWorkflow";
+    String mapreduceName = "ClassicWordCount";
+    String sparkName = "SparkWorkflowTest";
 
     Id.Program workflowProgram =
       Id.Workflow.from(Id.Namespace.DEFAULT, "WorkflowApp", ProgramType.WORKFLOW, workflowName);
@@ -93,45 +75,49 @@ public class WorkflowStatsSlaHttpHandlerTest extends AppFabricTestBase {
     Id.Program sparkProgram =
       Id.Program.from(Id.Namespace.DEFAULT, "WorkflowApp", ProgramType.SPARK, sparkName);
 
-    for (long i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
       RunId workflowRunId = RunIds.generate();
       store.setStart(workflowProgram, workflowRunId.getId(), RunIds.getTime(workflowRunId, TimeUnit.SECONDS));
 
-      long randomValue = (long) (Math.random() * 50);
-      Thread.sleep(randomValue);
+      TimeUnit.SECONDS.sleep(1);
 
       RunId mapreduceRunid = RunIds.generate();
       store.setWorkflowProgramStart(mapreduceProgram, mapreduceRunid.getId(), workflowProgram.getId(),
                                     workflowRunId.getId(), mapreduceProgram.getId(),
                                     RunIds.getTime(mapreduceRunid, TimeUnit.SECONDS), null, null);
+      TimeUnit.SECONDS.sleep(1);
       store.setStop(mapreduceProgram, mapreduceRunid.getId(),
-                    RunIds.getTime(workflowRunId, TimeUnit.SECONDS) + randomValue, ProgramRunStatus.COMPLETED);
-      Thread.sleep(randomValue);
+                    TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
 
-      if ((Math.random() * 3) == 0) {
+      TimeUnit.SECONDS.sleep(1);
+
+      // This makes sure that not all runs have Spark programs in them
+      if (i < 5) {
         RunId sparkRunid = RunIds.generate();
         store.setWorkflowProgramStart(sparkProgram, sparkRunid.getId(), workflowProgram.getId(),
                                       workflowRunId.getId(), sparkProgram.getId(),
                                       RunIds.getTime(sparkRunid, TimeUnit.SECONDS), null, null);
+        TimeUnit.SECONDS.sleep(1);
         store.setStop(sparkProgram, sparkRunid.getId(),
-                      RunIds.getTime(sparkRunid, TimeUnit.SECONDS) + 50 + randomValue, ProgramRunStatus.COMPLETED);
-        Thread.sleep(randomValue);
+                      TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
+        TimeUnit.SECONDS.sleep(1);
       }
       store.setStop(workflowProgram, workflowRunId.getId(),
-                    RunIds.getTime(workflowRunId, TimeUnit.SECONDS) + 150, ProgramRunStatus.COMPLETED);
+                    TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
+      TimeUnit.SECONDS.sleep(1);
     }
-    System.out.println("Tell him Rohan sends his regards");
 
     String request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/statistics?start=%s&end=%s" +
                                      "&percentile=%s&percentile=%s",
-                                   Constants.Gateway.API_VERSION_3, app.getId().getNamespaceId(),
-                                   app.getId().getId(), workflowProgram.getId(), "0", "now", "90", "95");
+                                   Constants.Gateway.API_VERSION_3, Id.Namespace.DEFAULT,
+                                   WorkflowApp.class.getSimpleName(), workflowProgram.getId(), "0", "now", "90", "95");
 
     try {
       HttpResponse response = doGet(request);
-      WorkflowStatsSlaHttpHandler.BasicStatistics basicStatistics =
-        readResponse(response, new TypeToken<WorkflowStatsSlaHttpHandler.BasicStatistics>() { }.getType());
-      Assert.assertEquals(10, basicStatistics.getPercentileToRunids().get("90.0").size());
+      WorkflowDataset.BasicStatistics basicStatistics =
+        readResponse(response, new TypeToken<WorkflowDataset.BasicStatistics>() { }.getType());
+      Assert.assertEquals(1, basicStatistics.getPercentileToRunids().get("90.0").size());
+      Assert.assertEquals(5,  Math.round(basicStatistics.getActionToStatistic().get(sparkName).get("count")));
     } catch (Exception e) {
       e.printStackTrace();
     }

@@ -121,6 +121,7 @@ public class DefaultConfigStore implements ConfigStore {
     Boolean success = txnl.executeUnchecked(new TransactionExecutor.Function<ConfigTable, Boolean>() {
       @Override
       public Boolean apply(ConfigTable configTable) throws Exception {
+        LOG.info("Deleting table id {} and table {}", id, configTable.table);
         if (configTable.table.get(rowKey(namespace, type, id)).isEmpty()) {
           return false;
         }

@@ -97,7 +97,6 @@ public class Transactional<T extends Iterable<V>, V> {
                                                         Supplier<T> supplier,
                                                         TransactionExecutor.Function<T, R> func)
     throws TransactionFailureException, IOException, InterruptedException {
-
     T it = supplier.get();
     Iterable<TransactionAware> txAwares = Iterables.transform(
       Iterables.filter(it, Predicates.instanceOf(TransactionAware.class)), new Function<V, TransactionAware>() {
