@@ -211,9 +211,9 @@ public class WorkflowDataset extends AbstractDataset {
    * Internal class to keep track of Workflow Run Records
    */
   public static class WorkflowRunRecord {
-    private String workflowRunId;
-    private long timeTaken;
-    private List<ActionRuns> actionRuns;
+    private final String workflowRunId;
+    private final long timeTaken;
+    private final List<ActionRuns> actionRuns;
 
     public WorkflowRunRecord(String workflowRunId, long timeTaken, List<ActionRuns> actionRuns) {
       this.actionRuns = actionRuns;
@@ -238,9 +238,9 @@ public class WorkflowDataset extends AbstractDataset {
    * Internal Class for keeping track of actions in a workflow
    */
   public static class ActionRuns {
-    private String runId;
-    private long timeTaken;
-    private String name;
+    private final String runId;
+    private final long timeTaken;
+    private final String name;
 
     public ActionRuns(String name, String runId, long timeTaken) {
       this.name = name;
@@ -266,13 +266,13 @@ public class WorkflowDataset extends AbstractDataset {
    */
   @VisibleForTesting
   public static class BasicStatistics {
-    private long startTime;
-    private long endTime;
-    private int runs;
-    private double avgRunTime;
-    private Map<String, Long> percentileToTime;
-    private Map<String, List<String>> percentileToRunids;
-    private Map<String, Map<String, Double>> actionToStatistic;
+    private final long startTime;
+    private final long endTime;
+    private final int runs;
+    private final double avgRunTime;
+    private final Map<String, Long> percentileToTime;
+    private final Map<String, List<String>> percentileToRunids;
+    private final Map<String, Map<String, Double>> actionToStatistic;
 
     public BasicStatistics(long startTime, long endTime, int runs, double avgRunTime,
                            Map<String, Long> percentileToTime,
