@@ -26,36 +26,18 @@ import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramType;
-import com.google.common.base.Supplier;
-import com.google.common.base.Throwables;
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.http.HttpResponse;
 import org.apache.twill.api.RunId;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for {@link co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler}
  */
-public class WorkflowStatsSlaHttpHandlerTest extends AppFabricTestBase {
-
-  private static final Gson GSON = new Gson();
-  public static final Supplier<File> TEMP_FOLDER_SUPPLIER = new Supplier<File>() {
-
-    @Override
-    public File get() {
-      try {
-        return tmpFolder.newFolder();
-      } catch (IOException e) {
-        throw Throwables.propagate(e);
-      }
-    }
-  };
+public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
 
   @Test
   public void testStatistics() throws Exception {
