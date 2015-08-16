@@ -23,12 +23,8 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.utils.TimeMathParser;
 import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.proto.ProgramType;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -36,11 +32,7 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -82,7 +74,8 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
 
     for (double i : percentiles) {
       if (i < 0 || i > 100) {
-        throw new BadRequestException("Percentile values have to be greater than 0 and less than 100");
+        throw new BadRequestException("Percentile values have to be greater than or equal to 0 and" +
+                                        " less than or equal to 100");
       }
     }
 
@@ -90,27 +83,14 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
 
     Id.Workflow workflow = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
     try {
-      try {
-        basicStatistics = store.getWorkflowStatistics(workflow, startTime, endTime, percentiles);
-
-      } catch (IllegalArgumentException exception) {
-        responder.sendJson(HttpResponseStatus.BAD_REQUEST, "The input that was provided was not correct");
-        return;
-      }
-    } catch (SecurityException exception) {
-      responder.sendJson(HttpResponseStatus.BAD_REQUEST, "You're not allowed to view this");
+      basicStatistics = store.getWorkflowStatistics(workflow, startTime, endTime, percentiles);
+    } catch (IllegalArgumentException exception) {
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The input that was provided was not correct.");
       return;
     }
-
-
-
-
-
-
-
-
-
+    if (basicStatistics == null) {
+      responder.sendString(HttpResponseStatus.OK, "There are no runs associated with this workflow.");
+    }
     responder.sendJson(HttpResponseStatus.OK, basicStatistics);
   }
-
 }

@@ -20,7 +20,6 @@ import co.cask.cdap.WorkflowApp;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.Constants;
-import co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
 import co.cask.cdap.internal.app.store.DefaultStore;
 import co.cask.cdap.internal.app.store.WorkflowDataset;
@@ -112,15 +111,10 @@ public class WorkflowStatsSlaHttpHandlerTest extends AppFabricTestBase {
                                    Constants.Gateway.API_VERSION_3, Id.Namespace.DEFAULT,
                                    WorkflowApp.class.getSimpleName(), workflowProgram.getId(), "0", "now", "90", "95");
 
-    try {
-      HttpResponse response = doGet(request);
-      WorkflowDataset.BasicStatistics basicStatistics =
-        readResponse(response, new TypeToken<WorkflowDataset.BasicStatistics>() { }.getType());
-      Assert.assertEquals(1, basicStatistics.getPercentileToRunids().get("90.0").size());
-      Assert.assertEquals(5,  Math.round(basicStatistics.getActionToStatistic().get(sparkName).get("count")));
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
+    HttpResponse response = doGet(request);
+    WorkflowDataset.BasicStatistics basicStatistics =
+      readResponse(response, new TypeToken<WorkflowDataset.BasicStatistics>() { }.getType());
+    Assert.assertEquals(1, basicStatistics.getPercentileToRunids().get("90.0").size());
+    Assert.assertEquals(5,  Math.round(basicStatistics.getActionToStatistic().get(sparkName).get("count")));
   }
 }

@@ -90,9 +90,11 @@ import javax.annotation.Nullable;
  * Implementation of the Store that ultimately places data into MetaDataTable.
  */
 public class DefaultStore implements Store {
-  private static final Logger LOG = LoggerFactory.getLogger(DefaultStore.class);
+
   public static final String APP_META_TABLE = "app.meta";
   public static final String WORKFLOW_STATS_TABLE = "workflow.stats";
+
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultStore.class);
   private static final Id.DatasetInstance APP_META_INSTANCE_ID =
     Id.DatasetInstance.from(Id.Namespace.SYSTEM, APP_META_TABLE);
   private static final Id.DatasetInstance WORKFLOW_STATS_INSTANCE_ID =
@@ -105,7 +107,7 @@ public class DefaultStore implements Store {
   private final DatasetFramework dsFramework;
 
   private Transactional<AppMds, AppMetadataStore> txnl;
-  private Transactional<WFD,  WorkflowDataset> txnlWorkflow;
+  private Transactional<WorkflowStatsDataset,  WorkflowDataset> txnlWorkflow;
 
   @Inject
   public DefaultStore(CConfiguration conf,
@@ -131,15 +133,15 @@ public class DefaultStore implements Store {
         }
       }
     });
-    txnlWorkflow = Transactional.of(txExecutorFactory, new Supplier<WFD>() {
+    txnlWorkflow = Transactional.of(txExecutorFactory, new Supplier<WorkflowStatsDataset>() {
       @Override
-      public WFD get() {
+      public WorkflowStatsDataset get() {
         try {
           Table workflowTable = DatasetsUtil.getOrCreateDataset(dsFramework, WORKFLOW_STATS_INSTANCE_ID, "table",
                                                            DatasetProperties.EMPTY,
                                                            DatasetDefinition.NO_ARGUMENTS, null);
           // TODO change var name
-          return new WFD(workflowTable);
+          return new WorkflowStatsDataset(workflowTable);
         } catch (Exception e) {
           throw Throwables.propagate(e);
         }
@@ -271,9 +273,9 @@ public class DefaultStore implements Store {
         }
       }
 
-      txnlWorkflow.executeUnchecked(new TransactionExecutor.Function<WFD, Void>() {
+      txnlWorkflow.executeUnchecked(new TransactionExecutor.Function<WorkflowStatsDataset, Void>() {
         @Override
-        public Void apply(WFD dataset) {
+        public Void apply(WorkflowStatsDataset dataset) {
           dataset.workflowDataset.write(id, run, actionRunsList);
           return null;
         }
@@ -312,9 +314,9 @@ public class DefaultStore implements Store {
                                                                  final long endTime,
                                                                  final List<Double> percentiles) {
     return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
-      <WFD, WorkflowDataset.BasicStatistics>() {
+      <WorkflowStatsDataset, WorkflowDataset.BasicStatistics>() {
       @Override
-      public WorkflowDataset.BasicStatistics apply(WFD dataset) throws Exception {
+      public WorkflowDataset.BasicStatistics apply(WorkflowStatsDataset dataset) throws Exception {
         return dataset.workflowDataset.statistics(id, startTime, endTime, percentiles);
       }
     });
@@ -1277,10 +1279,10 @@ public class DefaultStore implements Store {
     }
   }
 
-  private static final class WFD implements Iterable<WorkflowDataset> {
+  private static final class WorkflowStatsDataset implements Iterable<WorkflowDataset> {
     private final WorkflowDataset workflowDataset;
 
-    private WFD(Table mdsTable) {
+    private WorkflowStatsDataset(Table mdsTable) {
       this.workflowDataset = new WorkflowDataset(mdsTable);
     }
 

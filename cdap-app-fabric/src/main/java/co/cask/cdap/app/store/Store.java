@@ -491,12 +491,12 @@ public interface Store {
   /**
    * Used by {@link co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler} to get the statistics of all completed
    * workflows in a time range
-   * @param workflowId
-   * @param startTime
-   * @param endTime
-   * @param percentiles
+   * @param workflowId Workflow that needs to have its statistics returned
+   * @param startTime StartTime of the range
+   * @param endTime EndTime of the range
+   * @param percentiles List of percentiles that the user wants to see
    * @return the statistics for a given workflow
    */
-  WorkflowDataset.BasicStatistics getWorkflowStatistics(final Id.Workflow workflowId, final long startTime,
-                                                          final long endTime, List<Double> percentiles);
+  WorkflowDataset.BasicStatistics getWorkflowStatistics(Id.Workflow workflowId, long startTime,
+                                                          long endTime, List<Double> percentiles);
 }

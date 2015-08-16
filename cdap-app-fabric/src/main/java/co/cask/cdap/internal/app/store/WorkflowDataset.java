@@ -22,15 +22,11 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scan;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler;
 import co.cask.cdap.proto.Id;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.google.inject.Inject;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +35,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,14 +54,15 @@ public class WorkflowDataset extends AbstractDataset {
 
   private final Table table;
 
-  public WorkflowDataset(Table table) {
+  WorkflowDataset(Table table) {
     super("ignored", table);
     this.table = table;
   }
 
   private byte[] createRowKey(String key, long time) {
     byte[] result = Bytes.toBytes(key);
-    byte[] rowKey = new byte[result.length + 8];
+    // Size of long is being added to the row key since the start time is being added at the end
+    byte[] rowKey = new byte[result.length + Bytes.SIZEOF_LONG];
     int offset = Bytes.putBytes(rowKey, 0, result, 0, result.length);
     Bytes.putBytes(rowKey, offset, Bytes.toBytes(time), 0, Bytes.SIZEOF_LONG);
     return rowKey;
@@ -137,14 +135,14 @@ public class WorkflowDataset extends AbstractDataset {
 
     Map<String, List<Long>> actionToRunRecord = getActionRuns(workflowRunRecords);
 
-    Map<String, Map<String, Double>> actionToStatistic = Maps.newHashMap();
+    Map<String, Map<String, Double>> actionToStatistic = new HashMap();
     for (Map.Entry<String, List<Long>> entry : actionToRunRecord.entrySet()) {
       double avgForAction = 0;
       for (long value: entry.getValue()) {
         avgForAction += value;
       }
       avgForAction /= entry.getValue().size();
-      Map temp = Maps.newHashMap();
+      Map temp = new HashMap();
       temp.put("count", entry.getValue().size());
       temp.put("avgRunTime", avgForAction);
       actionToStatistic.put(entry.getKey(), temp);
@@ -168,8 +166,8 @@ public class WorkflowDataset extends AbstractDataset {
   private Pair<Map<String, Long>, Map<String, List<String>>> getPercentiles(List<WorkflowRunRecord> workflowRunRecords,
                                                                             List<Double> percentiles) {
     int count = workflowRunRecords.size();
-    Map<String, Long> percentileToTime = Maps.newHashMap();
-    Map<String, List<String>> percentileToRunids = Maps.newHashMap();
+    Map<String, Long> percentileToTime = new HashMap();
+    Map<String, List<String>> percentileToRunids = new HashMap();
     for (double i : percentiles) {
       List<String> percentileRun = new ArrayList();
       int percentileStart = (int) ((i * count) / 100);
@@ -193,17 +191,17 @@ public class WorkflowDataset extends AbstractDataset {
   }
 
   private Map<String, List<Long>> getActionRuns(List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords) {
-    Map<String, List<Long>> actionToRunRecord = Maps.newHashMap();
-    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord: workflowRunRecords) {
-      for (WorkflowDataset.ActionRuns runs: workflowRunRecord.getActionRuns()) {
-        List<Long> runList;
-        if (actionToRunRecord.get(runs.getName()) == null) {
-          runList = Lists.newArrayList();
+    Map<String, List<Long>> actionToRunRecord = new HashMap();
+    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord : workflowRunRecords) {
+      for (WorkflowDataset.ActionRuns runs : workflowRunRecord.getActionRuns()) {
+        List<Long> runList = actionToRunRecord.get(runs.getName());
+        if (runList == null) {
+          runList = new ArrayList<>();
+          actionToRunRecord.put(runs.getName(), runList);
         } else {
           runList = actionToRunRecord.get(runs.getName());
         }
         runList.add(runs.getTimeTaken());
-        actionToRunRecord.put(runs.getName(), runList);
       }
     }
     return actionToRunRecord;
@@ -250,7 +248,7 @@ public class WorkflowDataset extends AbstractDataset {
       this.timeTaken = timeTaken;
     }
 
-    public Long getTimeTaken() {
+    public long getTimeTaken() {
       return timeTaken;
     }
 
