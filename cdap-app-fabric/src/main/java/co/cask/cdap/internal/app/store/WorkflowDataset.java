@@ -27,7 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import javafx.util.Pair;
+import org.apache.hadoop.hbase.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,8 +130,8 @@ public class WorkflowDataset extends AbstractDataset {
     Pair<Map<String, Long>, Map<String, List<String>>> percentilesAndPercentileList =
       getPercentiles(workflowRunRecords, percentiles);
 
-    Map<String, Long> percentileToTime = percentilesAndPercentileList.getKey();
-    Map<String, List<String>> percentileToRunids = percentilesAndPercentileList.getValue();
+    Map<String, Long> percentileToTime = percentilesAndPercentileList.getFirst();
+    Map<String, List<String>> percentileToRunids = percentilesAndPercentileList.getSecond();
 
     Map<String, List<Long>> actionToRunRecord = getActionRuns(workflowRunRecords);
 
