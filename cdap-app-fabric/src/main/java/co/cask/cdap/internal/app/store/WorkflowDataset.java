@@ -215,7 +215,7 @@ public class WorkflowDataset extends AbstractDataset {
   /**
    * Internal class to keep track of Workflow Run Records
    */
-  public static class WorkflowRunRecord {
+  static class WorkflowRunRecord {
     private final String workflowRunId;
     private final long timeTaken;
     private final List<ActionRuns> actionRuns;
@@ -242,7 +242,7 @@ public class WorkflowDataset extends AbstractDataset {
   /**
    * Internal Class for keeping track of actions in a workflow
    */
-  public static class ActionRuns {
+  static class ActionRuns {
     private final String runId;
     private final long timeTaken;
     private final ProgramType programType;

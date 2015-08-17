@@ -27,6 +27,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramType;
 import com.google.gson.reflect.TypeToken;
+import com.ning.http.client.HttpResponseStatus;
 import org.apache.http.HttpResponse;
 import org.apache.twill.api.RunId;
 import org.junit.Assert;
@@ -94,5 +95,24 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
       readResponse(response, new TypeToken<WorkflowDataset.BasicStatistics>() { }.getType());
     Assert.assertEquals(1, basicStatistics.getPercentileToRunids().get("90.0").size());
     Assert.assertEquals(5,  Math.round(basicStatistics.getActionToStatistic().get(sparkName).get("count")));
+
+    request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/statistics?start=%s&end=%s" +
+                                     "&percentile=%s&percentile=%s",
+                                   Constants.Gateway.API_VERSION_3, Id.Namespace.DEFAULT,
+                                   WorkflowApp.class.getSimpleName(), workflowProgram.getId(), "now", "0", "90", "95");
+
+    response = doGet(request);
+    Assert.assertEquals(org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST.getCode(),
+                        response.getStatusLine().getStatusCode());
+
+    request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/statistics?start=%s&end=%s" +
+                              "&percentile=%s&percentile=%s",
+                            Constants.Gateway.API_VERSION_3, Id.Namespace.DEFAULT,
+                            WorkflowApp.class.getSimpleName(), workflowProgram.getId(), "now", "0", "90.0", "950");
+
+    response = doGet(request);
+    Assert.assertEquals(org.jboss.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST.getCode(),
+                        response.getStatusLine().getStatusCode());
+
   }
 }
