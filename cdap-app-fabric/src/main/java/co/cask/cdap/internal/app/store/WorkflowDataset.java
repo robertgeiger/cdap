@@ -22,9 +22,12 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scan;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
+import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.utils.ImmutablePair;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.MRJobInfo;
 import co.cask.cdap.proto.ProgramType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
@@ -32,6 +35,7 @@ import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.sun.istack.Nullable;
+import org.apache.twill.api.RunId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +46,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Dataset for Completed Workflows and their associated actions
@@ -209,6 +214,57 @@ public class WorkflowDataset extends AbstractDataset {
     return actionToRunRecord;
   }
 
+  public WorkflowDataset.DetailedWorkflowRunRecord getDetailedRecord(Id.Workflow workflowId,
+                                                                     String runId,
+                                                                     MRJobInfoFetcher mrJobInfoFetcher,
+                                                                     MetricStore metricStore) throws Exception {
+    WorkflowRunRecord workflowRunRecord = getRecord(workflowId, runId);
+    List<ActionRuns> actionRuns = workflowRunRecord.getActionRuns();
+    Map<String, Object> details = new HashMap<>();
+    for (ActionRuns actionRun : actionRuns) {
+      if (actionRun.getProgramType() == ProgramType.MAPREDUCE) {
+        details.put(actionRun.getName(),
+                    getMapreduceDetails(Id.Program.from(workflowId.getNamespaceId(), workflowId.getApplicationId(),
+                                                        actionRun.getProgramType(), actionRun.getName()),
+                                        actionRun.getRunId(), mrJobInfoFetcher));
+      }
+    }
+    return new DetailedWorkflowRunRecord(details);
+  }
+
+  private Object getMapreduceDetails(Id.Program mapreduceProgram, String runId,
+                                     MRJobInfoFetcher mrJobInfoFetcher) throws Exception {
+    Id.Run mrRun = new Id.Run(mapreduceProgram, runId);
+    MRJobInfo mrJobInfo = mrJobInfoFetcher.getMRJobInfo(mrRun);
+    return mrJobInfo;
+  }
+
+  @Nullable
+  public WorkflowRunRecord getRecord(Id.Workflow id, String runId) {
+    RunId pid = RunIds.fromString(runId);
+    Joiner joiner = Joiner.on(DELIMITER);
+    String key = joiner.join(id.getApplication().getNamespaceId(), id.getApplicationId(), id.getId()) + DELIMITER;
+    long startTime = RunIds.getTime(pid, TimeUnit.SECONDS);
+    byte[] startRowKey = createRowKey(key, startTime);
+    Scan scan = new Scan(startRowKey, null);
+
+    WorkflowRunRecord workflowRunRecord;
+    Scanner scanner = table.scan(scan);
+    Row indexRow = scanner.next();
+    Map<byte[], byte[]> columns = indexRow.getColumns();
+    String workflowRunId = Bytes.toString(columns.get(RUNID));
+    long timeTaken = Bytes.toLong(columns.get(TIME_TAKEN));
+
+    List<ActionRuns> actionRunsList = GSON.fromJson(Bytes.toString(columns.get(NODES)), ACTION_RUNS_TYPE);
+    workflowRunRecord = new WorkflowRunRecord(workflowRunId, timeTaken, actionRunsList);
+
+    if (!runId.equals(workflowRunRecord.getWorkflowRunId())) {
+      return null;
+    } else {
+      return workflowRunRecord;
+    }
+  }
+
   /**
    * Internal class to keep track of Workflow Run Records
    */
@@ -321,6 +377,17 @@ public class WorkflowDataset extends AbstractDataset {
 
     public Map<String, Map<String, Double>> getActionToStatistic() {
       return actionToStatistic;
+    }
+  }
+
+  /**
+   * Class that contains the details of a particular run of workflow
+   */
+  public static class DetailedWorkflowRunRecord {
+    private final Map<String, Object> actionToDetails;
+
+    DetailedWorkflowRunRecord(Map<String, Object> actionToDetails) {
+      this.actionToDetails = actionToDetails;
     }
   }
 }

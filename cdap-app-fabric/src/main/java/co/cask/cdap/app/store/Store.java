@@ -19,10 +19,12 @@ package co.cask.cdap.app.store;
 import co.cask.cdap.api.ProgramSpecification;
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.api.flow.FlowSpecification;
+import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.worker.Worker;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.ApplicationSpecification;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.common.ApplicationNotFoundException;
 import co.cask.cdap.common.ProgramNotFoundException;
@@ -499,4 +501,16 @@ public interface Store {
    */
   WorkflowDataset.BasicStatistics getWorkflowStatistics(Id.Workflow workflowId, long startTime,
                                                         long endTime, List<Double> percentiles);
+
+
+  /**
+   *
+   * @param workflowId Workflow whose run needs to be obtained
+   * @param runId RunId of the workflow
+   * @param mrJobInfoFetcher MRJob Info Fetcher
+   * @param metricStore The metric store
+   * @return A detailed WorkflowRunRecord
+   */
+  WorkflowDataset.DetailedWorkflowRunRecord getWorkflowRun(Id.Workflow workflowId, String runId,
+                                                           MRJobInfoFetcher mrJobInfoFetcher, MetricStore metricStore);
 }

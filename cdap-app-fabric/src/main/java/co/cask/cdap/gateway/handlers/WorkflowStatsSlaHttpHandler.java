@@ -17,6 +17,7 @@
 package co.cask.cdap.gateway.handlers;
 
 import co.cask.cdap.api.metrics.MetricStore;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.BadRequestException;
 import co.cask.cdap.common.conf.Constants;
@@ -32,7 +33,9 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -48,11 +51,13 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowStatsSLAHttpHandler.class);
   private final Store store;
   private final MetricStore metricStore;
+  private final MRJobInfoFetcher mrJobInfoFetcher;
 
   @Inject
-  WorkflowStatsSLAHttpHandler(MetricStore metricStore, Store store) {
+  WorkflowStatsSLAHttpHandler(MetricStore metricStore, Store store, MRJobInfoFetcher mrJobInfoFetcher) {
     this.metricStore = metricStore;
     this.store = store;
+    this.mrJobInfoFetcher = mrJobInfoFetcher;
   }
 
   @GET
@@ -97,5 +102,34 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
       return;
     }
     responder.sendJson(HttpResponseStatus.OK, basicStatistics);
+  }
+
+  @GET
+  @Path("apps/{app-id}/workflows/{workflow-id}/compare/run-id/{run-id}")
+  public void compare(HttpRequest request, HttpResponder responder,
+                      @PathParam("namespace-id") String namespaceId,
+                      @PathParam("app-id") String appId,
+                      @PathParam("workflow-id") String workflowId,
+                      @PathParam("run-id") String runId,
+                      @QueryParam("other-run-id") String otherRunId) {
+    Id.Workflow id = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
+    WorkflowDataset.DetailedWorkflowRunRecord workflowRunRecord = store.getWorkflowRun(id, runId,
+                                                                                       mrJobInfoFetcher, metricStore);
+    WorkflowDataset.DetailedWorkflowRunRecord otherWorkflowRunRecord = store.getWorkflowRun(id, runId, mrJobInfoFetcher,
+                                                                                            metricStore);
+    if (workflowRunRecord == null) {
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The run-id you provided was not correct.");
+      return;
+    }
+    if (otherWorkflowRunRecord == null) {
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The other run-id you provided was not correct.");
+      return;
+    }
+    // TODO: Change format of return such that the results are intertwined.
+    // Also this will just return the naive results. Need details.
+    Map<String, WorkflowDataset.DetailedWorkflowRunRecord> result = new HashMap<>();
+    result.put(runId, workflowRunRecord);
+    result.put(otherRunId, otherWorkflowRunRecord);
+    responder.sendJson(HttpResponseStatus.OK, result);
   }
 }

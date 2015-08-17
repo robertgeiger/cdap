@@ -25,6 +25,7 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.flow.FlowSpecification;
 import co.cask.cdap.api.flow.FlowletConnection;
 import co.cask.cdap.api.flow.FlowletDefinition;
+import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.service.ServiceSpecification;
 import co.cask.cdap.api.worker.WorkerSpecification;
@@ -33,6 +34,7 @@ import co.cask.cdap.api.workflow.WorkflowNode;
 import co.cask.cdap.api.workflow.WorkflowSpecification;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.ApplicationSpecification;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.program.Programs;
 import co.cask.cdap.app.store.Store;
@@ -1171,6 +1173,20 @@ public class DefaultStore implements Store {
                                 new FlowSpecificationWithChangedFlowletsAndConnections(flowSpec,
                                                                                        adjustedFlowletDef,
                                                                                        connections));
+  }
+
+
+  @Override
+  public WorkflowDataset.DetailedWorkflowRunRecord getWorkflowRun(final Id.Workflow workflowId, final String runId,
+                                                                  final MRJobInfoFetcher mrJobInfoFetcher,
+                                                                  final MetricStore metricStore) {
+    return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
+      <WorkflowStatsDataset, WorkflowDataset.DetailedWorkflowRunRecord>() {
+      @Override
+      public WorkflowDataset.DetailedWorkflowRunRecord apply(WorkflowStatsDataset dataset) throws Exception {
+        return dataset.workflowDataset.getDetailedRecord(workflowId, runId, mrJobInfoFetcher, metricStore);
+      }
+    });
   }
 
   private static class FlowSpecificationWithChangedFlowlets extends ForwardingFlowSpecification {
