@@ -70,7 +70,7 @@ public class ETLCassandraTest extends BaseETLBatchTest {
 
   @Before
   public void beforeTest() throws Exception {
-    EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+    EmbeddedCassandraServerHelper.startEmbeddedCassandra(30 * 1000);
     String clusterName = "TestCluster";
     String host = "localhost:9171";
   }
