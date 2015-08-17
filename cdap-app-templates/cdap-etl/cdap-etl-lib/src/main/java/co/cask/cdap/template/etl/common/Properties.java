@@ -138,6 +138,20 @@ public final class Properties {
   }
 
   /**
+   * Properties for Cassandra
+   */
+  public static class Cassandra {
+    public static final String PARITIONER = "partitioner";
+    public static final String PORT = "port";
+    public static final String COLUMN_FAMILY = "columnFamily";
+    public static final String KEYSPACE = "keyspace";
+    public static final String INITIAL_ADDRESS = "initialAddress";
+    public static final String COLUMNS = "columns";
+    public static final String PRIMARY_KEY = "primaryKey";
+    public static final String BUFFER_SIZE = "bufferSize";
+  }
+
+  /**
    * Properties for ProjectionTransform
    */
   public static class ProjectionTransform {
