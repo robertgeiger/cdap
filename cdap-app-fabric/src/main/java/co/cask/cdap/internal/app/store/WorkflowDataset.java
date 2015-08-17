@@ -74,7 +74,7 @@ public class WorkflowDataset extends AbstractDataset {
     return rowKey;
   }
 
-  public void write(Id.Program id, RunRecordMeta runRecordMeta, List<ActionRuns> actionRunsList) {
+  public void write(Id.Workflow id, RunRecordMeta runRecordMeta, List<ActionRuns> actionRunsList) {
     Joiner joiner = Joiner.on(DELIMITER);
     String key = joiner.join(id.getApplication().getNamespaceId(), id.getApplicationId(), id.getId()) + DELIMITER;
     long start = runRecordMeta.getStartTs();

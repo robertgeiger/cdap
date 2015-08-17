@@ -46,7 +46,7 @@ import javax.ws.rs.QueryParam;
 public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowStatsSLAHttpHandler.class);
-  protected final Store store;
+  private final Store store;
   private final MetricStore metricStore;
 
   @Inject

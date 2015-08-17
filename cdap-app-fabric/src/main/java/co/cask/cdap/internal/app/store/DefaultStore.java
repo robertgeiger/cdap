@@ -256,12 +256,13 @@ public class DefaultStore implements Store {
 
     // This block has been added so that completed workflow runs can be logged to the workflow dataset
     if (id.getType() == ProgramType.WORKFLOW && runStatus == ProgramRunStatus.COMPLETED) {
-      recordCompletedWorkflows(id, pid);
+      Id.Workflow workflow = Id.Workflow.from(id.getApplication(), id.getId());
+      recordCompletedWorkflows(workflow, pid);
     }
     // todo: delete old history data
   }
 
-  private void recordCompletedWorkflows(final Id.Program id, String pid) {
+  private void recordCompletedWorkflows(final Id.Workflow id, String pid) {
     final RunRecordMeta run = getRun(id, pid);
     Id.Application app = id.getApplication();
     ApplicationSpecification appSpec = getApplication(app);
