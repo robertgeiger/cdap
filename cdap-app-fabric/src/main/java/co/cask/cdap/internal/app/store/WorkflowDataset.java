@@ -56,13 +56,11 @@ public class WorkflowDataset extends AbstractDataset {
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowDataset.class);
   private static final Type ACTION_RUNS_TYPE = new TypeToken<List<ActionRuns>>() { }.getType();
 
-  private final MRJobInfoFetcher mrJobInfoFetcher;
   private final Table table;
 
-  WorkflowDataset(Table table, MRJobInfoFetcher mrJobInfoFetcher) {
+  WorkflowDataset(Table table) {
     super("ignored", table);
     this.table = table;
-    this.mrJobInfoFetcher = mrJobInfoFetcher;
   }
 
   private byte[] createRowKey(String key, long time) {

@@ -104,7 +104,6 @@ public class DefaultStore implements Store {
   private final NamespacedLocationFactory namespacedLocationFactory;
   private final CConfiguration configuration;
   private final DatasetFramework dsFramework;
-  private final MRJobInfoFetcher mrJobInfoFetcher;
 
   private Transactional<AppMds, AppMetadataStore> txnl;
   private Transactional<WorkflowStatsDataset,  WorkflowDataset> txnlWorkflow;
@@ -114,13 +113,11 @@ public class DefaultStore implements Store {
                       LocationFactory locationFactory,
                       NamespacedLocationFactory namespacedLocationFactory,
                       TransactionExecutorFactory txExecutorFactory,
-                      DatasetFramework framework,
-                      final MRJobInfoFetcher mrJobInfoFetcher) {
+                      DatasetFramework framework) {
     this.configuration = conf;
     this.locationFactory = locationFactory;
     this.namespacedLocationFactory = namespacedLocationFactory;
     this.dsFramework = framework;
-    this.mrJobInfoFetcher = mrJobInfoFetcher;
 
     txnl = Transactional.of(txExecutorFactory, new Supplier<AppMds>() {
       @Override
@@ -142,7 +139,7 @@ public class DefaultStore implements Store {
           Table workflowTable = DatasetsUtil.getOrCreateDataset(dsFramework, WORKFLOW_STATS_INSTANCE_ID, "table",
                                                                 DatasetProperties.EMPTY,
                                                                 DatasetDefinition.NO_ARGUMENTS, null);
-          return new WorkflowStatsDataset(workflowTable, mrJobInfoFetcher);
+          return new WorkflowStatsDataset(workflowTable);
         } catch (Exception e) {
           throw Throwables.propagate(e);
         }
@@ -313,6 +310,7 @@ public class DefaultStore implements Store {
     });
   }
 
+  @Nullable
   public WorkflowDataset.BasicStatistics getWorkflowStatistics(final Id.Workflow id,
                                                                final long startTime,
                                                                final long endTime,
@@ -1286,8 +1284,8 @@ public class DefaultStore implements Store {
   private static final class WorkflowStatsDataset implements Iterable<WorkflowDataset> {
     private final WorkflowDataset workflowDataset;
 
-    private WorkflowStatsDataset(Table mdsTable, MRJobInfoFetcher mrJobInfoFetcher) {
-      this.workflowDataset = new WorkflowDataset(mdsTable, mrJobInfoFetcher);
+    private WorkflowStatsDataset(Table mdsTable) {
+      this.workflowDataset = new WorkflowDataset(mdsTable);
     }
 
     @Override
