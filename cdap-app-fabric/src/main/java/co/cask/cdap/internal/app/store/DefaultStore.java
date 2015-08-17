@@ -33,6 +33,7 @@ import co.cask.cdap.api.workflow.WorkflowNode;
 import co.cask.cdap.api.workflow.WorkflowSpecification;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.ApplicationSpecification;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.program.Programs;
 import co.cask.cdap.app.store.Store;
@@ -93,18 +94,17 @@ public class DefaultStore implements Store {
 
   public static final String APP_META_TABLE = "app.meta";
   public static final String WORKFLOW_STATS_TABLE = "workflow.stats";
-
   private static final Logger LOG = LoggerFactory.getLogger(DefaultStore.class);
   private static final Id.DatasetInstance APP_META_INSTANCE_ID =
     Id.DatasetInstance.from(Id.Namespace.SYSTEM, APP_META_TABLE);
   private static final Id.DatasetInstance WORKFLOW_STATS_INSTANCE_ID =
     Id.DatasetInstance.from(Id.Namespace.SYSTEM, WORKFLOW_STATS_TABLE);
 
-
   private final LocationFactory locationFactory;
   private final NamespacedLocationFactory namespacedLocationFactory;
   private final CConfiguration configuration;
   private final DatasetFramework dsFramework;
+  private final MRJobInfoFetcher mrJobInfoFetcher;
 
   private Transactional<AppMds, AppMetadataStore> txnl;
   private Transactional<WorkflowStatsDataset,  WorkflowDataset> txnlWorkflow;
@@ -114,11 +114,13 @@ public class DefaultStore implements Store {
                       LocationFactory locationFactory,
                       NamespacedLocationFactory namespacedLocationFactory,
                       TransactionExecutorFactory txExecutorFactory,
-                      DatasetFramework framework) {
+                      DatasetFramework framework,
+                      final MRJobInfoFetcher mrJobInfoFetcher) {
     this.configuration = conf;
     this.locationFactory = locationFactory;
     this.namespacedLocationFactory = namespacedLocationFactory;
     this.dsFramework = framework;
+    this.mrJobInfoFetcher = mrJobInfoFetcher;
 
     txnl = Transactional.of(txExecutorFactory, new Supplier<AppMds>() {
       @Override
@@ -138,10 +140,9 @@ public class DefaultStore implements Store {
       public WorkflowStatsDataset get() {
         try {
           Table workflowTable = DatasetsUtil.getOrCreateDataset(dsFramework, WORKFLOW_STATS_INSTANCE_ID, "table",
-                                                           DatasetProperties.EMPTY,
-                                                           DatasetDefinition.NO_ARGUMENTS, null);
-          // TODO change var name
-          return new WorkflowStatsDataset(workflowTable);
+                                                                DatasetProperties.EMPTY,
+                                                                DatasetDefinition.NO_ARGUMENTS, null);
+          return new WorkflowStatsDataset(workflowTable, mrJobInfoFetcher);
         } catch (Exception e) {
           throw Throwables.propagate(e);
         }
@@ -253,38 +254,40 @@ public class DefaultStore implements Store {
       }
     });
 
+    // This block has been added so that completed workflow runs can be logged to the workflow dataset
     if (id.getType() == ProgramType.WORKFLOW && runStatus == ProgramRunStatus.COMPLETED) {
-      final RunRecordMeta run = getRun(id, pid);
-      Id.Application app = id.getApplication();
-      ApplicationSpecification appSpec = getApplication(app);
-      WorkflowSpecification workflowSpec = appSpec.getWorkflows().get(id.getId());
-      final Map<String, WorkflowNode> nodeIdMap = workflowSpec.getNodeIdMap();
+      recordCompletedWorkflows(id, pid);
+    }
+    // todo: delete old history data
+  }
 
-      final List<WorkflowDataset.ActionRuns> actionRunsList = new ArrayList<>();
+  private void recordCompletedWorkflows(final Id.Program id, String pid) {
+    final RunRecordMeta run = getRun(id, pid);
+    Id.Application app = id.getApplication();
+    ApplicationSpecification appSpec = getApplication(app);
+    WorkflowSpecification workflowSpec = appSpec.getWorkflows().get(id.getId());
+    final Map<String, WorkflowNode> nodeIdMap = workflowSpec.getNodeIdMap();
 
-      for (Map.Entry<String, String> entry : run.getProperties().entrySet()) {
-        if (!entry.getKey().equals("workflowToken")) {
-          WorkflowActionNode workflowNode = (WorkflowActionNode) nodeIdMap.get(entry.getKey());
-          ProgramType programType = ProgramType.valueOfSchedulableType(workflowNode.getProgram().getProgramType());
-          Id.Program innerProgram = Id.Program.from(app.getNamespaceId(), app.getId(), programType, entry.getKey());
-          RunRecordMeta innerProgramRun = getRun(innerProgram, entry.getValue());
-          actionRunsList.add(new WorkflowDataset.ActionRuns(
-            entry.getKey(), entry.getValue(), innerProgramRun.getStopTs() - innerProgramRun.getStartTs()));
-        }
+    final List<WorkflowDataset.ActionRuns> actionRunsList = new ArrayList<>();
+
+    for (Map.Entry<String, String> entry : run.getProperties().entrySet()) {
+      if (!"workflowToken".equals(entry.getKey())) {
+        WorkflowActionNode workflowNode = (WorkflowActionNode) nodeIdMap.get(entry.getKey());
+        ProgramType programType = ProgramType.valueOfSchedulableType(workflowNode.getProgram().getProgramType());
+        Id.Program innerProgram = Id.Program.from(app.getNamespaceId(), app.getId(), programType, entry.getKey());
+        RunRecordMeta innerProgramRun = getRun(innerProgram, entry.getValue());
+        actionRunsList.add(new WorkflowDataset.ActionRuns(
+          entry.getKey(), entry.getValue(), programType, innerProgramRun.getStopTs() - innerProgramRun.getStartTs()));
       }
-
-      txnlWorkflow.executeUnchecked(new TransactionExecutor.Function<WorkflowStatsDataset, Void>() {
-        @Override
-        public Void apply(WorkflowStatsDataset dataset) {
-          dataset.workflowDataset.write(id, run, actionRunsList);
-          return null;
-        }
-      });
     }
 
-
-
-    // todo: delete old history data
+    txnlWorkflow.executeUnchecked(new TransactionExecutor.Function<WorkflowStatsDataset, Void>() {
+      @Override
+      public Void apply(WorkflowStatsDataset dataset) {
+        dataset.workflowDataset.write(id, run, actionRunsList);
+        return null;
+      }
+    });
   }
 
   @Override
@@ -310,14 +313,14 @@ public class DefaultStore implements Store {
   }
 
   public WorkflowDataset.BasicStatistics getWorkflowStatistics(final Id.Workflow id,
-                                                                 final long startTime,
-                                                                 final long endTime,
-                                                                 final List<Double> percentiles) {
+                                                               final long startTime,
+                                                               final long endTime,
+                                                               final List<Double> percentiles) {
     return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
       <WorkflowStatsDataset, WorkflowDataset.BasicStatistics>() {
       @Override
       public WorkflowDataset.BasicStatistics apply(WorkflowStatsDataset dataset) throws Exception {
-        return dataset.workflowDataset.statistics(id, startTime, endTime, percentiles);
+        return dataset.workflowDataset.getStatistics(id, startTime, endTime, percentiles);
       }
     });
   }
@@ -1282,8 +1285,8 @@ public class DefaultStore implements Store {
   private static final class WorkflowStatsDataset implements Iterable<WorkflowDataset> {
     private final WorkflowDataset workflowDataset;
 
-    private WorkflowStatsDataset(Table mdsTable) {
-      this.workflowDataset = new WorkflowDataset(mdsTable);
+    private WorkflowStatsDataset(Table mdsTable, MRJobInfoFetcher mrJobInfoFetcher) {
+      this.workflowDataset = new WorkflowDataset(mdsTable, mrJobInfoFetcher);
     }
 
     @Override

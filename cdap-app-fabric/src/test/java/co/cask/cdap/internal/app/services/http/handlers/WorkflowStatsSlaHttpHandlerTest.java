@@ -60,17 +60,12 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
       RunId workflowRunId = RunIds.generate();
       store.setStart(workflowProgram, workflowRunId.getId(), RunIds.getTime(workflowRunId, TimeUnit.SECONDS));
 
-      TimeUnit.SECONDS.sleep(1);
-
       RunId mapreduceRunid = RunIds.generate();
       store.setWorkflowProgramStart(mapreduceProgram, mapreduceRunid.getId(), workflowProgram.getId(),
                                     workflowRunId.getId(), mapreduceProgram.getId(),
                                     RunIds.getTime(mapreduceRunid, TimeUnit.SECONDS), null, null);
-      TimeUnit.SECONDS.sleep(1);
       store.setStop(mapreduceProgram, mapreduceRunid.getId(),
                     TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
-
-      TimeUnit.SECONDS.sleep(1);
 
       // This makes sure that not all runs have Spark programs in them
       if (i < 5) {
@@ -78,13 +73,14 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
         store.setWorkflowProgramStart(sparkProgram, sparkRunid.getId(), workflowProgram.getId(),
                                       workflowRunId.getId(), sparkProgram.getId(),
                                       RunIds.getTime(sparkRunid, TimeUnit.SECONDS), null, null);
-        TimeUnit.SECONDS.sleep(1);
         store.setStop(sparkProgram, sparkRunid.getId(),
                       TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
-        TimeUnit.SECONDS.sleep(1);
       }
       store.setStop(workflowProgram, workflowRunId.getId(),
                     TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
+
+      // This sleep is required so that the store is not overridden as the workflows can then
+      // potentially start at the same time causing conflicts
       TimeUnit.SECONDS.sleep(1);
     }
 

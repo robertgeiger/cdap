@@ -498,5 +498,5 @@ public interface Store {
    * @return the statistics for a given workflow
    */
   WorkflowDataset.BasicStatistics getWorkflowStatistics(Id.Workflow workflowId, long startTime,
-                                                          long endTime, List<Double> percentiles);
+                                                        long endTime, List<Double> percentiles);
 }

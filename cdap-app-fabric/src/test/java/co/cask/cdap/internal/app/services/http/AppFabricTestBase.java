@@ -177,7 +177,6 @@ public abstract class AppFabricTestBase {
     txManager.startAndWait();
     dsOpService = injector.getInstance(DatasetOpExecutor.class);
     dsOpService.startAndWait();
-    dsOpService.startAndWait();
     datasetService = injector.getInstance(DatasetService.class);
     datasetService.startAndWait();
     appFabricServer = injector.getInstance(AppFabricServer.class);

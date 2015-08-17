@@ -32,7 +32,9 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -68,14 +70,18 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     long startTime = TimeMathParser.parseTimeInSeconds(start);
     long endTime = TimeMathParser.parseTimeInSeconds(end);
 
-    if (endTime < startTime || startTime < 0 || endTime < 0) {
-      throw new BadRequestException("Wrong start or end time.");
+    if (startTime < 0) {
+      throw new BadRequestException("Wrong start time.");
+    } else if (endTime < 0) {
+      throw new BadRequestException("Wrong end time.");
+    } else if (endTime < startTime) {
+      throw new BadRequestException("Start time cannot be larger than end time.");
     }
 
     for (double i : percentiles) {
-      if (i < 0 || i > 100) {
+      if (i < 0.0 || i > 100.0) {
         throw new BadRequestException("Percentile values have to be greater than or equal to 0 and" +
-                                        " less than or equal to 100");
+                                        " less than or equal to 100. Invalid input was " + Double.toString(i));
       }
     }
 
@@ -85,11 +91,12 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     try {
       basicStatistics = store.getWorkflowStatistics(workflow, startTime, endTime, percentiles);
     } catch (IllegalArgumentException exception) {
-      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The input that was provided was not correct.");
-      return;
+      throw new BadRequestException(exception);
     }
     if (basicStatistics == null) {
-      responder.sendString(HttpResponseStatus.OK, "There are no runs associated with this workflow.");
+      responder.sendString(HttpResponseStatus.OK, "There are no statistics associated with this workflow : "
+        + workflowId + " in the specified time range.");
+      return;
     }
     responder.sendJson(HttpResponseStatus.OK, basicStatistics);
   }

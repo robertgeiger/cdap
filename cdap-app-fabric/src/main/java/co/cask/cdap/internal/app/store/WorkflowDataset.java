@@ -22,11 +22,15 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scan;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.ProgramType;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.sun.istack.Nullable;
 import org.apache.hadoop.hbase.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,23 +44,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Dataset for Completed Workflows
+ * Dataset for Completed Workflows and their associated actions
  */
 public class WorkflowDataset extends AbstractDataset {
 
   private static final Gson GSON = new Gson();
-  private static final byte[] RUNID = Bytes.toBytes("runId");
-  private static final byte[] TIME_TAKEN = Bytes.toBytes("timeTaken");
-  private static final byte[] NODES = Bytes.toBytes("nodes");
+  private static final byte[] RUNID = Bytes.toBytes("r");
+  private static final byte[] TIME_TAKEN = Bytes.toBytes("t");
+  private static final byte[] NODES = Bytes.toBytes("n");
   private static final String DELIMITER = ":";
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowDataset.class);
   private static final Type ACTION_RUNS_TYPE = new TypeToken<List<ActionRuns>>() { }.getType();
 
+  private final MRJobInfoFetcher mrJobInfoFetcher;
   private final Table table;
 
-  WorkflowDataset(Table table) {
+  WorkflowDataset(Table table, MRJobInfoFetcher mrJobInfoFetcher) {
     super("ignored", table);
     this.table = table;
+    this.mrJobInfoFetcher = mrJobInfoFetcher;
   }
 
   private byte[] createRowKey(String key, long time) {
@@ -69,10 +75,9 @@ public class WorkflowDataset extends AbstractDataset {
   }
 
   public void write(Id.Program id, RunRecordMeta runRecordMeta, List<ActionRuns> actionRunsList) {
-
+    Joiner joiner = Joiner.on(DELIMITER);
+    String key = joiner.join(id.getApplication().getNamespaceId(), id.getApplicationId(), id.getId()) + DELIMITER;
     long start = runRecordMeta.getStartTs();
-    String key = id.getApplication().getNamespaceId() + DELIMITER
-      + id.getApplicationId() + DELIMITER + id.getId() + DELIMITER;
     byte[] rowKey = createRowKey(key, start);
 
     long timeTaken = runRecordMeta.getStopTs() - start;
@@ -84,7 +89,7 @@ public class WorkflowDataset extends AbstractDataset {
     table.put(rowKey, NODES, Bytes.toBytes(value));
   }
 
-  public List<WorkflowRunRecord> scan(Id.Program id, long timeRangeStart, long timeRangeEnd) {
+  public List<WorkflowRunRecord> scan(Id.Workflow id, long timeRangeStart, long timeRangeEnd) throws Exception {
     String namespaceId = id.getApplication().getNamespaceId();
     String applicationId = id.getApplicationId();
     String workflowId = id.getId();
@@ -109,9 +114,9 @@ public class WorkflowDataset extends AbstractDataset {
     return workflowRunRecordList;
   }
 
-  public WorkflowDataset.BasicStatistics statistics(Id.Workflow id, long startTime,
-                                                    long endTime, List<Double> percentiles) {
-
+  @Nullable
+  public WorkflowDataset.BasicStatistics getStatistics(Id.Workflow id, long startTime,
+                                                    long endTime, List<Double> percentiles) throws Exception {
     List<WorkflowRunRecord> workflowRunRecords = scan(id, startTime, endTime);
     int count = workflowRunRecords.size();
 
@@ -120,7 +125,7 @@ public class WorkflowDataset extends AbstractDataset {
     }
 
     double avgRunTime = 0.0;
-    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord: workflowRunRecords) {
+    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord : workflowRunRecords) {
       avgRunTime += workflowRunRecord.getTimeTaken();
     }
     avgRunTime /= count;
@@ -135,14 +140,14 @@ public class WorkflowDataset extends AbstractDataset {
 
     Map<String, List<Long>> actionToRunRecord = getActionRuns(workflowRunRecords);
 
-    Map<String, Map<String, Double>> actionToStatistic = new HashMap();
+    Map<String, Map<String, Double>> actionToStatistic = new HashMap<>();
     for (Map.Entry<String, List<Long>> entry : actionToRunRecord.entrySet()) {
       double avgForAction = 0;
-      for (long value: entry.getValue()) {
+      for (long value : entry.getValue()) {
         avgForAction += value;
       }
       avgForAction /= entry.getValue().size();
-      Map temp = new HashMap();
+      Map temp = new HashMap<>();
       temp.put("count", entry.getValue().size());
       temp.put("avgRunTime", avgForAction);
       actionToStatistic.put(entry.getKey(), temp);
@@ -166,8 +171,8 @@ public class WorkflowDataset extends AbstractDataset {
   private Pair<Map<String, Long>, Map<String, List<String>>> getPercentiles(List<WorkflowRunRecord> workflowRunRecords,
                                                                             List<Double> percentiles) {
     int count = workflowRunRecords.size();
-    Map<String, Long> percentileToTime = new HashMap();
-    Map<String, List<String>> percentileToRunids = new HashMap();
+    Map<String, Long> percentileToTime = new HashMap<>();
+    Map<String, List<String>> percentileToRunids = new HashMap<>();
     for (double i : percentiles) {
       List<String> percentileRun = new ArrayList();
       int percentileStart = (int) ((i * count) / 100);
@@ -191,7 +196,7 @@ public class WorkflowDataset extends AbstractDataset {
   }
 
   private Map<String, List<Long>> getActionRuns(List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords) {
-    Map<String, List<Long>> actionToRunRecord = new HashMap();
+    Map<String, List<Long>> actionToRunRecord = new HashMap<>();
     for (WorkflowDataset.WorkflowRunRecord workflowRunRecord : workflowRunRecords) {
       for (WorkflowDataset.ActionRuns runs : workflowRunRecord.getActionRuns()) {
         List<Long> runList = actionToRunRecord.get(runs.getName());
@@ -210,7 +215,7 @@ public class WorkflowDataset extends AbstractDataset {
   /**
    * Internal class to keep track of Workflow Run Records
    */
-  private static class WorkflowRunRecord {
+  public static class WorkflowRunRecord {
     private final String workflowRunId;
     private final long timeTaken;
     private final List<ActionRuns> actionRuns;
@@ -237,15 +242,21 @@ public class WorkflowDataset extends AbstractDataset {
   /**
    * Internal Class for keeping track of actions in a workflow
    */
-  private static class ActionRuns {
+  public static class ActionRuns {
     private final String runId;
     private final long timeTaken;
+    private final ProgramType programType;
     private final String name;
 
-    public ActionRuns(String name, String runId, long timeTaken) {
+    public ActionRuns(String name, String runId, ProgramType programType, long timeTaken) {
       this.name = name;
       this.runId = runId;
+      this.programType = programType;
       this.timeTaken = timeTaken;
+    }
+
+    public ProgramType getProgramType() {
+      return programType;
     }
 
     public long getTimeTaken() {
