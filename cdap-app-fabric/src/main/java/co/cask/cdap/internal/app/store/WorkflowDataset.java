@@ -23,6 +23,7 @@ import co.cask.cdap.api.dataset.table.Scan;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
+import co.cask.cdap.common.utils.ImmutablePair;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
 import com.google.common.annotations.VisibleForTesting;
@@ -31,7 +32,6 @@ import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.sun.istack.Nullable;
-import org.apache.hadoop.hbase.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,7 +132,7 @@ public class WorkflowDataset extends AbstractDataset {
 
     workflowRunRecords = sort(workflowRunRecords);
 
-    Pair<Map<String, Long>, Map<String, List<String>>> percentilesAndPercentileList =
+    ImmutablePair<Map<String, Long>, Map<String, List<String>>> percentilesAndPercentileList =
       getPercentiles(workflowRunRecords, percentiles);
 
     Map<String, Long> percentileToTime = percentilesAndPercentileList.getFirst();
@@ -162,14 +162,13 @@ public class WorkflowDataset extends AbstractDataset {
       }
     }
 
-    BasicStatistics basicStatistics = new BasicStatistics(startTime, endTime, count, avgRunTime, percentileToTime,
+    return new BasicStatistics(startTime, endTime, count, avgRunTime, percentileToTime,
                                                           percentileToRunids, actionToStatistic);
 
-    return basicStatistics;
   }
 
-  private Pair<Map<String, Long>, Map<String, List<String>>> getPercentiles(List<WorkflowRunRecord> workflowRunRecords,
-                                                                            List<Double> percentiles) {
+  private ImmutablePair<Map<String, Long>, Map<String, List<String>>> getPercentiles(
+    List<WorkflowRunRecord> workflowRunRecords, List<Double> percentiles) {
     int count = workflowRunRecords.size();
     Map<String, Long> percentileToTime = new HashMap<>();
     Map<String, List<String>> percentileToRunids = new HashMap<>();
@@ -182,7 +181,7 @@ public class WorkflowDataset extends AbstractDataset {
       percentileToRunids.put(Double.toString(i), percentileRun);
       percentileToTime.put(Double.toString(i), workflowRunRecords.get(percentileStart).getTimeTaken());
     }
-    return new Pair<>(percentileToTime, percentileToRunids);
+    return new ImmutablePair<>(percentileToTime, percentileToRunids);
   }
 
   private List<WorkflowDataset.WorkflowRunRecord> sort(List<WorkflowDataset.WorkflowRunRecord> workflowRunRecords) {
