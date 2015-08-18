@@ -29,6 +29,7 @@ import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.template.etl.common.Properties;
 import org.apache.cassandra.config.Config;
 import org.apache.cassandra.hadoop.BulkOutputFormat;
+import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
 import org.apache.cassandra.thrift.Mutation;
@@ -68,16 +69,18 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, ByteBuffer, 
   public void prepareRun(BatchSinkContext context) {
     Job job = context.getHadoopJob();
     Configuration conf = job.getConfiguration();
-    Config.setClientMode(true);
 
     // cassandra bulk loader config
-    conf.set("mapreduce.job.user.classpath.first", "true");
-    conf.set("cassandra.output.keyspace", config.keyspace);
-    conf.set("cassandra.output.columnfamily", config.columnFamily);
-    conf.set("cassandra.output.partitioner.class", config.partitioner);
-    conf.set("cassandra.output.thrift.port", config.port);    // default
-    conf.set("cassandra.output.thrift.address", "127.0.0.1");
-    conf.set("mapreduce.output.bulkoutputformat.streamthrottlembits", "400");
+    ConfigHelper.setOutputColumnFamily(conf, config.keyspace, config.columnFamily);
+    ConfigHelper.setOutputInitialAddress(conf, config.initialAddress);
+    ConfigHelper.setOutputPartitioner(conf, config.partitioner);
+    ConfigHelper.setOutputRpcPort(conf, config.port);
+//    conf.set("cassandra.output.keyspace", config.keyspace);
+//    conf.set("cassandra.output.columnfamily", config.columnFamily);
+//    conf.set("cassandra.output.partitioner.class", config.partitioner);
+//    conf.set("cassandra.output.thrift.port", config.port);    // default
+//    conf.set("cassandra.output.thrift.address", "127.0.0.1");
+//    conf.set("mapreduce.output.bulkoutputformat.streamthrottlembits", "400");
 
     //conf.set("mapreduce.output.bulkoutputformat.buffersize", Integer.toString(config.bufferSize));
     job.setOutputFormatClass(BulkOutputFormat.class);
@@ -86,17 +89,16 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, ByteBuffer, 
   @Override
   public void transform(StructuredRecord record,
                         Emitter<KeyValue<ByteBuffer, List<Mutation>>> emitter) throws Exception {
-
     try {
       ByteBuffer row = encodeObject(record.get(config.primaryKey),
                                     record.getSchema().getField(config.primaryKey).getSchema());
       emitter.emit(new KeyValue<>(row, getColumns(record)));
-    } catch (NullPointerException e) {
+    } catch (Exception e) {
       LOG.debug("Primary key " + config.primaryKey + "is not present in this record: " + record.getSchema().toString());
     }
   }
 
-  private List<Mutation> getColumns(StructuredRecord record) {
+  private List<Mutation> getColumns(StructuredRecord record) throws Exception {
     List<Mutation> columns = new ArrayList<>();
     for (String columnName : config.columns.split(",")) {
       if (columnName.equals(config.primaryKey)) {
@@ -104,7 +106,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, ByteBuffer, 
       }
       Column column = new Column();
       column.name = ByteBufferUtil.bytes(columnName);
-      column.value = record.get(columnName);
+      column.value = encodeObject(columnName, record.getSchema().getField(columnName).getSchema());
       column.timestamp = record.get("ts");
       Mutation mutation = new Mutation();
       mutation.column_or_supercolumn = new ColumnOrSuperColumn();

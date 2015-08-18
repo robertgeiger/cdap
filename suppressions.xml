@@ -37,6 +37,9 @@
   <!-- do not check thrift generated files -->
   <suppress checks=".*" files=".*/transaction/distributed/thrift/.*" />
 
+  <!--do not check cassandra files-->
+  <suppress checks = ".*" files=".*/org/apache/cassandra/.*" />
+
 
 
 </suppressions>
