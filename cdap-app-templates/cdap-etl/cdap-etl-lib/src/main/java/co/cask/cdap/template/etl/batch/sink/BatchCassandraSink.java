@@ -27,9 +27,14 @@ import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.batch.BatchSink;
 import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.template.etl.common.Properties;
+import co.cask.cdap.template.etl.common.StructuredRecordStringConverter;
+import com.google.common.base.Preconditions;
 import org.apache.cassandra.config.Config;
 import org.apache.cassandra.hadoop.BulkOutputFormat;
 import org.apache.cassandra.hadoop.ConfigHelper;
+import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
+import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
+import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
 import org.apache.cassandra.thrift.Mutation;
@@ -42,7 +47,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link BatchSink} that writes data to Cassandra.
@@ -56,7 +64,7 @@ import java.util.List;
 @Description("CDAP Cassandra Batch Sink takes the structured record from the input source " +
   "and converts each field to a byte buffer, then puts it in the keyspace and column family specified by the user. " +
   "The Cassandra server should be running prior to creating the adapter.")
-public class BatchCassandraSink extends BatchSink<StructuredRecord, ByteBuffer, List<Mutation>> {
+public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, ByteBuffer>, List<ByteBuffer>> {
   private static final Logger LOG = LoggerFactory.getLogger(BatchCassandraSink.class);
 
   private final CassandraConfig config;
@@ -70,48 +78,47 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, ByteBuffer, 
     Job job = context.getHadoopJob();
     Configuration conf = job.getConfiguration();
 
-    // cassandra bulk loader config
     ConfigHelper.setOutputColumnFamily(conf, config.keyspace, config.columnFamily);
     ConfigHelper.setOutputInitialAddress(conf, config.initialAddress);
     ConfigHelper.setOutputPartitioner(conf, config.partitioner);
     ConfigHelper.setOutputRpcPort(conf, config.port);
-//    conf.set("cassandra.output.keyspace", config.keyspace);
-//    conf.set("cassandra.output.columnfamily", config.columnFamily);
-//    conf.set("cassandra.output.partitioner.class", config.partitioner);
-//    conf.set("cassandra.output.thrift.port", config.port);    // default
-//    conf.set("cassandra.output.thrift.address", "127.0.0.1");
-//    conf.set("mapreduce.output.bulkoutputformat.streamthrottlembits", "400");
 
-    //conf.set("mapreduce.output.bulkoutputformat.buffersize", Integer.toString(config.bufferSize));
-    job.setOutputFormatClass(BulkOutputFormat.class);
+    // The query needs to include the non-primaryKey columns. Creating the query
+    String query = "UPDATE " + config.keyspace + "." + config.columnFamily + " SET ";
+    for (String column : config.columns.split(",")) {
+      if (!Arrays.asList(config.primaryKey.split(",")).contains(column)) {
+        query += column + " = ?, ";
+      }
+    }
+    query = query.substring(0, query.lastIndexOf(",")) + " "; //to remove the last comma
+    CqlConfigHelper.setOutputCql(job.getConfiguration(), query);
+
+    //ideally, we will use CqlBulkOutputFormat once Cassandra patches
+    job.setOutputFormatClass(CqlOutputFormat.class);
   }
 
   @Override
   public void transform(StructuredRecord record,
-                        Emitter<KeyValue<ByteBuffer, List<Mutation>>> emitter) throws Exception {
-    try {
-      ByteBuffer row = encodeObject(record.get(config.primaryKey),
-                                    record.getSchema().getField(config.primaryKey).getSchema());
-      emitter.emit(new KeyValue<>(row, getColumns(record)));
-    } catch (Exception e) {
-      LOG.debug("Primary key " + config.primaryKey + "is not present in this record: " + record.getSchema().toString());
+                        Emitter<KeyValue<Map<String, ByteBuffer>, List<ByteBuffer>>> emitter) throws Exception {
+    Map<String, ByteBuffer> keys = new LinkedHashMap<>();
+    for (String key : config.primaryKey.split(",")) {
+      Preconditions.checkNotNull(record.get(key), "Primary key " + key + " is not present in this record: " +
+        StructuredRecordStringConverter.toDelimitedString(record, ";"));
+      keys.put(key, encodeObject(record.get(key), record.getSchema().getField(key).getSchema()));
     }
+    emitter.emit(new KeyValue<>(keys, getColumns(record)));
   }
 
-  private List<Mutation> getColumns(StructuredRecord record) throws Exception {
-    List<Mutation> columns = new ArrayList<>();
+  private List<ByteBuffer> getColumns(StructuredRecord record) throws Exception {
+    List<ByteBuffer> columns = new ArrayList<>();
     for (String columnName : config.columns.split(",")) {
-      if (columnName.equals(config.primaryKey)) {
-        continue;
+
+      //Cassandra allows multiple primary keys, so splitting that list on a comma
+      // and checking that the current column isn't a primary key
+      if (!Arrays.asList(config.primaryKey.split(",")).contains(columnName)) {
+        columns.add(encodeObject(record.get(columnName),
+                                 record.getSchema().getField(columnName).getSchema()));
       }
-      Column column = new Column();
-      column.name = ByteBufferUtil.bytes(columnName);
-      column.value = encodeObject(columnName, record.getSchema().getField(columnName).getSchema());
-      column.timestamp = record.get("ts");
-      Mutation mutation = new Mutation();
-      mutation.column_or_supercolumn = new ColumnOrSuperColumn();
-      mutation.column_or_supercolumn.column = column;
-      columns.add(mutation);
     }
     return columns;
   }
@@ -151,31 +158,31 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, ByteBuffer, 
    */
   public static class CassandraConfig extends PluginConfig {
     @Name(Properties.Cassandra.PARITIONER)
-    String partitioner;
+    private String partitioner;
 
     @Name(Properties.Cassandra.PORT)
-    String port;
+    private String port;
 
     @Name(Properties.Cassandra.COLUMN_FAMILY)
-    String columnFamily;
+    private String columnFamily;
 
     @Name(Properties.Cassandra.KEYSPACE)
-    String keyspace;
+    private String keyspace;
 
     @Name(Properties.Cassandra.INITIAL_ADDRESS)
-    String initialAddress;
+    private String initialAddress;
 
     @Name(Properties.Cassandra.COLUMNS)
-    String columns;
+    private String columns;
 
     @Name(Properties.Cassandra.PRIMARY_KEY)
-    String primaryKey;
+    private String primaryKey;
 
     @Name(Properties.Cassandra.BUFFER_SIZE)
     //int bufferSize;
 
     public CassandraConfig(String partitioner, String port, String columnFamily, String keyspace,
-                           String initialAddress, String columns, String primaryKey, int bufferSize) {
+                           String initialAddress, String columns, String primaryKey) {
       this.partitioner = partitioner;
       this.initialAddress = initialAddress;
       this.port = port;
@@ -183,7 +190,6 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, ByteBuffer, 
       this.keyspace = keyspace;
       this.columns = columns;
       this.primaryKey = primaryKey;
-      //this.bufferSize = bufferSize;
     }
   }
 }
