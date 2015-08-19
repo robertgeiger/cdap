@@ -2,9 +2,9 @@
     :author: Cask Data, Inc.
     :copyright: Copyright © 2014 Cask Data, Inc.
 
-============================================
+====================
 Troubleshooting CDAP
-============================================
+====================
 
 Here are some selected examples of potential problems and possible resolutions.
 
