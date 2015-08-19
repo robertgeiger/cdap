@@ -224,7 +224,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
   public final DequeueResult<StreamEvent> poll(int maxEvents, long timeout,
                                                TimeUnit timeoutUnit) throws IOException, InterruptedException {
 
-    LOG.info("ZEN#206 Polling stream {}", streamConfig.getStreamId());
+    LOG.info("ZEN#206 Polling stream {}, consumer state {}", streamConfig.getStreamId(), consumerState);
     // Only need the CLAIMED state for FIFO with group size > 1.
     byte[] fifoStateContent = null;
     if (consumerConfig.getDequeueStrategy() == DequeueStrategy.FIFO && consumerConfig.getGroupSize() > 1) {
@@ -345,7 +345,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
 
   @Override
   public final boolean commitTx() throws Exception {
-    LOG.info("ZEN#206 committing Tx with {} polledEvents.", polledEvents.size());
+    LOG.info("ZEN#206 committing Tx with {} polledEvents, consumer state {}.", polledEvents.size(), consumerState);
     if (polledEvents.isEmpty()) {
       return true;
     }
@@ -360,10 +360,14 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
 
   @Override
   public void postTxCommit() {
+    LOG.info("ZEN#206 postTxCommit with {} polledEvents, consumer state {}.", polledEvents.size(), consumerState);
     long currentNano = System.nanoTime();
     if (currentNano >= nextPersistStateTime) {
       nextPersistStateTime = currentNano + STATE_PERSIST_MIN_INTERVAL;
+      LOG.info("ZEN#206 postTxCommit persisting consumer state {}.", consumerState);
       persistConsumerState();
+    } else {
+      LOG.info("ZEN#206 postTxCommit NOT persisting consumer state {}.", consumerState);
     }
 
     // Cleanup the entryStates map to free up memory
@@ -377,7 +381,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
 
   @Override
   public boolean rollbackTx() throws Exception {
-    LOG.info("ZEN#206 rolling back the Tx with {} polledEvents.", polledEvents.size());
+    LOG.info("ZEN#206 rolling back the Tx with {} polledEvents, consumer state {}", polledEvents.size(), consumerState);
     if (polledEvents.isEmpty()) {
       return true;
     }
@@ -485,6 +489,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
   }
 
   private void persistConsumerState() {
+    LOG.info("ZEN#206 Before persisting the consumer state {}", consumerState);
     try {
       if (lastPersistedState == null || !consumerState.equals(lastPersistedState)) {
         consumerStateStore.save(consumerState);
@@ -494,6 +499,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
     } catch (IOException e) {
       LOG.error("Failed to persist consumer state for consumer {} of stream {}", consumerConfig, getStreamId(), e);
     }
+    LOG.info("ZEN#206 After persisting the state {}", consumerState);
   }
 
   /**
