@@ -80,3 +80,5 @@ This table lists the upgrade paths available for different CDAP versions:
 Version  Direct Upgrade to:
 
 2.6.3    2.8.1
+
+If you are doing a new installation, we recommend using the current version of CDAP.
