@@ -192,6 +192,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
     this.entryStatesScanCompleted = Sets.newTreeSet(ROW_PREFIX_COMPARATOR);
 
     this.eventCache = Lists.newArrayList();
+    LOG.info("ZEN#206 stream name: {}, begin consumer state {}", streamConfig.getStreamId(), beginConsumerState);
     this.consumerState = beginConsumerState;
     this.lastPersistedState = new StreamConsumerState(beginConsumerState);
     this.stateColumnName = Bytes.add(QueueEntryRow.STATE_COLUMN_PREFIX, Bytes.toBytes(consumerConfig.getGroupId()));
@@ -223,6 +224,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
   public final DequeueResult<StreamEvent> poll(int maxEvents, long timeout,
                                                TimeUnit timeoutUnit) throws IOException, InterruptedException {
 
+    LOG.info("ZEN#206 Polling stream {}", streamConfig.getStreamId());
     // Only need the CLAIMED state for FIFO with group size > 1.
     byte[] fifoStateContent = null;
     if (consumerConfig.getDequeueStrategy() == DequeueStrategy.FIFO && consumerConfig.getGroupSize() > 1) {
@@ -231,7 +233,14 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
 
     // Try to read from cache if any
     if (!eventCache.isEmpty()) {
+      LOG.info("ZEN#206 Found {} events in the eventCache", eventCache.size());
+      for (StreamEventOffset offset : eventCache) {
+        LOG.info("ZEN#206 event in eventCache {}", offset);
+      }
+
       getEvents(eventCache, polledEvents, maxEvents, fifoStateContent);
+
+      LOG.info("ZEN#206 Found {} events in the polledEvents with maxEvents {}", polledEvents.size(), maxEvents);
     }
 
     if (polledEvents.size() == maxEvents) {
@@ -252,15 +261,19 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
     // It's a conservative approach to save the reader position before reading so that no
     // event will be missed upon restart.
     consumerState.setState(reader.getPosition());
+    LOG.info("ZEN#206 Saving the reader offset {}, pollEvents size {}, maxRead {}, consumer state {}",
+             reader.getPosition(), polledEvents.size(), maxRead, consumerState);
 
     // Read from the underlying file reader
     while (polledEvents.size() < maxEvents) {
       int readCount = reader.read(eventCache, maxRead, timeoutNano, TimeUnit.NANOSECONDS, readFilter);
+      LOG.info("ZEN#206 Read {} events from file.", readCount);
       long elapsedNano = stopwatch.elapsedTime(TimeUnit.NANOSECONDS);
       timeoutNano -= elapsedNano;
 
       if (readCount > 0) {
         int eventsClaimed = getEvents(eventCache, polledEvents, maxEvents - polledEvents.size(), fifoStateContent);
+        LOG.info("ZEN#206 Events claimed {}.", eventsClaimed);
 
         // TODO: This is a quick fix for preventing backoff logic in flowlet drive kicks in too early.
         // But it doesn't entirely prevent backoff. A proper fix would have a special state in the dequeue result
@@ -332,6 +345,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
 
   @Override
   public final boolean commitTx() throws Exception {
+    LOG.info("ZEN#206 committing Tx with {} polledEvents.", polledEvents.size());
     if (polledEvents.isEmpty()) {
       return true;
     }
@@ -363,6 +377,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
 
   @Override
   public boolean rollbackTx() throws Exception {
+    LOG.info("ZEN#206 rolling back the Tx with {} polledEvents.", polledEvents.size());
     if (polledEvents.isEmpty()) {
       return true;
     }
@@ -371,8 +386,15 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
     // This is to avoid upon close() is called right after rollback, it recorded uncommitted file offsets.
     consumerState.setState(lastPersistedState.getState());
 
+    LOG.info("ZEN#206 Resetting the consumer state to {}", consumerState);
+
     // Insert all polled events back to beginning of the eventCache
     eventCache.addAll(0, Lists.transform(polledEvents, CONVERT_STREAM_EVENT_OFFSET));
+
+    LOG.info("ZEN#206 Inserted all polled events back to the beginning of the cache {}", eventCache.size());
+    for (StreamEventOffset offset : eventCache) {
+      LOG.info("ZEN#206 Re-inserted event in eventCache {}", offset);
+    }
 
     // Special case for FIFO. On rollback, put the CLAIMED state into the entry states for claim entry to use.
     byte[] fifoState = null;
@@ -467,6 +489,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
       if (lastPersistedState == null || !consumerState.equals(lastPersistedState)) {
         consumerStateStore.save(consumerState);
         lastPersistedState = new StreamConsumerState(consumerState);
+        LOG.info("ZEN#206 Persisting consumer state {}", consumerState);
       }
     } catch (IOException e) {
       LOG.error("Failed to persist consumer state for consumer {} of stream {}", consumerConfig, getStreamId(), e);
@@ -497,6 +520,7 @@ public abstract class AbstractStreamFileConsumer implements StreamConsumer {
    * @return The row key for writing to the state table if successfully claimed or {@code null} if not claimed.
    */
   private byte[] claimEntry(StreamFileOffset offset, byte[] claimedStateContent) throws IOException {
+    LOG.info("ZEN#206 Claiming stream event offset {}", offset);
     ByteArrayDataOutput out = ByteStreams.newDataOutput(50);
     out.writeLong(consumerConfig.getGroupId());
     StreamUtils.encodeOffset(out, offset);
