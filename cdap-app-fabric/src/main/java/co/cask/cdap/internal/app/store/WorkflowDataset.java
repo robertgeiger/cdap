@@ -248,11 +248,9 @@ public class WorkflowDataset extends AbstractDataset {
   private Set<WorkflowRunRecord> getNeighbors(Id.Workflow id, String runId, int count, long timeInterval) {
     RunId pid = RunIds.fromString(runId);
     long startTime = RunIds.getTime(pid, TimeUnit.SECONDS);
-    System.out.println(startTime);
     Set<WorkflowRunRecord> workflowRunRecords = new HashSet<>();
     for (int i = (-1 * count); i <= count; i++) {
       long prevStartTime = startTime + (i * timeInterval);
-      System.out.println("PrevStartTime : " + prevStartTime);
       MDSKey mdsKey = new MDSKey.Builder().add(id.getNamespaceId())
         .add(id.getApplicationId()).add(id.getId()).add(prevStartTime).build();
       byte[] startRowKey = mdsKey.getKey();
@@ -268,7 +266,6 @@ public class WorkflowDataset extends AbstractDataset {
       splitter.skipString();
       splitter.skipString();
       long time = splitter.getLong();
-      System.out.println("Record : " + time);
       if ((time > (startTime - (count * timeInterval))) && time < (startTime + (count * timeInterval))) {
         Map<byte[], byte[]> columns = indexRow.getColumns();
         String workflowRunId = Bytes.toString(columns.get(RUNID));
