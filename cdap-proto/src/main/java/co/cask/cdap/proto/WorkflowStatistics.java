@@ -88,16 +88,4 @@ public class WorkflowStatistics {
       this.programToStatistics = programToStatistics;
     }
   }
-
-  public static class FormattedStatistics {
-    private final Map<String, Object> runIdToStatistic;
-
-    public FormattedStatistics(Map<String, Object> runIdToStatistic) {
-      this.runIdToStatistic = runIdToStatistic;
-    }
-
-    public Map<String, Object> getRunIdToStatistic() {
-      return runIdToStatistic;
-    }
-  }
 }

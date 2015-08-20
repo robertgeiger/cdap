@@ -345,8 +345,10 @@ public class DefaultStore implements Store {
   }
 
   @Override
-  public Map<String, WorkflowDataset.WorkflowRunRecord> retrieveSpacedRecords(final Id.Workflow workflow, final String runId,
-                                                                       final int count, final long timeInterval) {
+  public Map<String, WorkflowDataset.WorkflowRunRecord> retrieveSpacedRecords(final Id.Workflow workflow,
+                                                                              final String runId,
+                                                                              final int count,
+                                                                              final long timeInterval) {
     return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
       <WorkflowStatsDataset, Map<String, WorkflowDataset.WorkflowRunRecord>>() {
       @Override
