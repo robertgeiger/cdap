@@ -86,7 +86,7 @@ public class WorkflowDataset extends AbstractDataset {
    * @return List of WorkflowRunRecords
    * @throws Exception
    */
-  public List<WorkflowRunRecord> scan(Id.Workflow id, long timeRangeStart, long timeRangeEnd) throws Exception {
+  private List<WorkflowRunRecord> scan(Id.Workflow id, long timeRangeStart, long timeRangeEnd) throws Exception {
     byte[] startRowKey = new MDSKey.Builder().add(id.getApplication().getNamespaceId()).add(id.getApplicationId()).
       add(id.getId()).add(timeRangeStart).build().getKey();
     byte[] endRowKey = new MDSKey.Builder().add(id.getApplication().getNamespaceId()).add(id.getApplicationId()).
@@ -208,7 +208,7 @@ public class WorkflowDataset extends AbstractDataset {
   }
 
   @Nullable
-  public WorkflowRunRecord getRecord(Id.Workflow id, String runId) {
+  WorkflowRunRecord getRecord(Id.Workflow id, String runId) {
     RunId pid = RunIds.fromString(runId);
     long startTime = RunIds.getTime(pid, TimeUnit.SECONDS);
     MDSKey mdsKey = new MDSKey.Builder().add(id.getNamespaceId())
