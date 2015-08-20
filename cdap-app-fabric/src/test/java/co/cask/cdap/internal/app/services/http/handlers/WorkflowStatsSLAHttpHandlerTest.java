@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
 
+
   @Test
   public void testStatistics() throws Exception {
 
@@ -170,7 +171,7 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
     RunId workflowRun1 = setupRuns(workflowProgram, mapreduceProgram, sparkProgram, store);
     RunId workflowRun2 = setupRuns(workflowProgram, mapreduceProgram, sparkProgram, store);
 
-    String request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/compare/run-id/%s?other-run-id=%s",
+    String request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/run-id/%s/compare?other-run-id=%s",
                                    Constants.Gateway.API_VERSION_3, Id.Namespace.DEFAULT,
                                    WorkflowApp.class.getSimpleName(), workflowProgram.getId(), workflowRun1.toString(),
                                    workflowRun2.toString());

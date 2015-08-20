@@ -503,7 +503,7 @@ public interface Store {
                                            long endTime, List<Double> percentiles);
 
   /**
-   * Returns detailed statistics for a run of a workflow.
+   * Returns the record that represents the run of a workflow.
    *
    * @param workflowId The Workflow whose run needs to be queried
    * @param runId RunId of the workflow run
@@ -521,5 +521,5 @@ public interface Store {
    * @return Map of runId of Workflow to DetailedStatistics of the run
    */
   Map<String, WorkflowDataset.WorkflowRunRecord> retrieveSpacedRecords(Id.Workflow workflow, String runId,
-                                                                int count, long timeInterval);
+                                                                       int count, long timeInterval);
 }

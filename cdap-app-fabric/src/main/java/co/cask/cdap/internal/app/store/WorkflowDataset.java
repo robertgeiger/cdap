@@ -270,7 +270,6 @@ public class WorkflowDataset extends AbstractDataset {
         Map<byte[], byte[]> columns = indexRow.getColumns();
         String workflowRunId = Bytes.toString(columns.get(RUNID));
         long timeTaken = Bytes.toLong(columns.get(TIME_TAKEN));
-
         List<ProgramRun> programRunList = GSON.fromJson(Bytes.toString(columns.get(NODES)), PROGRAM_RUNS_TYPE);
         workflowRunRecords.put(workflowRunId, new WorkflowRunRecord(workflowRunId, timeTaken, programRunList));
       } else {

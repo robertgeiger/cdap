@@ -134,7 +134,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
   }
 
   @GET
-  @Path("apps/{app-id}/workflows/{workflow-id}/compare/run-id/{run-id}")
+  @Path("apps/{app-id}/workflows/{workflow-id}/run-id/{run-id}/compare")
   public void compare(HttpRequest request, HttpResponder responder,
                       @PathParam("namespace-id") String namespaceId,
                       @PathParam("app-id") String appId,
@@ -152,7 +152,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
       responder.sendString(HttpResponseStatus.BAD_REQUEST, "The other run-id you provided was not correct.");
       return;
     }
-    // TODO: Change format of return such that the results are intertwined.
+
     Map<String, WorkflowStatistics.DetailedStatistics> detailedStatisticsMap = new HashMap<>();
     detailedStatisticsMap.put(runId, detailedStatistics);
     detailedStatisticsMap.put(otherRunId, otherDetailedStatistics);
