@@ -17,11 +17,13 @@
 package co.cask.cdap.internal.app.services.http;
 
 import co.cask.cdap.api.Config;
+import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.metrics.MetricsCollectionService;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.templates.ApplicationTemplate;
 import co.cask.cdap.app.program.ManifestFields;
 import co.cask.cdap.app.store.ServiceStore;
+import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.discovery.EndpointStrategy;
@@ -35,6 +37,7 @@ import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutor;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.gateway.handlers.UsageHandler;
 import co.cask.cdap.internal.app.services.AppFabricServer;
+import co.cask.cdap.internal.app.store.DefaultStore;
 import co.cask.cdap.internal.guice.AppFabricTestModule;
 import co.cask.cdap.internal.test.AppJarHelper;
 import co.cask.cdap.internal.test.PluginJarHelper;
@@ -153,6 +156,9 @@ public abstract class AppFabricTestBase {
   private static LocationFactory locationFactory;
   private static File adapterDir;
 
+  protected static MetricStore metricStore;
+  protected static Store store;
+
   @ClassRule
   public static TemporaryFolder tmpFolder = new TemporaryFolder();
 
@@ -198,6 +204,8 @@ public abstract class AppFabricTestBase {
     locationFactory = getInjector().getInstance(LocationFactory.class);
     adapterDir = new File(conf.get(Constants.AppFabric.APP_TEMPLATE_DIR));
     createNamespaces();
+    store = injector.getInstance(DefaultStore.class);
+    metricStore = injector.getInstance(MetricStore.class);
   }
 
   @AfterClass
