@@ -118,6 +118,10 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
                                 @PathParam("run-id") String runId,
                                 @QueryParam("count") int count,
                                 @QueryParam("interval") String interval) throws Exception {
+    if (count < 0) {
+      throw new BadRequestException("Count has to be greater than or equal to 0");
+    }
+
     long timeInterval = TimeMathParser.resolutionInSeconds(interval);
     Id.Workflow workflow = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
     Collection<WorkflowDataset.WorkflowRunRecord> workflowRunRecords =
@@ -162,7 +166,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
   }
 
   private Map<String, Map<String, Map<String, Long>>> convert(Map<String, WorkflowStatistics.DetailedStatistics>
-                                                                        workflowDetailedStatisticsMap) {
+                                                                workflowDetailedStatisticsMap) {
     Map<String, Map<String, Map<String, Long>>> formattedStatisticsMap = new HashMap<>();
     for (Map.Entry<String, WorkflowStatistics.DetailedStatistics> entry : workflowDetailedStatisticsMap.entrySet()) {
       Map<String, Map<String, Long>> internalMap = entry.getValue().getProgramToStatistics();
@@ -222,8 +226,6 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     MetricSearchQuery metricSearchQuery = new MetricSearchQuery(0, Integer.MAX_VALUE, -1, tags);
     Collection<String> metricNames = metricStore.findMetricNames(metricSearchQuery);
     Map<String, Long> overallResult = new HashMap<>();
-    String name;
-    List<TimeValue> timeValues;
     for (String metricName : metricNames) {
       Collection<MetricTimeSeries> resultPerQuery = metricStore.query(
         new MetricDataQuery(0, 0, Integer.MAX_VALUE, metricName, AggregationFunction.SUM,
