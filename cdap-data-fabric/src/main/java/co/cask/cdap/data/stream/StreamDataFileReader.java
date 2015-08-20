@@ -32,6 +32,8 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
 import java.io.FileNotFoundException;
@@ -51,6 +53,8 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class StreamDataFileReader implements FileReader<PositionStreamEvent, Long> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(StreamDataFileReader.class);
 
   private final InputSupplier<? extends SeekableInputStream> eventInputSupplier;
   private final InputSupplier<? extends InputStream> indexInputSupplier;
@@ -117,6 +121,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
     this.offset = offset;
     this.timestampBuffer = new byte[8];
     this.timestamp = -1L;
+    LOG.info("ZEN#206 created StreamDataFileReader with offset {}", offset);
   }
 
   @Override
@@ -242,6 +247,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
    * Opens and initialize this reader.
    */
   private void doOpen() throws IOException {
+    LOG.info("ZEN#206 opening reader");
     try {
       eventInput = eventInputSupplier.getInput();
       decoder = new BinaryDecoder(eventInput);
@@ -262,13 +268,17 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
         }
       }
     } catch (IOException e) {
+      LOG.info("ZEN#206 Exception occurred. Resetting the position ", e);
+      // ZEN#206C position is getting reset to 0 on EOFException too
       position = 0;
       if (eventInput != null) {
         eventInput.close();
         eventInput = null;
+        LOG.info("ZEN#206 setting eventInput to null");
       }
       throw e;
     }
+    LOG.info("ZEN#206 reader opened with position {}", position);
   }
 
   private long computeSleepNano(long timeout, TimeUnit unit) {
@@ -278,7 +288,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
 
   private void init() throws IOException {
     readHeader();
-
+    LOG.info("ZEN#206 init with offset {}, startTime {}", offset, startTime);
     // If it is constructed with an arbitrary offset, need to find an event position
     if (offset > 0) {
       initByOffset(offset);
@@ -308,6 +318,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
     }
 
     position = eventInput.getPos();
+    LOG.info("#ZEN#206 readHeader position {}", position);
   }
 
   /**
@@ -374,6 +385,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
         return position >= offset;
       }
     });
+    LOG.info("ZEN#206 initByOffset {}", offset);
   }
 
   private void initByTime(final long time) throws IOException {
@@ -391,12 +403,14 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
         return timestamp >= time;
       }
     });
+    LOG.info("ZEN#206 initByTime {}", time);
   }
 
   /**
    * Skips events until the given condition is true.
    */
   private void skipUntil(SkipCondition condition) throws IOException {
+    LOG.info("ZEN#206 skipUntil position {}", position);
     long positionBound = position = eventInput.getPos();
 
     try {
@@ -444,6 +458,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
         throw e;
       }
     }
+    LOG.info("ZEN#206 done skipUntil position {}", position);
   }
 
   private void verifySchema(Map<String, String> properties) throws IOException {
@@ -475,9 +490,13 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
 
   private void readDataBlock(ReadFilter filter) throws IOException {
     // Data block is <timestamp> <length> <stream_data>+
+    LOG.info("ZEN#206 readDataBlock previous position {}", position);
     position = eventInput.getPos();
+    LOG.info("ZEN#206 readDataBlock position {}", position);
     long timestamp = readTimestamp();
+    LOG.info("ZEN#206 readDataBlock timeStamp {}", timestamp);
     if (timestamp < 0) {
+      LOG.info("ZEN#206 readDataBlock setting EOF for timestamp {}", timestamp);
       eof = true;
       return;
     }
@@ -487,11 +506,13 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
     if (acceptTimestamp(filter, timestamp)) {
       streamEventBuffer.fillBuffer(eventInput, readLength());
       this.timestamp = timestamp;
+      // ZEN#206C Why is position not getting updated here?
       return;
     }
 
     // If timestamp is not accepted and the timestamp comes from event template, then the whole file can be skipped
     if (eventTemplate.getTimestamp() >= 0) {
+      LOG.info("ZEN#206 readDataBlock setting EOF for eventTemplate timestamp {}", eventTemplate.getTimestamp());
       eof = true;
       return;
     }
@@ -509,6 +530,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
       throw new EOFException("Expected to skip " + length + " but only " + bytesSkipped + " was skipped.");
     }
     position = eventInput.getPos();
+    LOG.info("ZEN#206 setting position {}", position);
   }
 
   /**
@@ -528,6 +550,7 @@ public final class StreamDataFileReader implements FileReader<PositionStreamEven
 
     PositionStreamEvent event = streamEventBuffer.nextEvent(timestamp, eventTemplate.getHeaders(), filter);
     position = streamEventBuffer.getPosition();
+    LOG.info("ZEN#206 setting position {}", position);
     return event;
   }
 

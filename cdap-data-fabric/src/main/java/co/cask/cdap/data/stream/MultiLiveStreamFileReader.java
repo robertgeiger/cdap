@@ -27,6 +27,8 @@ import com.google.common.collect.Sets;
 import com.google.common.primitives.Longs;
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -159,6 +161,7 @@ public final class MultiLiveStreamFileReader implements FileReader<StreamEventOf
   private static final class StreamEventSource implements Comparable<StreamEventSource>,
                                                           Closeable, PositionReporter<StreamFileOffset> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(StreamEventSource.class);
     private final FileReader<PositionStreamEvent, StreamFileOffset> reader;
     private final List<PositionStreamEvent> events;
     private StreamFileOffset currentOffset;
@@ -174,6 +177,7 @@ public final class MultiLiveStreamFileReader implements FileReader<StreamEventOf
     void initialize() throws IOException {
       reader.initialize();
       currentOffset = reader.getPosition();
+      LOG.info("ZEN#206 currentOffset after initialize {}", currentOffset);
     }
 
     void read(Collection<? super StreamEventOffset> result) throws IOException, InterruptedException {
@@ -190,6 +194,7 @@ public final class MultiLiveStreamFileReader implements FileReader<StreamEventOf
 
       // Updates current offset information to be after the current event.
       currentOffset = nextOffset;
+      LOG.info("ZEN#206 currentOffset after read {}", currentOffset);
     }
 
     /**

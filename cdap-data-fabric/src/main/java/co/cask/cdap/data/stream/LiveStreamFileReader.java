@@ -70,11 +70,13 @@ public final class LiveStreamFileReader extends LiveFileReader<PositionStreamEve
     this.beginOffset = beginOffset;
     this.maxFileCheckInterval = (maxFileCheckInterval <= 0) ? Constants.Stream.NEW_FILE_CHECK_INTERVAL
                                                             : maxFileCheckInterval;
+    LOG.info("ZEN#206 beginOffset {}", beginOffset);
   }
 
   @Nullable
   @Override
   protected FileReader<PositionStreamEvent, StreamFileOffset> renewReader() throws IOException {
+    LOG.info("ZEN#206 renewing reader");
     // If no reader has yet opened, start with the beginning offset.
     if (reader == null) {
       reader = new StreamPositionTransformFileReader(beginOffset);
@@ -160,15 +162,15 @@ public final class LiveStreamFileReader extends LiveFileReader<PositionStreamEve
       this.offset = new StreamFileOffset(offset);
       this.partitionLocation = Locations.getParent(offset.getEventLocation());
 
-      LOG.trace("Stream reader created for {}", offset.getEventLocation().toURI());
+      LOG.info("ZEN#206 Stream reader created for {}, offset {}", offset.getEventLocation().toURI(), offset);
     }
 
     @Override
     public void initialize() throws IOException {
-      LOG.trace("Initialize stream reader {}", offset);
+      LOG.info("ZEN#206 Initialize stream reader {}", offset);
       reader.initialize();
       offset = new StreamFileOffset(offset, reader.getPosition());
-      LOG.trace("Stream reader initialized {}", offset);
+      LOG.info("ZEN#206 Stream reader initialized {}", offset);
     }
 
     @Override
@@ -182,6 +184,7 @@ public final class LiveStreamFileReader extends LiveFileReader<PositionStreamEve
                     long timeout, TimeUnit unit, ReadFilter readFilter) throws IOException, InterruptedException {
       int eventCount = reader.read(events, maxEvents, timeout, unit, readFilter);
       offset = new StreamFileOffset(offset, reader.getPosition());
+      LOG.info("ZEN#206 update offset after read {}, eventCount {}", offset, eventCount);
       return eventCount;
     }
 
