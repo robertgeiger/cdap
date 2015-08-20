@@ -78,13 +78,13 @@ public class WorkflowStatistics {
    * Returns detailed statistics per run
    */
   public static class DetailedStatistics {
-    private final Map<String, Object> programToStatistics;
+    private final Map<String, Map<String, Long>> programToStatistics;
 
-    public Map<String, Object> getProgramToStatistics() {
+    public Map<String, Map<String, Long>> getProgramToStatistics() {
       return programToStatistics;
     }
 
-    public DetailedStatistics(Map<String, Object> programToStatistics) {
+    public DetailedStatistics(Map<String, Map<String, Long>> programToStatistics) {
       this.programToStatistics = programToStatistics;
     }
   }

@@ -244,7 +244,6 @@ public class WorkflowDataset extends AbstractDataset {
     if (workflowRunRecord != null) {
       mainRunRecords.put(workflowRunRecord.getWorkflowRunId(), workflowRunRecord);
     }
-    System.out.println(mainRunRecords);
     return mainRunRecords;
   }
 

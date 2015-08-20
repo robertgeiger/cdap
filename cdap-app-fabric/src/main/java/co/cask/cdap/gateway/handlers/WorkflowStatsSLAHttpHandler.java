@@ -132,7 +132,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
         getDetailedRecord(workflow, workflowRunRecord.getWorkflowRunId());
       detailedStatisticsMap.put(workflowRunRecord.getWorkflowRunId(), detailedStatistics);
     }
-    Map<String, Map<String, Object>> formattedStatisticsMap = convert(detailedStatisticsMap);
+    Map<String, Map<String, Map<String, Long>>> formattedStatisticsMap = convert(detailedStatisticsMap);
 
     responder.sendJson(HttpResponseStatus.OK, formattedStatisticsMap);
   }
@@ -161,17 +161,17 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     detailedStatisticsMap.put(runId, detailedStatistics);
     detailedStatisticsMap.put(otherRunId, otherDetailedStatistics);
 
-    Map<String, Map<String, Object>> formattedStatisticsMap = convert(detailedStatisticsMap);
+    Map<String, Map<String, Map<String, Long>>> formattedStatisticsMap = convert(detailedStatisticsMap);
     responder.sendJson(HttpResponseStatus.OK, formattedStatisticsMap);
   }
 
-  private Map<String, Map<String, Object>> convert(Map<String, WorkflowStatistics.DetailedStatistics>
+  private Map<String, Map<String, Map<String, Long>>> convert(Map<String, WorkflowStatistics.DetailedStatistics>
                                                                         workflowDetailedStatisticsMap) {
-    Map<String, Map<String, Object>> formattedStatisticsMap = new HashMap<>();
+    Map<String, Map<String, Map<String, Long>>> formattedStatisticsMap = new HashMap<>();
     for (Map.Entry<String, WorkflowStatistics.DetailedStatistics> entry : workflowDetailedStatisticsMap.entrySet()) {
-      Map<String, Object> internalMap = entry.getValue().getProgramToStatistics();
-      for (Map.Entry<String, Object> internalEntry : internalMap.entrySet()) {
-        Map<String, Object> newMap;
+      Map<String, Map<String, Long>> internalMap = entry.getValue().getProgramToStatistics();
+      for (Map.Entry<String, Map<String, Long>> internalEntry : internalMap.entrySet()) {
+        Map<String, Map<String, Long>> newMap;
         if ((newMap = formattedStatisticsMap.get(internalEntry.getKey())) == null) {
           newMap = new HashMap<>();
           formattedStatisticsMap.put(internalEntry.getKey(), newMap);
@@ -190,7 +190,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
       return null;
     }
     List<WorkflowDataset.ProgramRun> programRuns = workflowRunRecord.getProgramRuns();
-    Map<String, Object> details = new HashMap<>();
+    Map<String, Map<String, Long>> details = new HashMap<>();
     for (WorkflowDataset.ProgramRun actionRun : programRuns) {
       if (actionRun.getProgramType() == ProgramType.MAPREDUCE) {
         details.put(actionRun.getName(),
@@ -207,9 +207,9 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     return new WorkflowStatistics.DetailedStatistics(details);
   }
 
-  private MRJobInfo getMapreduceDetails(Id.Program mapreduceProgram, String runId) throws Exception {
+  private Map<String, Long> getMapreduceDetails(Id.Program mapreduceProgram, String runId) throws Exception {
     Id.Run mrRun = new Id.Run(mapreduceProgram, runId);
-    return mrJobInfoFetcher.getMRJobInfo(mrRun);
+    return mrJobInfoFetcher.getMRJobInfo(mrRun).getCounters();
   }
 
   private Map<String, Long> getSparkDetails(Id.Program sparkProgram, String runId) throws Exception {
@@ -220,10 +220,9 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     context.put(Constants.Metrics.Tag.RUN_ID, runId);
 
     List<TagValue> tags = new ArrayList<>();
-    tags.add(new TagValue(Constants.Metrics.Tag.NAMESPACE, sparkProgram.getNamespaceId()));
-    tags.add(new TagValue(Constants.Metrics.Tag.APP, sparkProgram.getApplicationId()));
-    tags.add(new TagValue(Constants.Metrics.Tag.SPARK, sparkProgram.getId()));
-    tags.add(new TagValue(Constants.Metrics.Tag.RUN_ID, runId));
+    for (Map.Entry<String, String> entry : context.entrySet()) {
+      tags.add(new TagValue(entry.getKey(), entry.getValue()));
+    }
     MetricSearchQuery metricSearchQuery = new MetricSearchQuery(0, Integer.MAX_VALUE, -1, tags);
     Collection<String> metricNames = metricStore.findMetricNames(metricSearchQuery);
     Map<String, Long> overallResult = new HashMap<>();
