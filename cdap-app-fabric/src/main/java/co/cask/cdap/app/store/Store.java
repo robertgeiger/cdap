@@ -523,6 +523,6 @@ public interface Store {
    * @param timeInterval The timeInterval with which the user wants to space out the runs
    * @return Map of runId of Workflow to DetailedStatistics of the run
    */
-  Set<WorkflowDataset.WorkflowRunRecord> retrieveSpacedRecords(Id.Workflow workflow, String runId,
+  Map<String, WorkflowDataset.WorkflowRunRecord> retrieveSpacedRecords(Id.Workflow workflow, String runId,
                                                                 int count, long timeInterval);
 }

@@ -238,17 +238,20 @@ public class WorkflowDataset extends AbstractDataset {
     }
   }
 
-  Set<WorkflowRunRecord> getDetailsOfRange(Id.Workflow workflow, String runId, int count, long timeInterval) {
-    Set<WorkflowRunRecord> mainRunRecords = getNeighbors(workflow, runId, count, timeInterval);
+  Map<String, WorkflowRunRecord> getDetailsOfRange(Id.Workflow workflow, String runId, int count, long timeInterval) {
+    Map<String, WorkflowRunRecord> mainRunRecords = getNeighbors(workflow, runId, count, timeInterval);
     WorkflowRunRecord workflowRunRecord = getRecord(workflow, runId);
-    mainRunRecords.add(workflowRunRecord);
+    if (workflowRunRecord != null) {
+      mainRunRecords.put(workflowRunRecord.getWorkflowRunId(), workflowRunRecord);
+    }
+    System.out.println(mainRunRecords);
     return mainRunRecords;
   }
 
-  private Set<WorkflowRunRecord> getNeighbors(Id.Workflow id, String runId, int count, long timeInterval) {
+  private Map<String, WorkflowRunRecord> getNeighbors(Id.Workflow id, String runId, int count, long timeInterval) {
     RunId pid = RunIds.fromString(runId);
     long startTime = RunIds.getTime(pid, TimeUnit.SECONDS);
-    Set<WorkflowRunRecord> workflowRunRecords = new HashSet<>();
+    Map<String, WorkflowRunRecord> workflowRunRecords = new HashMap<>();
     for (int i = (-1 * count); i <= count; i++) {
       long prevStartTime = startTime + (i * timeInterval);
       MDSKey mdsKey = new MDSKey.Builder().add(id.getNamespaceId())
@@ -272,7 +275,7 @@ public class WorkflowDataset extends AbstractDataset {
         long timeTaken = Bytes.toLong(columns.get(TIME_TAKEN));
 
         List<ProgramRun> programRunList = GSON.fromJson(Bytes.toString(columns.get(NODES)), PROGRAM_RUNS_TYPE);
-        workflowRunRecords.add(new WorkflowRunRecord(workflowRunId, timeTaken, programRunList));
+        workflowRunRecords.put(workflowRunId, new WorkflowRunRecord(workflowRunId, timeTaken, programRunList));
       } else {
         break;
       }

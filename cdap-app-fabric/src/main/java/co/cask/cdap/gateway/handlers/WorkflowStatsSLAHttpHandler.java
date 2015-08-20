@@ -124,8 +124,8 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
                                 @QueryParam("interval") String interval) throws Exception {
     long timeInterval = TimeMathParser.resolutionInSeconds(interval);
     Id.Workflow workflow = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
-    Set<WorkflowDataset.WorkflowRunRecord> workflowRunRecords =
-      store.retrieveSpacedRecords(workflow, runId, count, timeInterval);
+    Collection<WorkflowDataset.WorkflowRunRecord> workflowRunRecords =
+      store.retrieveSpacedRecords(workflow, runId, count, timeInterval).values();
     Map<String, WorkflowStatistics.DetailedStatistics> detailedStatisticsMap = new HashMap<>();
     for (WorkflowDataset.WorkflowRunRecord workflowRunRecord : workflowRunRecords) {
       WorkflowStatistics.DetailedStatistics detailedStatistics =
@@ -212,8 +212,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     return mrJobInfoFetcher.getMRJobInfo(mrRun);
   }
 
-  private Map<String, List<TimeValue>> getSparkDetails(Id.Program sparkProgram, String runId) throws Exception {
-    System.out.println("Trigger : " + runId);
+  private Map<String, Long> getSparkDetails(Id.Program sparkProgram, String runId) throws Exception {
     Map<String, String> context = new HashMap<>();
     context.put(Constants.Metrics.Tag.NAMESPACE, sparkProgram.getNamespaceId());
     context.put(Constants.Metrics.Tag.APP, sparkProgram.getApplicationId());
@@ -227,7 +226,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     tags.add(new TagValue(Constants.Metrics.Tag.RUN_ID, runId));
     MetricSearchQuery metricSearchQuery = new MetricSearchQuery(0, Integer.MAX_VALUE, -1, tags);
     Collection<String> metricNames = metricStore.findMetricNames(metricSearchQuery);
-    Map<String, List<TimeValue>> overallResult = new HashMap<>();
+    Map<String, Long> overallResult = new HashMap<>();
     String name;
     List<TimeValue> timeValues;
     for (String metricName : metricNames) {
@@ -236,9 +235,7 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
                             context, new ArrayList<String>()));
 
       for (MetricTimeSeries metricTimeSeries : resultPerQuery) {
-        name = metricTimeSeries.getMetricName();
-        timeValues = metricTimeSeries.getTimeValues();
-        overallResult.put(name, timeValues);
+        overallResult.put(metricTimeSeries.getMetricName(), metricTimeSeries.getTimeValues().get(0).getValue());
       }
     }
     return overallResult;
