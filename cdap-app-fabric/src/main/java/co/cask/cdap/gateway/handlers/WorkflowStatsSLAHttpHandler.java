@@ -18,6 +18,7 @@ package co.cask.cdap.gateway.handlers;
 
 import co.cask.cdap.api.dataset.lib.cube.AggregationFunction;
 import co.cask.cdap.api.dataset.lib.cube.TimeSeries;
+import co.cask.cdap.api.dataset.lib.cube.TimeValue;
 import co.cask.cdap.api.metrics.MetricDataQuery;
 import co.cask.cdap.api.metrics.MetricSearchQuery;
 import co.cask.cdap.api.metrics.MetricStore;
@@ -31,6 +32,7 @@ import co.cask.cdap.common.utils.TimeMathParser;
 import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.MRJobInfo;
+import co.cask.cdap.proto.MetricQueryResult;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.WorkflowStatistics;
 import co.cask.http.AbstractHttpHandler;
@@ -210,7 +212,8 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     return mrJobInfoFetcher.getMRJobInfo(mrRun);
   }
 
-  private List<Collection<MetricTimeSeries>> getSparkDetails(Id.Program sparkProgram, String runId) throws Exception {
+  private Map<String, List<TimeValue>> getSparkDetails(Id.Program sparkProgram, String runId) throws Exception {
+    System.out.println("Trigger : " + runId);
     Map<String, String> context = new HashMap<>();
     context.put(Constants.Metrics.Tag.NAMESPACE, sparkProgram.getNamespaceId());
     context.put(Constants.Metrics.Tag.APP, sparkProgram.getApplicationId());
@@ -224,12 +227,19 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
     tags.add(new TagValue(Constants.Metrics.Tag.RUN_ID, runId));
     MetricSearchQuery metricSearchQuery = new MetricSearchQuery(0, Integer.MAX_VALUE, -1, tags);
     Collection<String> metricNames = metricStore.findMetricNames(metricSearchQuery);
-    List<Collection<MetricTimeSeries>> overallResult = new ArrayList<>();
+    Map<String, List<TimeValue>> overallResult = new HashMap<>();
+    String name;
+    List<TimeValue> timeValues;
     for (String metricName : metricNames) {
       Collection<MetricTimeSeries> resultPerQuery = metricStore.query(
         new MetricDataQuery(0, 0, Integer.MAX_VALUE, metricName, AggregationFunction.SUM,
                             context, new ArrayList<String>()));
-      overallResult.add(resultPerQuery);
+
+      for (MetricTimeSeries metricTimeSeries : resultPerQuery) {
+        name = metricTimeSeries.getMetricName();
+        timeValues = metricTimeSeries.getTimeValues();
+        overallResult.put(name, timeValues);
+      }
     }
     return overallResult;
   }

@@ -266,7 +266,7 @@ public class WorkflowDataset extends AbstractDataset {
       splitter.skipString();
       splitter.skipString();
       long time = splitter.getLong();
-      if ((time > (startTime - (count * timeInterval))) && time < (startTime + (count * timeInterval))) {
+      if ((time >= (startTime - (count * timeInterval))) && time <= (startTime + (count * timeInterval))) {
         Map<byte[], byte[]> columns = indexRow.getColumns();
         String workflowRunId = Bytes.toString(columns.get(RUNID));
         long timeTaken = Bytes.toLong(columns.get(TIME_TAKEN));
