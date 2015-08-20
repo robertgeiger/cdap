@@ -25,6 +25,7 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.flow.FlowSpecification;
 import co.cask.cdap.api.flow.FlowletConnection;
 import co.cask.cdap.api.flow.FlowletDefinition;
+import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.service.ServiceSpecification;
 import co.cask.cdap.api.worker.WorkerSpecification;
@@ -33,6 +34,7 @@ import co.cask.cdap.api.workflow.WorkflowNode;
 import co.cask.cdap.api.workflow.WorkflowSpecification;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.ApplicationSpecification;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.program.Programs;
 import co.cask.cdap.app.store.Store;
@@ -84,6 +86,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -326,6 +329,29 @@ public class DefaultStore implements Store {
       @Override
       public WorkflowStatistics apply(WorkflowStatsDataset dataset) throws Exception {
         return dataset.workflowDataset.getStatistics(id, startTime, endTime, percentiles);
+      }
+    });
+  }
+
+  @Override
+  public WorkflowDataset.WorkflowRunRecord getWorkflowRun(final Id.Workflow workflowId, final String runId) {
+    return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
+      <WorkflowStatsDataset, WorkflowDataset.WorkflowRunRecord>() {
+      @Override
+      public WorkflowDataset.WorkflowRunRecord apply(WorkflowStatsDataset dataset) throws Exception {
+        return dataset.workflowDataset.getRecord(workflowId, runId);
+      }
+    });
+  }
+
+  @Override
+  public Set<WorkflowDataset.WorkflowRunRecord> retrieveSpacedRecords(final Id.Workflow workflow, final String runId,
+                                                                       final int count, final long timeInterval) {
+    return txnlWorkflow.executeUnchecked(new TransactionExecutor.Function
+      <WorkflowStatsDataset, Set<WorkflowDataset.WorkflowRunRecord>>() {
+      @Override
+      public Set<WorkflowDataset.WorkflowRunRecord> apply(WorkflowStatsDataset dataset) throws Exception {
+        return dataset.workflowDataset.getDetailsOfRange(workflow, runId, count, timeInterval);
       }
     });
   }

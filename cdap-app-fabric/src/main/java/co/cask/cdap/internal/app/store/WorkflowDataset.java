@@ -22,6 +22,7 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scan;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.data2.dataset2.lib.table.MDSKey;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.PercentileInformation;
@@ -30,6 +31,7 @@ import co.cask.cdap.proto.WorkflowStatistics;
 import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.twill.api.RunId;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -37,8 +39,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
@@ -204,6 +209,80 @@ public class WorkflowDataset extends AbstractDataset {
     return programToRunRecord.values();
   }
 
+  @Nullable
+  public WorkflowRunRecord getRecord(Id.Workflow id, String runId) {
+    RunId pid = RunIds.fromString(runId);
+    long startTime = RunIds.getTime(pid, TimeUnit.SECONDS);
+    MDSKey mdsKey = new MDSKey.Builder().add(id.getNamespaceId())
+      .add(id.getApplicationId()).add(id.getId()).add(startTime).build();
+    byte[] startRowKey = mdsKey.getKey();
+    Scan scan = new Scan(startRowKey, null);
+
+    WorkflowRunRecord workflowRunRecord;
+    Scanner scanner = table.scan(scan);
+    Row indexRow = scanner.next();
+    if (indexRow == null) {
+      return null;
+    }
+    Map<byte[], byte[]> columns = indexRow.getColumns();
+    String workflowRunId = Bytes.toString(columns.get(RUNID));
+    long timeTaken = Bytes.toLong(columns.get(TIME_TAKEN));
+
+    List<ProgramRun> actionRunsList = GSON.fromJson(Bytes.toString(columns.get(NODES)), PROGRAM_RUNS_TYPE);
+    workflowRunRecord = new WorkflowRunRecord(workflowRunId, timeTaken, actionRunsList);
+
+    if (!runId.equals(workflowRunRecord.getWorkflowRunId())) {
+      return null;
+    } else {
+      return workflowRunRecord;
+    }
+  }
+
+  Set<WorkflowRunRecord> getDetailsOfRange(Id.Workflow workflow, String runId, int count, long timeInterval) {
+    Set<WorkflowRunRecord> mainRunRecords = getNeighbors(workflow, runId, count, timeInterval);
+    WorkflowRunRecord workflowRunRecord = getRecord(workflow, runId);
+    mainRunRecords.add(workflowRunRecord);
+    return mainRunRecords;
+  }
+
+  private Set<WorkflowRunRecord> getNeighbors(Id.Workflow id, String runId, int count, long timeInterval) {
+    RunId pid = RunIds.fromString(runId);
+    long startTime = RunIds.getTime(pid, TimeUnit.SECONDS);
+    System.out.println(startTime);
+    Set<WorkflowRunRecord> workflowRunRecords = new HashSet<>();
+    for (int i = (-1 * count); i <= count; i++) {
+      long prevStartTime = startTime + (i * timeInterval);
+      System.out.println("PrevStartTime : " + prevStartTime);
+      MDSKey mdsKey = new MDSKey.Builder().add(id.getNamespaceId())
+        .add(id.getApplicationId()).add(id.getId()).add(prevStartTime).build();
+      byte[] startRowKey = mdsKey.getKey();
+      Scan scan = new Scan(startRowKey, null);
+      Scanner scanner = table.scan(scan);
+      Row indexRow = scanner.next();
+      if (indexRow == null) {
+        return workflowRunRecords;
+      }
+      mdsKey = new MDSKey(indexRow.getRow());
+      MDSKey.Splitter splitter = mdsKey.split();
+      splitter.skipString();
+      splitter.skipString();
+      splitter.skipString();
+      long time = splitter.getLong();
+      System.out.println("Record : " + time);
+      if ((time > (startTime - (count * timeInterval))) && time < (startTime + (count * timeInterval))) {
+        Map<byte[], byte[]> columns = indexRow.getColumns();
+        String workflowRunId = Bytes.toString(columns.get(RUNID));
+        long timeTaken = Bytes.toLong(columns.get(TIME_TAKEN));
+
+        List<ProgramRun> programRunList = GSON.fromJson(Bytes.toString(columns.get(NODES)), PROGRAM_RUNS_TYPE);
+        workflowRunRecords.add(new WorkflowRunRecord(workflowRunId, timeTaken, programRunList));
+      } else {
+        break;
+      }
+    }
+    return workflowRunRecords;
+  }
+
   /**
    * Class to store the name, type and list of runs of the programs across all workflow runs
    */
@@ -238,7 +317,7 @@ public class WorkflowDataset extends AbstractDataset {
   /**
    * Internal class to keep track of Workflow Run Records
    */
-  static class WorkflowRunRecord {
+  public static class WorkflowRunRecord {
     private final String workflowRunId;
     private final long timeTaken;
     private final List<ProgramRun> programRuns;
@@ -265,7 +344,7 @@ public class WorkflowDataset extends AbstractDataset {
   /**
    * Internal Class for keeping track of programs in a workflow
    */
-  static class ProgramRun {
+  public static class ProgramRun {
     private final String runId;
     private final long timeTaken;
     private final ProgramType programType;

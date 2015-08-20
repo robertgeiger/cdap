@@ -16,11 +16,22 @@
 
 package co.cask.cdap.gateway.handlers;
 
+import co.cask.cdap.api.dataset.lib.cube.AggregationFunction;
+import co.cask.cdap.api.dataset.lib.cube.TimeSeries;
+import co.cask.cdap.api.metrics.MetricDataQuery;
+import co.cask.cdap.api.metrics.MetricSearchQuery;
+import co.cask.cdap.api.metrics.MetricStore;
+import co.cask.cdap.api.metrics.MetricTimeSeries;
+import co.cask.cdap.api.metrics.TagValue;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.BadRequestException;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.utils.TimeMathParser;
+import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.MRJobInfo;
+import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.WorkflowStatistics;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
@@ -31,7 +42,13 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -46,10 +63,14 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(WorkflowStatsSLAHttpHandler.class);
   private final Store store;
+  private final MRJobInfoFetcher mrJobInfoFetcher;
+  private final MetricStore metricStore;
 
   @Inject
-  WorkflowStatsSLAHttpHandler(Store store) {
+  WorkflowStatsSLAHttpHandler(Store store, MRJobInfoFetcher mrJobInfoFetcher, MetricStore metricStore) {
     this.store = store;
+    this.mrJobInfoFetcher = mrJobInfoFetcher;
+    this.metricStore = metricStore;
   }
 
   @GET
@@ -88,5 +109,128 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
       return;
     }
     responder.sendJson(HttpResponseStatus.OK, workflowStatistics);
+  }
+
+  @GET
+  @Path("apps/{app-id}/workflows/{workflow-id}/runs/{run-id}/statistics")
+  public void workflowRunDetail(HttpRequest request, HttpResponder responder,
+                                @PathParam("namespace-id") String namespaceId,
+                                @PathParam("app-id") String appId,
+                                @PathParam("workflow-id") String workflowId,
+                                @PathParam("run-id") String runId,
+                                @QueryParam("count") int count,
+                                @QueryParam("interval") String interval) throws Exception {
+    long timeInterval = TimeMathParser.resolutionInSeconds(interval);
+    Id.Workflow workflow = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
+    Set<WorkflowDataset.WorkflowRunRecord> workflowRunRecords =
+      store.retrieveSpacedRecords(workflow, runId, count, timeInterval);
+    Map<String, WorkflowStatistics.DetailedStatistics> detailedStatisticsMap = new HashMap<>();
+    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord : workflowRunRecords) {
+      WorkflowStatistics.DetailedStatistics detailedStatistics =
+        getDetailedRecord(workflow, workflowRunRecord.getWorkflowRunId());
+      detailedStatisticsMap.put(workflowRunRecord.getWorkflowRunId(), detailedStatistics);
+    }
+    Map<String, Map<String, Object>> formattedStatisticsMap = convert(detailedStatisticsMap);
+
+    responder.sendJson(HttpResponseStatus.OK, formattedStatisticsMap);
+  }
+
+  @GET
+  @Path("apps/{app-id}/workflows/{workflow-id}/compare/run-id/{run-id}")
+  public void compare(HttpRequest request, HttpResponder responder,
+                      @PathParam("namespace-id") String namespaceId,
+                      @PathParam("app-id") String appId,
+                      @PathParam("workflow-id") String workflowId,
+                      @PathParam("run-id") String runId,
+                      @QueryParam("other-run-id") String otherRunId) throws Exception {
+    Id.Workflow id = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
+    WorkflowStatistics.DetailedStatistics detailedStatistics = getDetailedRecord(id, runId);
+    WorkflowStatistics.DetailedStatistics otherDetailedStatistics = getDetailedRecord(id, otherRunId);
+    if (detailedStatistics == null) {
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The run-id you provided was not correct.");
+      return;
+    }
+    if (otherDetailedStatistics == null) {
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The other run-id you provided was not correct.");
+      return;
+    }
+    // TODO: Change format of return such that the results are intertwined.
+    Map<String, WorkflowStatistics.DetailedStatistics> detailedStatisticsMap = new HashMap<>();
+    detailedStatisticsMap.put(runId, detailedStatistics);
+    detailedStatisticsMap.put(otherRunId, otherDetailedStatistics);
+
+    Map<String, Map<String, Object>> formattedStatisticsMap = convert(detailedStatisticsMap);
+    responder.sendJson(HttpResponseStatus.OK, formattedStatisticsMap);
+  }
+
+  private Map<String, Map<String, Object>> convert(Map<String, WorkflowStatistics.DetailedStatistics>
+                                                                        workflowDetailedStatisticsMap) {
+    Map<String, Map<String, Object>> formattedStatisticsMap = new HashMap<>();
+    for (Map.Entry<String, WorkflowStatistics.DetailedStatistics> entry : workflowDetailedStatisticsMap.entrySet()) {
+      Map<String, Object> internalMap = entry.getValue().getProgramToStatistics();
+      for (Map.Entry<String, Object> internalEntry : internalMap.entrySet()) {
+        Map<String, Object> newMap;
+        if ((newMap = formattedStatisticsMap.get(internalEntry.getKey())) == null) {
+          newMap = new HashMap<>();
+          formattedStatisticsMap.put(internalEntry.getKey(), newMap);
+        }
+        newMap.put(entry.getKey(), internalEntry.getValue());
+      }
+    }
+    return formattedStatisticsMap;
+  }
+
+  @Nullable
+  public WorkflowStatistics.DetailedStatistics getDetailedRecord(Id.Workflow workflowId,
+                                                                 String runId) throws Exception {
+    WorkflowDataset.WorkflowRunRecord workflowRunRecord = store.getWorkflowRun(workflowId, runId);
+    if (workflowRunRecord == null) {
+      return null;
+    }
+    List<WorkflowDataset.ProgramRun> programRuns = workflowRunRecord.getProgramRuns();
+    Map<String, Object> details = new HashMap<>();
+    for (WorkflowDataset.ProgramRun actionRun : programRuns) {
+      if (actionRun.getProgramType() == ProgramType.MAPREDUCE) {
+        details.put(actionRun.getName(),
+                    getMapreduceDetails(Id.Program.from(workflowId.getNamespaceId(), workflowId.getApplicationId(),
+                                                        actionRun.getProgramType(), actionRun.getName()),
+                                        actionRun.getRunId()));
+      } else if (actionRun.getProgramType() == ProgramType.SPARK) {
+        details.put(actionRun.getName(),
+                    getSparkDetails(Id.Program.from(workflowId.getNamespaceId(), workflowId.getApplicationId(),
+                                                    actionRun.getProgramType(), actionRun.getName()),
+                                    actionRun.getRunId()));
+      }
+    }
+    return new WorkflowStatistics.DetailedStatistics(details);
+  }
+
+  private MRJobInfo getMapreduceDetails(Id.Program mapreduceProgram, String runId) throws Exception {
+    Id.Run mrRun = new Id.Run(mapreduceProgram, runId);
+    return mrJobInfoFetcher.getMRJobInfo(mrRun);
+  }
+
+  private List<Collection<MetricTimeSeries>> getSparkDetails(Id.Program sparkProgram, String runId) throws Exception {
+    Map<String, String> context = new HashMap<>();
+    context.put(Constants.Metrics.Tag.NAMESPACE, sparkProgram.getNamespaceId());
+    context.put(Constants.Metrics.Tag.APP, sparkProgram.getApplicationId());
+    context.put(Constants.Metrics.Tag.SPARK, sparkProgram.getId());
+    context.put(Constants.Metrics.Tag.RUN_ID, runId);
+
+    List<TagValue> tags = new ArrayList<>();
+    tags.add(new TagValue(Constants.Metrics.Tag.NAMESPACE, sparkProgram.getNamespaceId()));
+    tags.add(new TagValue(Constants.Metrics.Tag.APP, sparkProgram.getApplicationId()));
+    tags.add(new TagValue(Constants.Metrics.Tag.SPARK, sparkProgram.getId()));
+    tags.add(new TagValue(Constants.Metrics.Tag.RUN_ID, runId));
+    MetricSearchQuery metricSearchQuery = new MetricSearchQuery(0, Integer.MAX_VALUE, -1, tags);
+    Collection<String> metricNames = metricStore.findMetricNames(metricSearchQuery);
+    List<Collection<MetricTimeSeries>> overallResult = new ArrayList<>();
+    for (String metricName : metricNames) {
+      Collection<MetricTimeSeries> resultPerQuery = metricStore.query(
+        new MetricDataQuery(0, 0, Integer.MAX_VALUE, metricName, AggregationFunction.SUM,
+                            context, new ArrayList<String>()));
+      overallResult.add(resultPerQuery);
+    }
+    return overallResult;
   }
 }

@@ -73,4 +73,31 @@ public class WorkflowStatistics {
   public Map<String, Map<String, String>> getNodes() {
     return nodes;
   }
+
+  /**
+   * Returns detailed statistics per run
+   */
+  public static class DetailedStatistics {
+    private final Map<String, Object> programToStatistics;
+
+    public Map<String, Object> getProgramToStatistics() {
+      return programToStatistics;
+    }
+
+    public DetailedStatistics(Map<String, Object> programToStatistics) {
+      this.programToStatistics = programToStatistics;
+    }
+  }
+
+  public static class FormattedStatistics {
+    private final Map<String, Object> runIdToStatistic;
+
+    public FormattedStatistics(Map<String, Object> runIdToStatistic) {
+      this.runIdToStatistic = runIdToStatistic;
+    }
+
+    public Map<String, Object> getRunIdToStatistic() {
+      return runIdToStatistic;
+    }
+  }
 }

@@ -19,10 +19,12 @@ package co.cask.cdap.app.store;
 import co.cask.cdap.api.ProgramSpecification;
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.api.flow.FlowSpecification;
+import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.worker.Worker;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.ApplicationSpecification;
+import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.common.ApplicationNotFoundException;
 import co.cask.cdap.common.ProgramNotFoundException;
@@ -41,6 +43,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -501,4 +504,25 @@ public interface Store {
    */
   WorkflowStatistics getWorkflowStatistics(Id.Workflow workflowId, long startTime,
                                            long endTime, List<Double> percentiles);
+
+  /**
+   * Returns detailed statistics for a run of a workflow.
+   *
+   * @param workflowId The Workflow whose run needs to be queried
+   * @param runId RunId of the workflow run
+   * @return A detailed report of the statistics
+   */
+  WorkflowDataset.WorkflowRunRecord getWorkflowRun(Id.Workflow workflowId, String runId);
+
+  /**
+   * Get a list of workflow runs that are spaced apart by time interval in both directions from the run id provided.
+   *
+   * @param workflow The workflow whose statistics need to be obtained
+   * @param runId The run id of the workflow
+   * @param count The count of the records that the user wants to compare against
+   * @param timeInterval The timeInterval with which the user wants to space out the runs
+   * @return Map of runId of Workflow to DetailedStatistics of the run
+   */
+  Set<WorkflowDataset.WorkflowRunRecord> retrieveSpacedRecords(Id.Workflow workflow, String runId,
+                                                                int count, long timeInterval);
 }
