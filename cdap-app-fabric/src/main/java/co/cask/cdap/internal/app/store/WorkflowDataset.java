@@ -214,11 +214,10 @@ public class WorkflowDataset extends AbstractDataset {
     MDSKey mdsKey = new MDSKey.Builder().add(id.getNamespaceId())
       .add(id.getApplicationId()).add(id.getId()).add(startTime).build();
     byte[] startRowKey = mdsKey.getKey();
-    Scan scan = new Scan(startRowKey, null);
 
     WorkflowRunRecord workflowRunRecord;
-    Scanner scanner = table.scan(scan);
-    Row indexRow = scanner.next();
+
+    Row indexRow = table.get(startRowKey);
     if (indexRow == null) {
       return null;
     }
@@ -249,8 +248,9 @@ public class WorkflowDataset extends AbstractDataset {
     RunId pid = RunIds.fromString(runId);
     long startTime = RunIds.getTime(pid, TimeUnit.SECONDS);
     Map<String, WorkflowRunRecord> workflowRunRecords = new HashMap<>();
-    for (int i = (-1 * count); i <= count; i++) {
-      long prevStartTime = startTime + (i * timeInterval);
+    int i = -count;
+    long prevStartTime = startTime - (timeInterval * count);
+    while (prevStartTime <= startTime + (count * timeInterval)) {
       MDSKey mdsKey = new MDSKey.Builder().add(id.getNamespaceId())
         .add(id.getApplicationId()).add(id.getId()).add(prevStartTime).build();
       byte[] startRowKey = mdsKey.getKey();
@@ -275,6 +275,9 @@ public class WorkflowDataset extends AbstractDataset {
       } else {
         break;
       }
+      prevStartTime = startTime + (i * timeInterval) < prevStartTime ?
+        prevStartTime + 1 : startTime + (i * timeInterval);
+      i ++;
     }
     return workflowRunRecords;
   }

@@ -23,11 +23,14 @@ import co.cask.cdap.app.metrics.MapReduceMetrics;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.PercentileInformation;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.WorkflowStatistics;
+import co.cask.cdap.proto.WorkflowStatsComparison;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.mapreduce.TaskCounter;
@@ -35,8 +38,13 @@ import org.apache.http.HttpResponse;
 import org.apache.twill.api.RunId;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -44,7 +52,6 @@ import java.util.concurrent.TimeUnit;
  * Tests for {@link co.cask.cdap.gateway.handlers.WorkflowStatsSLAHttpHandler}
  */
 public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
-
 
   @Test
   public void testStatistics() throws Exception {
@@ -61,43 +68,66 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
     Id.Program sparkProgram =
       Id.Program.from(Id.Namespace.DEFAULT, "WorkflowApp", ProgramType.SPARK, sparkName);
 
+    long startTime = System.currentTimeMillis();
+    long currentTimeMillis = startTime;
+    String outlierRunId = null;
     for (int i = 0; i < 10; i++) {
-      RunId workflowRunId = RunIds.generate();
+      // work-flow runs every 5 minutes
+      currentTimeMillis = startTime + (i * TimeUnit.MINUTES.toMillis(5));
+      RunId workflowRunId = RunIds.generate(currentTimeMillis);
       store.setStart(workflowProgram, workflowRunId.getId(), RunIds.getTime(workflowRunId, TimeUnit.SECONDS));
 
-      RunId mapreduceRunid = RunIds.generate();
+      // MR job starts 2 seconds after workflow started
+      RunId mapreduceRunid = RunIds.generate(currentTimeMillis + TimeUnit.SECONDS.toMillis(2));
       store.setWorkflowProgramStart(mapreduceProgram, mapreduceRunid.getId(), workflowProgram.getId(),
                                     workflowRunId.getId(), mapreduceProgram.getId(),
                                     RunIds.getTime(mapreduceRunid, TimeUnit.SECONDS), null, null);
       store.setStop(mapreduceProgram, mapreduceRunid.getId(),
-                    TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
+                    // map-reduce job ran for 17 seconds
+                    TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis) + 19,
+                    ProgramRunStatus.COMPLETED);
 
       // This makes sure that not all runs have Spark programs in them
       if (i < 5) {
-        RunId sparkRunid = RunIds.generate();
+        // spark starts 20 seconds after workflow starts
+        RunId sparkRunid = RunIds.generate(currentTimeMillis + TimeUnit.SECONDS.toMillis(20));
         store.setWorkflowProgramStart(sparkProgram, sparkRunid.getId(), workflowProgram.getId(),
                                       workflowRunId.getId(), sparkProgram.getId(),
                                       RunIds.getTime(sparkRunid, TimeUnit.SECONDS), null, null);
-        store.setStop(sparkProgram, sparkRunid.getId(),
-                      TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
+        // spark job runs for 38 seconds
+        long stopTime = TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis) + 58;
+        if (i == 4) {
+          // spark job ran for 100 seconds. 62 seconds greater than avg.
+          stopTime = TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis) + 120;
+        }
+        store.setStop(sparkProgram, sparkRunid.getId(), stopTime, ProgramRunStatus.COMPLETED);
       }
-      store.setStop(workflowProgram, workflowRunId.getId(),
-                    TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
 
-      // This sleep is required so that the store is not overridden as the workflows can then
-      // potentially start at the same time causing conflicts
-      TimeUnit.SECONDS.sleep(1);
+      // workflow ran for 1 minute
+      long workflowStopTime = TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis) + 60;
+      if (i == 4) {
+        // spark job ran longer for this run
+        workflowStopTime = TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis) + 122;
+        outlierRunId = workflowRunId.getId();
+      }
+
+      store.setStop(workflowProgram, workflowRunId.getId(), workflowStopTime, ProgramRunStatus.COMPLETED);
     }
 
     String request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/statistics?start=%s&end=%s" +
-                                     "&percentile=%s&percentile=%s",
+                                     "&percentile=%s",
                                    Constants.Gateway.API_VERSION_3, Id.Namespace.DEFAULT,
-                                   WorkflowApp.class.getSimpleName(), workflowProgram.getId(), "0", "now", "90", "95");
+                                   WorkflowApp.class.getSimpleName(), workflowProgram.getId(),
+                                   TimeUnit.MILLISECONDS.toSeconds(startTime),
+                                   TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis) + TimeUnit.MINUTES.toSeconds(2),
+                                   "99");
 
     HttpResponse response = doGet(request);
     WorkflowStatistics workflowStatistics =
       readResponse(response, new TypeToken<WorkflowStatistics>() { }.getType());
-    Assert.assertEquals(1, workflowStatistics.getPercentileInformationList().get(0).getRunIdsOverPercentile().size());
+    PercentileInformation percentileInformation = workflowStatistics.getPercentileInformationList().get(0);
+    Assert.assertEquals(1, percentileInformation.getRunIdsOverPercentile().size());
+    Assert.assertEquals(outlierRunId, percentileInformation.getRunIdsOverPercentile().get(0));
     Assert.assertEquals("5", workflowStatistics.getNodes().get(sparkName).get("runs"));
 
     request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/statistics?start=%s&end=%s" +
@@ -117,15 +147,13 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
     response = doGet(request);
     Assert.assertEquals(HttpResponseStatus.BAD_REQUEST.getCode(),
                         response.getStatusLine().getStatusCode());
-    metricStore.deleteAll();
   }
 
   @Test
-  public void details() throws Exception {
+  public void testDetails() throws Exception {
     deploy(WorkflowApp.class);
     String workflowName = "FunWorkflow";
     String mapreduceName = "ClassicWordCount";
-    metricStore.deleteAll();
     String sparkName = "SparkWorkflowTest";
 
     Id.Program workflowProgram =
@@ -135,27 +163,31 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
     Id.Program sparkProgram =
       Id.Program.from(Id.Namespace.DEFAULT, "WorkflowApp", ProgramType.SPARK, sparkName);
 
-    RunId workflowRun1 = setupRuns(workflowProgram, mapreduceProgram, sparkProgram, store);
-    for (int i = 0; i < 12; i++) {
-      setupRuns(workflowProgram, mapreduceProgram, sparkProgram, store);
+    List<RunId> runIdList = new ArrayList<>();
+    for (int i = 0; i < 13; i++) {
+      runIdList.add(setupRuns(workflowProgram, mapreduceProgram, sparkProgram, store));
     }
-    String request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/runs/%s/statistics?count=%s&interval=%s",
+
+    System.out.println("List : " + runIdList);
+
+    String request = String.format("%s/namespaces/%s/apps/%s/workflows/%s/runs/%s/statistics?limit=%s&interval=%s",
                                    Constants.Gateway.API_VERSION_3, Id.Namespace.DEFAULT,
-                                   WorkflowApp.class.getSimpleName(), workflowProgram.getId(), workflowRun1.toString(),
-                                   "20", "1s");
+                                   WorkflowApp.class.getSimpleName(), workflowProgram.getId(), runIdList.get(6).getId(),
+                                   "3", "2s");
 
     HttpResponse response = doGet(request);
-    Map<String, Map<String, Map<String, Long>>> workflowStatistics =
-      readResponse(response, new TypeToken<Map<String, Map<String, Map<String, Long>>>>() { }.getType());
+    WorkflowStatsComparison workflowStatistics =
+      readResponse(response, new TypeToken<WorkflowStatsComparison>() { }.getType());
 
-    // This should only return 3 because the 1st, 6th and 11th record were picked as the interval is 5 seconds
-    // and the workflow runs every second. For some reason the test fails when run with other test implying that
-    // state is saved somewhere. Ask someone how to delete the whole metrics thing.
-    Assert.assertEquals(2, workflowStatistics.size());
+    for (WorkflowStatsComparison.ProgramNodes.WorkflowDetails temp : workflowStatistics.getProgramNodesList().iterator()
+      .next().getWorkflowDetailsList()) {
+      System.out.println("Final : " + temp.getWorkflowRunId());
+    }
+    // Assert.assertEquals(7, workflowStatistics.getProgramNodesList().iterator().next().getWorkflowDetailsList().size());
   }
 
   @Test
-  public void compare() throws Exception {
+  public void testCompare() throws Exception {
     deploy(WorkflowApp.class);
     String workflowName = "FunWorkflow";
     String mapreduceName = "ClassicWordCount";
@@ -177,13 +209,19 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
                                    workflowRun2.toString());
 
     HttpResponse response = doGet(request);
-    Map<String, Map<String, Map<String, Long>>> workflowStatistics =
-      readResponse(response, new TypeToken<Map<String, Map<String, Map<String, Long>>>>() { }.getType());
+    Collection<WorkflowStatsComparison.ProgramNodes> workflowStatistics =
+      readResponse(response, new TypeToken<Collection<WorkflowStatsComparison.ProgramNodes>>() {
+      }.getType());
 
-    Assert.assertEquals(2, workflowStatistics.get(mapreduceName).size());
-    Assert.assertEquals(38L, (long) workflowStatistics.get(mapreduceName).get(workflowRun1.toString()).get(
-      TaskCounter.MAP_INPUT_RECORDS.name()));
-    metricStore.deleteAll();
+    Assert.assertNotNull(workflowStatistics.iterator().next());
+    Assert.assertEquals(2, workflowStatistics.size());
+
+    for (WorkflowStatsComparison.ProgramNodes node : workflowStatistics) {
+      if (node.getProgramType() == ProgramType.MAPREDUCE) {
+        Assert.assertEquals(38L, (long) node.getWorkflowDetailsList().get(0)
+          .getMetrics().get(TaskCounter.MAP_INPUT_RECORDS.name()));
+      }
+    }
   }
 
   private RunId setupRuns(Id.Program workflowProgram, Id.Program mapreduceProgram,
@@ -218,6 +256,7 @@ public class WorkflowStatsSLAHttpHandlerTest extends AppFabricTestBase {
     store.setStop(workflowProgram, workflowRunId.getId(),
                   TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()), ProgramRunStatus.COMPLETED);
 
+    // Sleep so that 2 runs of the workflow dont have same start time which causes exception to be thrown
     TimeUnit.SECONDS.sleep(1);
     return workflowRunId;
   }

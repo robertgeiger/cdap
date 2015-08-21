@@ -17,7 +17,6 @@
 package co.cask.cdap.gateway.handlers;
 
 import co.cask.cdap.api.dataset.lib.cube.AggregationFunction;
-import co.cask.cdap.api.dataset.lib.cube.TimeValue;
 import co.cask.cdap.api.metrics.MetricDataQuery;
 import co.cask.cdap.api.metrics.MetricSearchQuery;
 import co.cask.cdap.api.metrics.MetricStore;
@@ -32,6 +31,7 @@ import co.cask.cdap.internal.app.store.WorkflowDataset;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.WorkflowStatistics;
+import co.cask.cdap.proto.WorkflowStatsComparison;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.inject.Inject;
@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -77,9 +78,9 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
                             @PathParam("namespace-id") String namespaceId,
                             @PathParam("app-id") String appId,
                             @PathParam("workflow-id") String workflowId,
-                            @QueryParam("start") String start,
-                            @QueryParam("end") String end,
-                            @QueryParam("percentile") List<Double> percentiles) throws Exception {
+                            @QueryParam("start") @DefaultValue("now-1d") String start,
+                            @QueryParam("end") @DefaultValue("now") String end,
+                            @QueryParam("percentile") @DefaultValue("90.0") List<Double> percentiles) throws Exception {
     long startTime = TimeMathParser.parseTimeInSeconds(start);
     long endTime = TimeMathParser.parseTimeInSeconds(end);
 
@@ -116,25 +117,26 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
                                 @PathParam("app-id") String appId,
                                 @PathParam("workflow-id") String workflowId,
                                 @PathParam("run-id") String runId,
-                                @QueryParam("count") int count,
+                                @QueryParam("limit") int limit,
                                 @QueryParam("interval") String interval) throws Exception {
-    if (count < 0) {
+    if (limit < 0) {
       throw new BadRequestException("Count has to be greater than or equal to 0");
     }
 
     long timeInterval = TimeMathParser.resolutionInSeconds(interval);
     Id.Workflow workflow = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
     Collection<WorkflowDataset.WorkflowRunRecord> workflowRunRecords =
-      store.retrieveSpacedRecords(workflow, runId, count, timeInterval).values();
-    Map<String, WorkflowStatistics.DetailedStatistics> detailedStatisticsMap = new HashMap<>();
-    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord : workflowRunRecords) {
-      WorkflowStatistics.DetailedStatistics detailedStatistics =
-        getDetailedRecord(workflow, workflowRunRecord.getWorkflowRunId());
-      detailedStatisticsMap.put(workflowRunRecord.getWorkflowRunId(), detailedStatistics);
-    }
-    Map<String, Map<String, Map<String, Long>>> formattedStatisticsMap = convert(detailedStatisticsMap);
+      store.retrieveSpacedRecords(workflow, runId, limit, timeInterval).values();
 
-    responder.sendJson(HttpResponseStatus.OK, formattedStatisticsMap);
+    List<WorkflowRunMetrics> workflowRunMetricsList = new ArrayList<>();
+    Map<String, Long> startTimes = new HashMap<>();
+    for (WorkflowDataset.WorkflowRunRecord workflowRunRecord : workflowRunRecords) {
+      workflowRunMetricsList.add(getDetailedRecord(workflow, workflowRunRecord.getWorkflowRunId()));
+      startTimes.put(workflowRunRecord.getWorkflowRunId(), workflowRunRecord.getTimeTaken());
+    }
+
+    Collection<WorkflowStatsComparison.ProgramNodes> formattedStatisticsMap = format(workflowRunMetricsList);
+    responder.sendJson(HttpResponseStatus.OK, new WorkflowStatsComparison(startTimes, formattedStatisticsMap));
   }
 
   @GET
@@ -145,66 +147,70 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
                       @PathParam("workflow-id") String workflowId,
                       @PathParam("run-id") String runId,
                       @QueryParam("other-run-id") String otherRunId) throws Exception {
-    Id.Workflow id = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
-    WorkflowStatistics.DetailedStatistics detailedStatistics = getDetailedRecord(id, runId);
-    WorkflowStatistics.DetailedStatistics otherDetailedStatistics = getDetailedRecord(id, otherRunId);
+    Id.Workflow workflow = Id.Workflow.from(Id.Namespace.from(namespaceId), appId, workflowId);
+    WorkflowRunMetrics detailedStatistics = getDetailedRecord(workflow, runId);
+    WorkflowRunMetrics otherDetailedStatistics = getDetailedRecord(workflow, otherRunId);
     if (detailedStatistics == null) {
-      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The run-id you provided was not correct.");
+      responder.sendString(HttpResponseStatus.NOT_FOUND, "The run-id provided was not found : " + runId);
       return;
     }
     if (otherDetailedStatistics == null) {
-      responder.sendString(HttpResponseStatus.BAD_REQUEST, "The other run-id you provided was not correct.");
+      responder.sendString(HttpResponseStatus.NOT_FOUND, "The other run-id provided was not found : " + otherRunId);
       return;
     }
 
-    Map<String, WorkflowStatistics.DetailedStatistics> detailedStatisticsMap = new HashMap<>();
-    detailedStatisticsMap.put(runId, detailedStatistics);
-    detailedStatisticsMap.put(otherRunId, otherDetailedStatistics);
-
-    Map<String, Map<String, Map<String, Long>>> formattedStatisticsMap = convert(detailedStatisticsMap);
-    responder.sendJson(HttpResponseStatus.OK, formattedStatisticsMap);
+    List<WorkflowRunMetrics> workflowRunMetricsList = new ArrayList<>();
+    workflowRunMetricsList.add(detailedStatistics);
+    workflowRunMetricsList.add(otherDetailedStatistics);
+    responder.sendJson(HttpResponseStatus.OK, format(workflowRunMetricsList));
   }
 
-  private Map<String, Map<String, Map<String, Long>>> convert(Map<String, WorkflowStatistics.DetailedStatistics>
-                                                                workflowDetailedStatisticsMap) {
-    Map<String, Map<String, Map<String, Long>>> formattedStatisticsMap = new HashMap<>();
-    for (Map.Entry<String, WorkflowStatistics.DetailedStatistics> entry : workflowDetailedStatisticsMap.entrySet()) {
-      Map<String, Map<String, Long>> internalMap = entry.getValue().getProgramToStatistics();
-      for (Map.Entry<String, Map<String, Long>> internalEntry : internalMap.entrySet()) {
-        Map<String, Map<String, Long>> newMap;
-        if ((newMap = formattedStatisticsMap.get(internalEntry.getKey())) == null) {
-          newMap = new HashMap<>();
-          formattedStatisticsMap.put(internalEntry.getKey(), newMap);
+  private Collection<WorkflowStatsComparison.ProgramNodes> format(List<WorkflowRunMetrics> workflowRunMetricsList) {
+    Map<String, WorkflowStatsComparison.ProgramNodes> programLevelDetailsMap = new HashMap<>();
+    for (WorkflowRunMetrics workflowRunMetrics : workflowRunMetricsList) {
+      for (ProgramMetrics programMetrics : workflowRunMetrics.getProgramMetricsList()) {
+        if (programLevelDetailsMap.get(programMetrics.getProgramName()) == null) {
+          programLevelDetailsMap.put(
+            programMetrics.getProgramName(), new WorkflowStatsComparison.ProgramNodes(
+              programMetrics.getProgramName(), programMetrics.getProgramType(),
+              new ArrayList<WorkflowStatsComparison.ProgramNodes.WorkflowDetails>()));
         }
-        newMap.put(entry.getKey(), internalEntry.getValue());
+        programLevelDetailsMap.get(programMetrics.getProgramName()).addWorkflowDetails(
+          workflowRunMetrics.getWorkflowRunId(), programMetrics.getMetrics());
       }
     }
-    return formattedStatisticsMap;
+    return programLevelDetailsMap.values();
   }
 
+  /**
+   * Returns the detailed Record for the Workflow
+   *
+   * @param workflowId Workflow that needs to get its detailed record
+   * @param runId Run Id of the workflow
+   * @return Return the Workflow Run Metrics
+   * @throws Exception
+   */
   @Nullable
-  public WorkflowStatistics.DetailedStatistics getDetailedRecord(Id.Workflow workflowId,
-                                                                 String runId) throws Exception {
+  private WorkflowRunMetrics getDetailedRecord(Id.Workflow workflowId, String runId) throws Exception {
     WorkflowDataset.WorkflowRunRecord workflowRunRecord = store.getWorkflowRun(workflowId, runId);
     if (workflowRunRecord == null) {
       return null;
     }
     List<WorkflowDataset.ProgramRun> programRuns = workflowRunRecord.getProgramRuns();
-    Map<String, Map<String, Long>> details = new HashMap<>();
-    for (WorkflowDataset.ProgramRun actionRun : programRuns) {
-      if (actionRun.getProgramType() == ProgramType.MAPREDUCE) {
-        details.put(actionRun.getName(),
-                    getMapreduceDetails(Id.Program.from(workflowId.getNamespaceId(), workflowId.getApplicationId(),
-                                                        actionRun.getProgramType(), actionRun.getName()),
-                                        actionRun.getRunId()));
-      } else if (actionRun.getProgramType() == ProgramType.SPARK) {
-        details.put(actionRun.getName(),
-                    getSparkDetails(Id.Program.from(workflowId.getNamespaceId(), workflowId.getApplicationId(),
-                                                    actionRun.getProgramType(), actionRun.getName()),
-                                    actionRun.getRunId()));
+    List<ProgramMetrics> programMetricsList = new ArrayList<>();
+    for (WorkflowDataset.ProgramRun programRun : programRuns) {
+      Map<String, Long> programMap = new HashMap<>();
+      Id.Program program = Id.Program.from(workflowId.getNamespaceId(), workflowId.getApplicationId(),
+                                           programRun.getProgramType(), programRun.getName());
+      if (programRun.getProgramType() == ProgramType.MAPREDUCE) {
+        programMap = getMapreduceDetails(program, programRun.getRunId());
+      } else if (programRun.getProgramType() == ProgramType.SPARK) {
+        programMap = getSparkDetails(program, programRun.getRunId());
       }
+      programMap.put("timeTaken", programRun.getTimeTaken());
+      programMetricsList.add(new ProgramMetrics(programRun.getName(), programRun.getProgramType(), programMap));
     }
-    return new WorkflowStatistics.DetailedStatistics(details);
+    return new WorkflowRunMetrics(runId, programMetricsList);
   }
 
   private Map<String, Long> getMapreduceDetails(Id.Program mapreduceProgram, String runId) throws Exception {
@@ -236,5 +242,47 @@ public class WorkflowStatsSLAHttpHandler extends AbstractHttpHandler {
       }
     }
     return overallResult;
+  }
+
+  static class ProgramMetrics {
+    private final String programName;
+    private final ProgramType programType;
+    private final Map<String, Long> metrics;
+
+    public ProgramMetrics(String programName, ProgramType programType, Map<String, Long> metrics) {
+      this.programName = programName;
+      this.programType = programType;
+      this.metrics = metrics;
+    }
+
+    public String getProgramName() {
+      return programName;
+    }
+
+    public ProgramType getProgramType() {
+      return programType;
+    }
+
+    public Map<String, Long> getMetrics() {
+      return metrics;
+    }
+  }
+
+  static class WorkflowRunMetrics {
+    private final String workflowRunId;
+    private final List<ProgramMetrics> programMetricsList;
+
+    public WorkflowRunMetrics(String workflowRunId, List<ProgramMetrics> programMetricsList) {
+      this.workflowRunId = workflowRunId;
+      this.programMetricsList = programMetricsList;
+    }
+
+    public String getWorkflowRunId() {
+      return workflowRunId;
+    }
+
+    public List<ProgramMetrics> getProgramMetricsList() {
+      return programMetricsList;
+    }
   }
 }
