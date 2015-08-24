@@ -160,10 +160,13 @@ The CDAP components are independently scalable, so you can install from 1 to N o
 combination of nodes.  The primary reasons to do so are for HA, and for cdap-router's data
 ingest capacity.
 
+
 Port 10000 was being used by another service so I changed router.server.port to 10023.
 
-I'm assuming this was Hive Server2?  We are considering changing the router default port. 
-You can follow this here: https://issues.cask.co/browse/CDAP-1696 
+In the Hadoop ecosystem, Hive Server2 defaults to 10000. As a consequence, we are
+considering changing the router default port. However, you can set it to whatever you need
+and specify it in the cdap-site.xml.
+
 
 Several properties specify an IP where a service is running, such as: router.server.address,
 metrics.query.bind.address, data.tx.bind.address, app.bind.address, router.bind.address.
@@ -173,18 +176,16 @@ Our convention is that '*.bind.*' properties are what services use during startu
 listen on a particular interface/port.  '*.server.*' properties are used by clients to
 connect to another (potentially remote) service.  
 
-For '*.bind.address' properties, it is
-often easiest just to set these to '0.0.0.0' to listen on all interfaces.   
+For '*.bind.address' properties, it is often easiest just to set these to '0.0.0.0' to
+listen on all interfaces.   
 
-'*.server.*'
-properties are used by clients to connect to another remote service. 
-
-The only one you
-should need to configure initially is router.server.address, which is used by the UI to
-connect to the router.  As an example, ideally routers running in production would have a
-load balancer in front, which is what you would set router.server.address to. 
+The '*.server.*' properties are used by clients to connect to another remote service. The
+only one you should need to configure initially is router.server.address, which is used by
+the UI to connect to the router.  As an example, ideally routers running in production
+would have a load balancer in front, which is what you would set router.server.address to.
 Alternatively, you could configure each UI instance to point to a particular router, and
 if you have both UI and router running on each node, you could use '127.0.0.1'.
+
 
 Applications
 ============
