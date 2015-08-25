@@ -1,28 +1,36 @@
 angular.module(PKG.name + '.feature.adapters')
-  .controller('CanvasController', function (myAdapterApi, MyPlumbService, $bootstrapModal, $state, $scope, $alert, CanvasFactory, MyPlumbFactory, $modalStack, $timeout, ModalConfirm, myAdapterTemplatesApi, $q, mySettings) {
+  .controller('CanvasController', function (myAdapterApi, MyPlumbService, $bootstrapModal, $state, $scope, $alert, CanvasFactory, MyPlumbFactory, $modalStack, $timeout, ModalConfirm, myAdapterTemplatesApi, $q, mySettings, EventPipe) {
 
     var sourceTemplates = [],
         transformTemplates = [],
         sinkTemplates = [];
 
+    function objectToArray(obj) {
+      var arr = [];
+
+      angular.forEach(obj, function (val) {
+        if (val.templateType === MyPlumbService.metadata.template.type) {
+          val.icon = 'fa-plug';
+          val.name = val.pluginTemplate;
+
+          arr.push(val);
+        }
+      });
+
+      return arr;
+    }
+
     mySettings.get('pluginTemplates')
       .then(function (res) {
-        var templates = res[$state.params.namespace];
+        if (!angular.isObject(res)) {
+          return;
+        }
 
-        angular.forEach(templates, function (template) {
-          if (template.templateType === MyPlumbService.metadata.template.type) {
-            template.icon = 'fa-plug';
-            template.name = template.templateName;
-            if (template.type === 'source') {
-              sourceTemplates.push(template);
-            } else if (template.type === 'transform') {
-              transformTemplates.push(template);
-            } else if (template.type === 'sink') {
-              sinkTemplates.push(template);
-            }
-          }
-        });
+        var templates = res[$state.params.namespace][MyPlumbService.metadata.template.type];
 
+        sourceTemplates = objectToArray(templates.source);
+        transformTemplates = objectToArray(templates.transform);
+        sinkTemplates = objectToArray(templates.sink);
       });
 
 
@@ -80,6 +88,8 @@ angular.module(PKG.name + '.feature.adapters')
     ];
 
     this.onImportSuccess = function(result) {
+      // EventPipe.emit('popovers.close');
+      EventPipe.emit('popovers.reset');
       $scope.config = JSON.stringify(result);
       this.reloadDAG = true;
       MyPlumbService.resetToDefaults(true);
@@ -104,6 +114,7 @@ angular.module(PKG.name + '.feature.adapters')
     };
 
     this.onRightSideGroupItemClicked = function(group) {
+      EventPipe.emit('popovers.close');
       var config;
       switch(group.name) {
         case 'Export':
@@ -313,15 +324,15 @@ angular.module(PKG.name + '.feature.adapters')
 
       var config;
 
-      if (item.templateName) {
+      if (item.pluginTemplate) {
         config = {
           id: id,
           name: item.pluginName,
           icon: MyPlumbFactory.getIcon(item.pluginName),
-          type: item.type,
+          type: item.pluginType,
           properties: item.properties,
           outputSchema: item.outputSchema,
-          templateName: item.templateName,
+          pluginTemplate: item.pluginTemplate,
           lock: item.lock
         };
       } else {

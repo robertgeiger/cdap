@@ -18,8 +18,7 @@ angular.module(PKG.name + '.feature.admin')
           templateUrl: '/assets/features/admin/templates/overview.html',
           controller: 'OverviewController',
           ncyBreadcrumb: {
-            label: 'Management',
-            parent: 'overview'
+            label: 'Management'
           }
         })
 
@@ -165,12 +164,12 @@ angular.module(PKG.name + '.feature.admin')
             })
 
             .state('admin.namespace.detail.templateedit', {
-              url: '/templates/edit/:templateName',
+              url: '/templates/edit/:templateType/:pluginType/:pluginTemplate',
               templateUrl: '/assets/features/admin/templates/namespace/templates.html',
               controller: 'NamespaceTemplatesController',
               controllerAs: 'TemplatesController',
               ncyBreadcrumb: {
-                label: '{{$state.params.templateName}}',
+                label: '{{$state.params.pluginTemplate}}',
                 parent: 'admin.namespace.detail.templateslist'
               }
             })
