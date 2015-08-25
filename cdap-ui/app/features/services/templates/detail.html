@@ -1,38 +1,76 @@
 <my-breadcrumbs></my-breadcrumbs>
 
-<div class="row" program-heading>
-  <div class="col-sm-6">
-    <h2 class="programTitle">
-      <span ng-bind="$state.params.programId"> </span>
-    </h2>
-    <div class="type-block">
-      <span class="icon-service"></span>
-      <small> Type: Service </small>
+<div class="levels">
+  <div class="program-level">
+    <div class="container">
+      <div class="row" program-heading>
+        <div class="col-sm-6">
+          <h2 class="programTitle">
+            <span ng-bind="$state.params.programId"> </span>
+          </h2>
+          <div class="type-block">
+            <span class="icon-service"></span>
+            <small> Type: Service </small>
+          </div>
+          <p> Description goes here. </p>
+        </div>
+        <div class="col-sm-6 text-right">
+          <my-start-stop-button
+            type="services"
+            is-stoppable="true">
+          </my-start-stop-button>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="col-sm-6 text-right">
-
-    <my-start-stop-button
-      type="services"
-      is-stoppable="true">
-    </my-start-stop-button>
-    <!-- END OF BUTTON GROUP -->
-
+  <div class="run-level">
+    <div class="container">
+      <div class="run-level-inner">
+        <div dropdown is-open="dropdown.isopen">
+          <a class="btn btn-default dropdown-toggle"
+             dropdown-toggle ng-disabled="RunsController.runs.length === 0">
+            <span>
+              <span class="fa fa-circle"></span>
+              <span>{{ RunsController.runs.selected.runid }}</span>
+            </span>
+            <span class="fa fa-caret-down"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+            <li ng-repeat="run in RunsController.runs">
+              <a ui-sref="services.detail.run({runid: run.runid})">
+                <span class="fa fa-circle"></span>
+                <span>{{ run.runid }}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <my-program-status
+          data-type="services"
+          data-runid="{{ RunsController.runs.selected.runid }}"
+          data-runs="RunsController.runs"
+        ></my-program-status>
+      </div>
+    </div>
+  </div>
+  <div class="tabs-level">
+    <div class="container">
+      <ul class="nav nav-tabs slanted-tabs" role="tablist">
+        <li role="presentation"
+            ng-repeat="tab in RunsController.tabs"
+            ng-class="{'active': tab.title == RunsController.activeTab.title}">
+          <a class="btn btn-default"
+             role="tab"
+             ng-click="RunsController.selectTab(tab)">
+            {{ tab.title }}
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 
-<div class="cdap-subnav-end"></div>
-<ul class="nav nav-tabs slanted-tabs" role="tablist">
-  <li role="presentation" ui-sref-active="active">
-    <a ui-sref="services.detail.runs" role="tab">Runs</a>
-  </li>
-  <li role="presentation" ui-sref-active="active">
-    <a ui-sref="services.detail.datasets" role="tab">Datasets</a>
-  </li>
-  <li role="presentation" ui-sref-active="active">
-    <a ui-sref="services.detail.history" role="tab">History</a>
-  </li>
-</ul>
+<div class="container">
+  <div ng-if="!$state.params.runid" ng-include="RunsController.activeTab.template" class="tab-view"></div>
+  <ui-view ng-if="$state.params.runid" role="tabpanel" class="tab-view" />
+</div>
 
-<br/>
-<ui-view role="tabpanel"/>
