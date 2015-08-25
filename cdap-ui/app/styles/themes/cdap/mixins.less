@@ -23,7 +23,7 @@
   &:hover, &:focus { text-decoration: none; }
 }
 
-.dropdown-defaults() {
+.dropdown-defaults(@text-align: right) {
   + .dropdown-menu {
     background-color: transparent;
     border: 0;
@@ -39,7 +39,7 @@
       span.fa {
         margin-top: 3px;
         margin-right: 0;
-        text-align: right;
+        text-align: @text-align;
       }
     }
   }
