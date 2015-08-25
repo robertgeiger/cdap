@@ -103,6 +103,7 @@ import java.io.Reader;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -270,7 +271,18 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
   protected void startUp() throws Exception {
     LOG.info("Starting {}...", BaseHiveExploreService.class.getSimpleName());
 
+    UserGroupInformation.loginUserFromSubject(null);
+    Field ugiAuthMethodField = UserGroupInformation.class.getDeclaredField("authenticationMethod");
+    ugiAuthMethodField.setAccessible(true);
+    UserGroupInformation.AuthenticationMethod originalAuthMethod =
+      (UserGroupInformation.AuthenticationMethod) ugiAuthMethodField.get(null);
+
+    ugiAuthMethodField.set(null, UserGroupInformation.AuthenticationMethod.SIMPLE);
     cliService.init(getHiveConf());
+    ugiAuthMethodField.set(null, originalAuthMethod);
+
+    ugiAuthMethodField.setAccessible(false);
+
     cliService.start();
 
     metastoreClientsExecutorService.scheduleWithFixedDelay(
