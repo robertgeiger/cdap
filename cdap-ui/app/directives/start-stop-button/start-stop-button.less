@@ -1,0 +1,44 @@
+@import "../../styles/variables.less";
+@import "../../styles/themes/cdap/mixins.less";
+
+body {
+  my-start-stop-button {
+    .btn-group {
+      .btn-default {
+        .border-radius(0);
+        width: 100px;
+        &.dropdown-toggle {
+          .dropdown-defaults(@text-align: center);
+        }
+        > span {
+          display: block;
+          &:last-child {
+            font-size: 13px;
+            margin-top: 5px;
+          }
+        }
+      }
+      ul.dropdown-menu {
+        min-width: 0;
+      }
+    }
+  }
+  &.theme-cdap {
+    my-start-stop-button {
+      .btn-group {
+        .btn-default {
+          > span {
+            &.fa-play {
+              color: @brand-success;
+            }
+          }
+          &.dropdown-toggle {
+            background-color: white;
+            border: 1px solid #dfe2e9;
+            color: @btn-default-color;
+          }
+        }
+      }
+    }
+  }
+}
