@@ -1,12 +1,99 @@
 @import "../../styles/variables.less";
+@import "../../../bower_components/bootstrap/less/mixins.less";
+@import "../../styles/themes/cdap/mixins.less";
 
 body.state-services {
+  main.container {
+    // Override container styling to accommodate full width view
+    width: 100%;
+    padding-right: 0;
+    padding-left: 0;
+  }
+  .levels {
+    background-color: @table-bg;
+  }
+  .run-level {
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    // height: 62px;
+    // line-height: 60px;
+    .run-level-inner {
+      .flexbox();
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      // height: 62px;
+      // line-height: 60px;
+    }
+    .dropdown {
+      border-right: 1px solid #ddd;
+      border-left: 1px solid #ddd;
+      display: table;
+      height: 60px;
+      .order(1);
+      span.fa-circle {
+        color: @brand-primary;
+        padding-right: 15px;
+      }
+      .dropdown-toggle {
+        .cask-btn(@background: transparent, @border: 0, @border-radius: 0, @color: @btn-default-color,  @font-size: 14px, @padding: 0 15px);
+        display: table-cell;
+        &:active {
+          .box-shadow(none);
+        }
+        span {
+          font-weight: bold;
+          &.fa-caret-down {
+            padding-left: 15px;
+          }
+        }
+      }
+      .dropdown-menu {
+        width: 100%;
+        li a {
+          background-color: white;
+          color: @btn-default-color;
+          font-weight: bold;
+          padding-left: 15px;
+        }
+      }
+    }
+
+  }
+  .tabs-level {
+    border-bottom: 1px solid #ddd;
+    margin-top: 25px;
+    ul.slanted-tabs {
+      border-bottom: 0; // TODO: remove set border bottom for all slanted tabs
+    }
+  }
+  .tab-view {
+    margin-top: 20px;
+
+    .table.borderless {
+      border-left: 1px solid #ddd;
+      > tbody > tr > td {
+        border: 0;
+      }
+      td.provisioned > span {
+        background-color: @subnav-border;
+        color: @brand-primary;
+        display: block;
+        font-weight: 500;
+        padding: 5px 0;
+        .border-radius(4px);
+      }
+    }
+  }
   table.endpoints {
     th, td {
+      &:first-child {
+        width: 30%;
+      }
       &:last-child {
-        border-left: 0;
         text-align: center;
         vertical-align: middle;
+        width: 20%;
       }
     }
     th {
