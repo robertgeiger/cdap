@@ -3,7 +3,11 @@
 
 body {
   my-start-stop-button {
-    .btn-group {
+    > .btn-group {
+      @media (max-width: @screen-xs-max) {
+        display: block;
+        margin-top: 20px;
+      }
       .btn-default {
         .border-radius(0);
         width: 100px;
@@ -28,14 +32,32 @@ body {
       .btn-group {
         .btn-default {
           > span {
-            &.fa-play {
+            &.fa-play, &.fa-refresh {
               color: @brand-success;
+            }
+            &.fa-stop {
+              color: @brand-danger;
+            }
+          }
+          &.btn-starting {
+            > span.fa-refresh {
+              color: @brand-success;
+            }
+          }
+          &.btn-stopping {
+            > span.fa-refresh {
+              color: @brand-danger;
             }
           }
           &.dropdown-toggle {
             background-color: white;
             border: 1px solid #dfe2e9;
             color: @btn-default-color;
+          }
+        }
+        .btn-group.open {
+          .dropdown-toggle {
+            background-color: #e0e0e0;
           }
         }
       }

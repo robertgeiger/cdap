@@ -2,35 +2,41 @@
 @import "../../styles/themes/cdap/mixins.less";
 @import "../../../bower_components/bootstrap/less/mixins.less";
 
-my-program-status {
-  height: 60px;
-  .order(2);
-  // > div {
-  //   border-right: 1px solid #ddd;
-  //   display: inline-block;
-  //   height: 60px;
-  //   padding: 8px 15px 0;
-  //   > span {
-  //     display: block;
-  //     line-height: 1.4;
-  //     &:first-child {
-  //       font-weight: bold;
-  //       margin-bottom: 5px;
-  //     }
-  //   }
-  // }
-  table.table.table-status {
-    background-color: transparent;
-    margin: 0;
-    td {
-      border-right: 1px solid #ddd;
-      padding-right: 15px;
-      padding-left: 15px;
-      vertical-align: middle;
-      > span {
-        display: block;
-        &:first-child {
-          font-weight: bold;
+body.theme-cdap {
+  my-program-status {
+    .order(2);
+    table.table-status {
+      background-color: transparent;
+      margin: 0;
+      @media (max-width: @screen-sm-max) {
+        border: 1px solid @table-border-color;
+      }
+      td {
+        border-right: 1px solid @table-border-color;
+        padding-right: 15px;
+        padding-left: 15px;
+        > span {
+          display: block;
+          &:first-child {
+            font-weight: bold;
+          }
+        }
+        .text-blue {
+          color: @brand-primary;
+        }
+        .text-green {
+          color: @brand-success;
+        }
+        .text-red {
+          color: @brand-danger;
+        }
+        .text-black {
+          color: black;
+        }
+        &:not(:first-child) {
+          > span:last-child {
+            color: @program-text;
+          }
         }
       }
     }
