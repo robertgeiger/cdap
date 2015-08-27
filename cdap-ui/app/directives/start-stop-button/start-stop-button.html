@@ -3,27 +3,26 @@
   <div ng-if="status === 'STOPPED'"
        class="btn btn-lg btn-default"
        ng-click="do('start')">
-    <span class="fa fa-play"></span>
+    <span class="fa fa-play text-success"></span>
     <span>Start</span>
   </div>
   <div ng-if="(['RUNNING', 'STARTED', 'SUSPENDED'].indexOf(status) !== -1) && isStoppable === 'false'"
        class="btn btn-lg btn-default"
        ng-disabled="status === 'RUNNING' && isRestartable === 'false'"
        ng-click="do('start')">
-       <span class="fa fa-play"></span>
+       <span class="fa fa-play text-success"></span>
        <span>Start</span>
   </div>
   <div ng-if="(['RUNNING', 'STARTED'].indexOf(status) !== -1) && isStoppable === 'true'"
        class="btn btn-lg btn-default"
        ng-click="do('stop')">
-    <span class="fa fa-stop"> </span>
+    <span class="fa fa-stop text-danger"> </span>
     <span>Stop</span>
   </div>
 
   <div ng-if="['STARTING', 'STOPPING'].indexOf(status) !== -1"
-       class="btn btn-lg btn-default"
-       ng-class="{'btn-starting': status === 'STARTING', 'btn-stopping': status === 'STOPPING'}">
-    <span class="fa fa-refresh fa-spin"></span>
+       class="btn btn-lg btn-default">
+    <span class="fa fa-refresh fa-spin" ng-class="{'text-success': status === 'STARTING', 'text-danger': status === 'STOPPING'}"></span>
     <span>{{status | caskCapitalizeFilter}}</span>
   </div>
 
