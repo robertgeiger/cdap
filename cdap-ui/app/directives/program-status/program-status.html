@@ -1,32 +1,27 @@
 <table class="table table-status">
   <tbody>
     <tr>
-      <td ng-if="status">
+      <td>
         <span>Status</span>
-        <span ng-class="{'txt-failed': status === 'FAILED' || status === 'KILLED', 'txt-running': status === 'RUNNING'}">
-          <span class="fa" ng-class="{'fa-refresh': status === 'RUNNING', 'fa-exclamation-triangle': status === 'FAILED' || status === 'KILLED'}"></span>
+        <span ng-if="status" ng-class="{'text-blue': status === 'COMPLETED', 'text-green': status === 'STARTED' || status === 'RUNNING', 'text-red': status === 'FAILED' || status === 'KILLED', 'text-black': status === 'STOPPED'}">
+          <span class="fa" ng-class="{'fa-check': status === 'COMPLETED', 'fa-play': status === 'STARTED', 'fa-refresh': status === 'RUNNING', 'fa-exclamation-triangle': status === 'FAILED' || status === 'KILLED', 'fa-stop': status === 'STOPPED'}"></span>
           <span ng-bind="status | caskCapitalizeFilter"></span>
         </span>
+        <span ng-if="!status">Not Started</span>
       </td>
-      <td ng-if="!status">
-        <span>Status</span>
-        <span>Not Started</span>
-      </td>
-      <td ng-if="start">
+      <td>
         <span>Started</span>
-        <span ng-bind="start | amDateFormat: 'MM/DD/YY h:mm:ss a'"></span>
+        <span ng-if="start" ng-bind="start | amDateFormat: 'MM/DD/YY h:mm:ss a'"></span>
+        <span ng-if="!start">&mdash;</span>
       </td>
-      <td ng-if="!start">
-        <span>Started</span>
-        <span>&mdash;</span>
-      </td>
-      <td ng-if="duration">
+      <td>
         <span>Duration</span>
-        <span ng-bind="duration | amDurationFormat | caskCapitalizeFilter"></span>
+        <span ng-if="duration" ng-bind="duration | amDurationFormat | caskCapitalizeFilter"></span>
+        <span ng-if="!duration">&mdash;</span>
       </td>
-      <td ng-if="!duration">
-        <span>Duration</span>
-        <span>&mdash;</span>
+      <td>
+        <span>Processing</span>
+        <span>TBD</span>
       </td>
     </tr>
   </tbody>

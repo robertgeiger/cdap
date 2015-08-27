@@ -4,17 +4,22 @@
   <div class="program-level">
     <div class="container">
       <div class="row" program-heading>
-        <div class="col-sm-6">
-          <h2 class="programTitle">
-            <span ng-bind="$state.params.programId"> </span>
-          </h2>
+        <div class="col-sm-4 col-md-6">
+          <h2 ng-bind="$state.params.programId"></h2>
           <div class="type-block">
             <span class="icon-service"></span>
             <small> Type: Service </small>
           </div>
           <p> Description goes here. </p>
+          <div class="program-tags">
+            <a class="btn">Dataset</a>
+            <a class="btn">Apps</a>
+            <a class="btn">
+              <span class="fa fa-plus"></span>
+            </a>
+          </div>
         </div>
-        <div class="col-sm-6 text-right">
+        <div class="col-sm-8 col-md-6 text-right">
           <my-start-stop-button
             type="services"
             is-stoppable="true">
@@ -26,12 +31,13 @@
   <div class="run-level">
     <div class="container">
       <div class="run-level-inner">
-        <div dropdown is-open="dropdown.isopen">
+        <div dropdown is-open="dropdown.isopen" class="flex-item">
           <a class="btn btn-default dropdown-toggle"
              dropdown-toggle ng-disabled="RunsController.runs.length === 0">
-            <span>
-              <span class="fa fa-circle"></span>
+            <span class="fa fa-circle"></span>
+            <span class="runid-text text-left">
               <span>{{ RunsController.runs.selected.runid }}</span>
+              <span>07-15-2015 10:51:38</span>
             </span>
             <span class="fa fa-caret-down"></span>
           </a>
@@ -39,7 +45,10 @@
             <li ng-repeat="run in RunsController.runs">
               <a ui-sref="services.detail.run({runid: run.runid})">
                 <span class="fa fa-circle"></span>
-                <span>{{ run.runid }}</span>
+                <span class="runid-text">
+                  <span>{{ run.runid }}</span>
+                  <span>07-15-2015 10:51:38</span>
+                </span>
               </a>
             </li>
           </ul>
@@ -48,7 +57,15 @@
           data-type="services"
           data-runid="{{ RunsController.runs.selected.runid }}"
           data-runs="RunsController.runs"
-        ></my-program-status>
+          class="flex-item"></my-program-status>
+        <div class="stop-run flex-item">
+          <div class="btn btn-default btn-block">
+            <span>
+              <span class="fa fa-stop"></span>
+              <span>Stop Run</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -58,7 +75,7 @@
         <li role="presentation"
             ng-repeat="tab in RunsController.tabs"
             ng-class="{'active': tab.title == RunsController.activeTab.title}">
-          <a class="btn btn-default"
+          <a
              role="tab"
              ng-click="RunsController.selectTab(tab)">
             {{ tab.title }}
