@@ -5,9 +5,11 @@
 body.state-services {
   main.container {
     // Override container styling to accommodate full width view
+    // TODO: come up with a way to apply the 3 lines below to all program detail views
     width: 100%;
     padding-right: 0;
     padding-left: 0;
+
     h2 {
       font-weight: 500;
       margin-top: 0;
@@ -16,161 +18,21 @@ body.state-services {
     h3 {
       font-weight: 400;
     }
-  }
-  div.levels {
-    background-color: @table-bg;
-    color: @program-text;
-  }
-  .program-tags {
-    a.btn {
-      .cask-btn(@background: @panel-default-border, @border: 1px solid gray, @border-radius: 16px, @color: gray, @font-size: 12px, @padding: 5px 15px);
-      .transition(all 0.2s ease);
-      &:last-child {
-        padding-right: 10px;
-        padding-left: 10px;
-      }
-      &:not(:last-child) {
-        margin-right: 10px;
-      }
-      &:hover {
-        background-color: lighten(@panel-default-border, 5%);
-      }
-    }
-  }
-  .run-level {
-    @media (min-width: @screen-md-min) {
-      border-top: 1px solid @table-border-color;
-      border-bottom: 1px solid @table-border-color;
-    }
-    margin-top: 20px;
-    .run-level-inner {
-      .flexbox();
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-start;
-    }
-    .dropdown {
-      border-right: 1px solid @table-border-color;
-      border-left: 1px solid @table-border-color;
-      @media (max-width: @screen-sm-max) {
-        border-top: 1px solid @table-border-color;
-      }
-      height: 60px;
-      .order(1);
-      span {
-        &.fa-circle {
-          color: @brand-primary;
+    table.endpoints {
+      th, td {
+        &:first-child {
+          width: 30%;
         }
-        &.runid-text {
-          padding: 0 15px;
-          span {
-            display: block;
-            &:last-child {
-              color: @program-text;
-            }
-          }
-        }
-      }
-      .dropdown-toggle {
-        .cask-btn(@background: transparent, @border: 0, @border-radius: 0, @color: @btn-default-color,  @font-size: 14px, @padding: 0 15px);
-        display: table;
-        height: 100%;
-        &:active {
-          .box-shadow(none);
-        }
-        > span {
-          display: table-cell;
-          font-weight: bold;
+        &:last-child {
+          text-align: center;
           vertical-align: middle;
-          &:nth-child(2) {
-
-          }
+          width: 20%;
         }
       }
-      .dropdown-menu {
-        width: 100%;
-        li a {
-          background-color: @table-bg;
-          color: @btn-default-color;
-          font-weight: bold;
-          padding-left: 15px;
-          display: table;
-          white-space: nowrap;
-          width: 100%;
-          &:hover, &:focus {
-            background-color: @subnav-border;
-            color: @btn-default-color;
-          }
-          > span {
-            display: table-cell;
-            vertical-align: middle;
-          }
+      th {
+        &:hover, &:focus {
+          cursor: default;
         }
-      }
-    }
-    div.stop-run {
-      width: 100px;
-      .order(3);
-      @media (min-width: @screen-sm-min) {
-        margin-left: auto;
-      }
-      .btn {
-        .cask-btn(@background: white, @border: 1px solid white, @border-radius: 0, @color: @btn-default-color, @font-size: 12px, @padding: 0);
-        border-right-color: @table-border-color;
-        border-left-color: @table-border-color;
-        @media (max-width: @screen-sm-max) {
-          border-color: @table-border-color;
-          height: 62px;
-        }
-        display: table;
-        height: 60px;
-        .transition(all 0.2s ease);
-        &:hover {
-          background-color: #e0e0e0;
-          border-top-color: #e0e0e0;
-          border-bottom-color: #e0e0e0;
-        }
-        > span {
-          display: table-cell;
-          vertical-align: middle;
-          span {
-            display: block;
-            &.fa-stop {
-              margin-bottom: 3px;
-            }
-          }
-        }
-      }
-    }
-  }
-  .tabs-level {
-    border-bottom: 1px solid @table-border-color;
-    margin-top: 25px;
-    ul.slanted-tabs {
-      border-bottom: 0; // TODO: remove set border bottom for all slanted tabs
-      > li.active > a:hover {
-        border-right: 1px solid transparent;
-      }
-    }
-  }
-  .tab-view {
-    margin-top: 20px;
-  }
-  table.endpoints {
-    th, td {
-      &:first-child {
-        width: 30%;
-      }
-      &:last-child {
-        text-align: center;
-        vertical-align: middle;
-        width: 20%;
-      }
-    }
-    th {
-      &:hover, &:focus {
-        cursor: default;
       }
     }
   }
