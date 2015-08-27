@@ -14,6 +14,12 @@ class WorkflowsRunsStatusController {
     this.mySparkApi = mySparkApi;
     this.$filter = $filter;
     this.runsCtrl = $scope.RunsController;
+    this.onChangeFlag = 1;
+
+    this.data = {
+      metrics: {},
+      current: {},
+    };
 
     params = {
       namespace: this.$state.params.namespace,
@@ -22,7 +28,10 @@ class WorkflowsRunsStatusController {
       scope: this.$scope
     };
 
-    this.data = {};
+    this.data = {
+      current: {},
+      metrics: {}
+    };
 
     this.myWorkFlowApi.get(params)
       .$promise
@@ -42,13 +51,9 @@ class WorkflowsRunsStatusController {
           }, item);
         });
 
-        this.data = {
-          nodes,
-          edges,
-          metrics: {},
-          current: {},
-        };
-
+        this.data['nodes'] = nodes;
+        this.data['edges'] = edges;
+        this.onChangeFlag += 1;
         var programs = [];
         angular.forEach(res.nodes, value => programs.push(value.program));
 
@@ -98,7 +103,10 @@ class WorkflowsRunsStatusController {
             };
             this.myMapreduceApi.runDetail(mapreduceParams)
               .$promise
-              .then( result => this.data.current[node.name] = result.status);
+              .then( result => {
+                this.data.current[node.name] = result.status;
+                this.onChangeFlag += 1;
+              });
           } else if (node.program.programType === 'SPARK') {
 
             var sparkParams = {
@@ -111,7 +119,10 @@ class WorkflowsRunsStatusController {
 
             this.mySparkApi.runDetail(sparkParams)
               .$promise
-              .then( (result) => this.data.current[node.name] = result.status );
+              .then( (result) => {
+                this.data.current[node.name] = result.status;
+                this.onChangeFlag += 1;
+              });
           }
         });
 
