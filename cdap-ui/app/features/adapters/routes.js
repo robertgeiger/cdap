@@ -1,10 +1,9 @@
 angular.module(PKG.name + '.feature.adapters')
   .config(function($stateProvider, $urlRouterProvider, MYAUTH_ROLE) {
     $stateProvider
-      .state('adapters', {
-        url: '',
+      .state('hydrator', {
+        url: '/hydrator',
         abstract: true,
-        parent: 'apps',
         data: {
           authorizedRoles: MYAUTH_ROLE.all,
           highlightTab: 'development'
@@ -12,17 +11,23 @@ angular.module(PKG.name + '.feature.adapters')
         template: '<ui-view/>'
       })
 
-        .state('adapters.list', {
+        .state('hydrator.drafts', {
           url: '/drafts',
-          templateUrl: '/assets/features/adapters/templates/list.html',
-          controller: 'AdapterListController',
+          templateUrl: '/assets/features/adapters/templates/drafts.html',
+          controller: 'HydratorDraftsController',
           ncyBreadcrumb: {
             label: 'All Drafts',
             parent: 'overview'
           }
         })
 
-        .state('adapters.create', {
+        .state('hydrator.lists', {
+          url: '',
+          templateUrl: '/assets/features/adapters/templates/list.html',
+          controller: 'HydratorListController'
+        })
+
+        .state('hydrator.create', {
           url: '/create?name&type',
           params: {
             data: null
