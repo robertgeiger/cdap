@@ -1,5 +1,5 @@
 angular.module(PKG.name + '.feature.adapters')
-  .controller('AdpaterDetailController', function($scope, rAdapterDetail) {
+  .controller('HydratorDetailController', function($scope, rAdapterDetail) {
     $scope.template = rAdapterDetail.template;
     $scope.isScheduled = false;
     if (rAdapterDetail.schedule) {

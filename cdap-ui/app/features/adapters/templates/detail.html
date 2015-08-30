@@ -6,11 +6,11 @@
     <h2 class="programTitle">
       <span>
         <!-- There is a display: block on the first span -->
-        <span tooltip="{{ $state.params.adapterId }}"
+        <span tooltip="{{ $state.params.hydratorId }}"
               tooltip-placement="right"
-              tooltip-enable="$state.params.adapterId.length > 50"
+              tooltip-enable="$state.params.hydratorId.length > 50"
               tooltip-append-to-body="true"
-              ng-bind="$state.params.adapterId | myEllipsis: 50"></span>
+              ng-bind="$state.params.hydratorId | myEllipsis: 50"></span>
       </span>
     </h2>
     <div class="type-block">
@@ -33,16 +33,16 @@
 <div class="cdap-subnav-end"></div>
 <ul class="nav nav-tabs slanted-tabs" role="tablist">
   <li role="presentation" ui-sref-active="active">
-    <a ui-sref="adapters.detail.runs" role="tab">Runs</a>
+    <a ui-sref="hydrator.detail.runs" role="tab">Runs</a>
   </li>
   <li role="presentation" ui-sref-active="active">
-    <a ui-sref="adapters.detail.history" role="tab">History</a>
+    <a ui-sref="hydrator.detail.history" role="tab">History</a>
   </li>
   <li role="presentation" ui-sref-active="active">
-    <a ui-sref="adapters.detail.datasets" role="tab">Datasets</a>
+    <a ui-sref="hydrator.detail.datasets" role="tab">Datasets</a>
   </li>
   <li role="presentation" ui-sref-active="active" ng-if="isScheduled">
-    <a ui-sref="adapters.detail.schedule" role="tab">Schedules</a>
+    <a ui-sref="hydrator.detail.schedule" role="tab">Schedules</a>
   </li>
 </ul>
 

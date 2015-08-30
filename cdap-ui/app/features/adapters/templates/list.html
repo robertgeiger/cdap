@@ -1,1 +1,11 @@
-<h1>list</h1>
+<div ng-repeat="apps in ListController.appslist">
+  <div>
+    {{app.name}}
+  </div>
+</div>
+
+<div ng-if="ListController.appslist.length == 0">
+  <div class="well well-lg">
+    <h3>No ETLApps published</h3>
+  </div>
+</div>

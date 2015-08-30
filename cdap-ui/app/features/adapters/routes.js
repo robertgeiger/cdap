@@ -24,9 +24,11 @@ angular.module(PKG.name + '.feature.adapters')
         .state('hydrator.lists', {
           url: '',
           templateUrl: '/assets/features/adapters/templates/list.html',
-          controller: 'HydratorListController'
+          controller: 'HydratorListController',
+          controlelrAs: 'ListController'
         })
 
+        // Adater create controller + template rename will happen parallel in adapter create revamp
         .state('hydrator.create', {
           url: '/create?name&type',
           params: {
@@ -61,8 +63,8 @@ angular.module(PKG.name + '.feature.adapters')
           }
         })
 
-        .state('adapters.detail', {
-          url: '/:adapterId',
+        .state('hydrator.detail', {
+          url: '/:hydratorId',
           data: {
             authorizedRoles: MYAUTH_ROLE.all,
             highlightTab: 'development'
@@ -75,7 +77,7 @@ angular.module(PKG.name + '.feature.adapters')
               // (timing issue with re-direct from login state).
               var params = {
                 namespace: $stateParams.namespace,
-                adapter: $stateParams.adapterId
+                adapter: $stateParams.hydratorId
               };
 
               myAdapterApi.runs(params)
@@ -88,7 +90,7 @@ angular.module(PKG.name + '.feature.adapters')
             rAdapterDetail: function($stateParams, $q, myAdapterApi) {
               var params = {
                 namespace: $stateParams.namespace,
-                adapter: $stateParams.adapterId
+                adapter: $stateParams.hydratorId
               };
 
               return myAdapterApi.get(params).$promise;
@@ -96,21 +98,21 @@ angular.module(PKG.name + '.feature.adapters')
           },
           ncyBreadcrumb: {
             parent: 'apps.list',
-            label: '{{$state.params.adapterId}}'
+            label: '{{$state.params.hydratorId}}'
           },
           templateUrl: '/assets/features/adapters/templates/detail.html',
-          controller: 'AdpaterDetailController'
+          controller: 'HydratorDetailController'
         })
-          .state('adapters.detail.runs',{
+          .state('hydrator.detail.runs',{
             url: '/runs',
             templateUrl: '/assets/features/adapters/templates/tabs/runs.html',
-            controller: 'AdapterRunsController',
+            controller: 'HydratorRunsController',
             ncyBreadcrumb: {
               parent: 'apps.list',
               label: '{{$state.params.adapterId}}'
             }
           })
-            .state('adapters.detail.runs.run', {
+            .state('hydrator.detail.runs.run', {
               url: '/:runid',
               templateUrl: '/assets/features/adapters/templates/tabs/runs/run-detail.html',
               ncyBreadcrumb: {
@@ -118,33 +120,33 @@ angular.module(PKG.name + '.feature.adapters')
               }
             })
 
-        .state('adapters.detail.datasets', {
+        .state('hydrator.detail.datasets', {
           url: '/datasets',
           data: {
             authorizedRoles: MYAUTH_ROLE.all,
             highlightTab: 'development'
           },
           templateUrl: 'data-list/data-list.html',
-          controller: 'AdapterDatasetsController',
+          controller: 'HydratorDatasetsController',
           ncyBreadcrumb: {
             label: 'Datasets',
-            parent: 'adapters.detail.runs'
+            parent: 'Hydrator.detail.runs'
           }
         })
-        .state('adapters.detail.history', {
+        .state('hydrator.detail.history', {
           url: '/history',
           data: {
             authorizedRoles: MYAUTH_ROLE.all,
             highlightTab: 'development'
           },
           templateUrl: '/assets/features/adapters/templates/tabs/history.html',
-          controller: 'AdapterRunsController',
+          controller: 'HydratorRunsController',
           ncyBreadcrumb: {
             label: 'History',
-            parent: 'adapters.detail.runs'
+            parent: 'Hydrator.detail.runs'
           }
         })
-        .state('adapters.detail.schedule', {
+        .state('hydrator.detail.schedule', {
           url: '/schedule',
           data: {
             authorizedRoles: MYAUTH_ROLE.all,
@@ -155,7 +157,7 @@ angular.module(PKG.name + '.feature.adapters')
           controllerAs: 'ScheduleController',
           ncyBreadcrumb: {
             label: 'Schedule',
-            parent: 'adapters.detail.runs'
+            parent: 'Hydrator.detail.runs'
           }
         });
   });

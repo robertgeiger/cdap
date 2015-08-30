@@ -13,7 +13,7 @@ angular.module(PKG.name + '.feature.adapters')
 
     $scope.cloneAdapter = function() {
       if ($scope.config) {
-        $state.go('adapters.create', {
+        $state.go('hydrator.create', {
           data: $scope.config,
           type: $scope.config.template
         });

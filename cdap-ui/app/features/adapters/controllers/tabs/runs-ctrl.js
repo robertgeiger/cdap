@@ -1,5 +1,5 @@
 angular.module(PKG.name + '.feature.adapters')
-  .controller('AdapterRunsController', function($scope, $filter, $state, rRuns) {
+  .controller('HydratorRunsController', function($scope, $filter, $state, rRuns) {
   var fFilter = $filter('filter');
   $scope.runs = rRuns;
 
