@@ -48,7 +48,8 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             .attr('r', 10)
             .attr('transform', 'translate(0, ' + (-defaultRadius - 25) + ')' )
             .attr('class', 'workflow-token')
-            .attr('ng-click', 'console.log("hello")');
+            .attr('id', 'token-' + scope.instanceMap[node.elem.__data__].nodeId);
+
 
           parent.append('text')
             .text('T')
@@ -147,6 +148,19 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
             .attr('class', 'workflow-shapes foundation-shape conditional-svg');
 
+          parent.append('circle')
+            .attr('r', 10)
+            .attr('transform', 'translate(0, ' + (-defaultRadius - 25) + ')' )
+            .attr('class', 'workflow-token')
+            .attr('id', 'token-' + scope.instanceMap[node.elem.__data__].nodeId);
+
+
+          parent.append('text')
+            .text('T')
+            .attr('x', -5)
+            .attr('y', (-defaultRadius - 20))
+            .attr('class', 'token-label');
+
           node.intersect = function(p) {
             return dagreD3.intersect.polygon(node, points, p);
           };
@@ -225,9 +239,11 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
 
       scope.handleTooltip = function(tip, nodeId) {
         if (['Start', 'End'].indexOf(nodeId) === -1) {
+          var text = scope.instanceMap[nodeId].program.programType || scope.instanceMap[nodeId].program.programName;
+
           tip
             .html(function() {
-              return '<span>'+ scope.instanceMap[nodeId].nodeId + ' : ' + scope.instanceMap[nodeId].program.programName +'</span>';
+              return '<span>'+ scope.instanceMap[nodeId].nodeId + ' : ' + text +'</span>';
             })
             .show();
         }

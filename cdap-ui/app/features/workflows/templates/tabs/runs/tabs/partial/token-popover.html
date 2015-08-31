@@ -1,0 +1,27 @@
+<div class="popover">
+  <div class="arrow"></div>
+  <div class="popover-title">
+    <h4>
+      <span>Tokens</span>
+      <i class="fa fa-times-circle-o pull-right" ng-click="$hide()"></i>
+    </h4>
+  </div>
+  <div class="popover-content">
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead>
+          <th>Key</th>
+          <th>Value</th>
+        </thead>
+
+        <tbody>
+          <tr ng-repeat="(key, value) in tokens">
+            <td>{{ key }}</td>
+            <td>{{ value }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
