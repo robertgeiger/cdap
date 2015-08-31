@@ -17,7 +17,7 @@ var baseDirective = {
 module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories) {
   return angular.extend({
     link: function (scope) {
-      scope.render = FlowFactories.genericRender.bind(null, scope, $filter, $location, tip);
+      scope.render = FlowFactories.genericRender.bind(null, scope, $filter, $location, tip, true);
 
       var defaultRadius = 50;
       scope.getShapes = function() {
@@ -36,6 +36,10 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             { x: -xPoint, y: -yPoint},
             { x: -xPoint, y: yPoint}
           ];
+
+          parent.select('.label')
+            .attr('transform', 'translate(0,'+ (defaultRadius + 15) + ')');
+
           var shapeSvg = parent.insert('polygon', ':first-child')
               .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '));
           var status = (scope.model.current && scope.model.current[node.elem.__data__]) || '';
@@ -71,6 +75,10 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             { x: 30, y: 0},
             { x: -30, y: 40},
           ];
+
+          parent.select('.label')
+            .attr('transform', 'translate(0,'+ (bbox.height + 25) + ')');
+
           var shapeSvg = parent.insert('polygon', ':first-child')
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
             .attr('transform', 'translate(' + (w/6) + ')')
@@ -91,6 +99,10 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             { x: 30, y: 40},
             { x: 30, y: -40},
           ];
+
+          parent.select('.label')
+            .attr('transform', 'translate(0,'+ (bbox.height + 25) + ')');
+
           var shapeSvg = parent.insert('polygon', ':first-child')
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
             .attr('transform', 'translate(' + (-w/6) + ')')
@@ -110,8 +122,12 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             { x: -defaultRadius*3/4, y:  0 },
             { x:  0, y:  defaultRadius*3/4 },
             { x:  defaultRadius*3/4, y:  0 }
-          ],
-          shapeSvg = parent.insert('polygon', ':first-child')
+          ];
+
+          parent.select('.label')
+            .attr('transform', 'translate(0,'+ (bbox.height + 25) + ')');
+
+          var shapeSvg = parent.insert('polygon', ':first-child')
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
             .attr('class', 'workflow-shapes foundation-shape conditional-svg');
 
@@ -182,6 +198,7 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
 
       scope.handleTooltip = function(tip, nodeId) {
         if (['Start', 'End'].indexOf(nodeId) === -1) {
+          console.log('node', scope.instanceMap[nodeId]);
           tip
             .html(function() {
               return '<span>'+ scope.instanceMap[nodeId].nodeId + ' : ' + scope.instanceMap[nodeId].program.programName +'</span>';
