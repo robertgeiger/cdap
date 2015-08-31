@@ -1,6 +1,8 @@
 @import "../../styles/variables.less";
 @import "../../styles/themes/cdap/mixins.less";
 
+
+
 my-flow-graph {
 
   .diagram-container {
@@ -89,6 +91,10 @@ my-flow-graph {
 
 my-workflow-graph {
 
+  @green-outline: darken(@brand-success, 15%);
+  @red-outline: darken(@brand-danger, 15%);
+  @grey-outline: #989898;
+
   .diagram-container {
     border: 1px solid @table-border-color;
     background-color: @table-bg;
@@ -127,8 +133,8 @@ my-workflow-graph {
 
   .job-svg {
     fill: white;
-    stroke: @cdap-darkness;
-    stroke-width: 5px;
+    stroke: @grey-outline;
+    stroke-width: 10px;
     cursor: not-allowed;
 
     + .label text {
@@ -144,7 +150,7 @@ my-workflow-graph {
     }
 
     &.running {
-      stroke: @brand-success;
+      stroke: @green-outline;
     }
 
     &.killed {
@@ -153,26 +159,27 @@ my-workflow-graph {
 
     &.completed {
       fill: @brand-success;
+      stroke: @green-outline;
     }
 
     &.failed {
-      fill: @brand-danger;
+      stroke: @red-outline;
     }
   }
 
   .end-svg, .start-svg {
-    stroke: @cdap-darkness;
-    stroke-width: 5px;
+    stroke-width: 7px;
+    fill: white;
   }
 
-  .start-svg { fill: @brand-success; }
-  .end-svg { fill: @brand-danger; }
+  .start-svg { stroke: @green-outline; }
+  .end-svg { stroke: @brand-primary; }
 
   .conditional-svg {
     fill: white;
     cursor: default;
     stroke: @cdap-orange;
-    stroke-width: 5px;
+    stroke-width: 10px;
   }
 
   .job-events {

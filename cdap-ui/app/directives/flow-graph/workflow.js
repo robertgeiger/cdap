@@ -19,7 +19,7 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
     link: function (scope) {
       scope.render = FlowFactories.genericRender.bind(null, scope, $filter, $location, tip, true);
 
-      var defaultRadius = 50;
+      var defaultRadius = 30;
       scope.getShapes = function() {
         var shapes = {};
         shapes.job = function(parent, bbox, node) {
@@ -38,7 +38,7 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
           ];
 
           parent.select('.label')
-            .attr('transform', 'translate(0,'+ (defaultRadius + 15) + ')');
+            .attr('transform', 'translate(0,'+ (defaultRadius + 25) + ')');
 
           var shapeSvg = parent.insert('polygon', ':first-child')
               .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '));
@@ -71,13 +71,13 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
           var w = bbox.width;
           var points = [
             // draw a triangle facing right
-            { x: -30, y: -40},
-            { x: 30, y: 0},
-            { x: -30, y: 40},
+            { x: -20, y: -30},
+            { x: 20, y: 0},
+            { x: -20, y: 30},
           ];
 
           parent.select('.label')
-            .attr('transform', 'translate(0,'+ (bbox.height + 25) + ')');
+            .attr('transform', 'translate(0,'+ (bbox.height + 20) + ')');
 
           var shapeSvg = parent.insert('polygon', ':first-child')
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
@@ -95,13 +95,13 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
           var w = bbox.width;
           var points = [
             // draw a triangle facing right
-            { x: -30, y: 0},
-            { x: 30, y: 40},
-            { x: 30, y: -40},
+            { x: -20, y: 0},
+            { x: 20, y: 30},
+            { x: 20, y: -30},
           ];
 
           parent.select('.label')
-            .attr('transform', 'translate(0,'+ (bbox.height + 25) + ')');
+            .attr('transform', 'translate(0,'+ (bbox.height + 20) + ')');
 
           var shapeSvg = parent.insert('polygon', ':first-child')
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
@@ -125,7 +125,7 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
           ];
 
           parent.select('.label')
-            .attr('transform', 'translate(0,'+ (bbox.height + 25) + ')');
+            .attr('transform', 'translate(0,'+ (bbox.height + 20) + ')');
 
           var shapeSvg = parent.insert('polygon', ':first-child')
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
@@ -198,7 +198,6 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
 
       scope.handleTooltip = function(tip, nodeId) {
         if (['Start', 'End'].indexOf(nodeId) === -1) {
-          console.log('node', scope.instanceMap[nodeId]);
           tip
             .html(function() {
               return '<span>'+ scope.instanceMap[nodeId].nodeId + ' : ' + scope.instanceMap[nodeId].program.programName +'</span>';
