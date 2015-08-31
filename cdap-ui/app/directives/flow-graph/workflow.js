@@ -44,20 +44,25 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
           var shapeSvg = parent.insert('polygon', ':first-child')
               .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '));
 
-          parent.append('circle')
-            .attr('r', 10)
-            .attr('transform', 'translate(0, ' + (-defaultRadius - 25) + ')' )
-            .attr('class', 'workflow-token')
-            .attr('id', 'token-' + scope.instanceMap[node.elem.__data__].nodeId);
-
-
-          parent.append('text')
-            .text('T')
-            .attr('x', -5)
-            .attr('y', (-defaultRadius - 20))
-            .attr('class', 'token-label');
 
           var status = (scope.model.current && scope.model.current[node.elem.__data__]) || '';
+
+          if (status === 'COMPLETED') {
+            parent.append('circle')
+              .attr('r', 10)
+              .attr('transform', 'translate(0, ' + (-defaultRadius - 25) + ')' )
+              .attr('class', 'workflow-token')
+              .attr('id', 'token-' + scope.instanceMap[node.elem.__data__].nodeId);
+
+
+            parent.append('text')
+              .text('T')
+              .attr('x', -5)
+              .attr('y', (-defaultRadius - 20))
+              .attr('class', 'token-label');
+          }
+
+
           switch(status) {
             case 'COMPLETED':
               shapeSvg.attr('class', 'workflow-shapes foundation-shape job-svg completed');
