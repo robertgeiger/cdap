@@ -100,7 +100,7 @@ angular.module(`${PKG.name}.services`)
             expandedNodes.push({
               label: 'IF',
               nodeType: 'CONDITIONNODE',
-              nodeId: 'IF' + i,
+              nodeId: nodes[i].nodeId,
               program: {
                 programName: nodes[i].predicateClassName
               }
@@ -109,7 +109,7 @@ angular.module(`${PKG.name}.services`)
             expandedNodes.push({
               label: 'ENDIF',
               nodeType: 'CONDITIONEND',
-              nodeId: 'IF' + i,
+              nodeId: nodes[i].nodeId,
               program: {
                 programName: 'CONDITIONEND'
               }

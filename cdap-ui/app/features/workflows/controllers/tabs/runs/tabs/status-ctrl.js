@@ -3,7 +3,7 @@ var runparams = {},
     params;
 
 class WorkflowsRunsStatusController {
-  constructor($state, $scope, myWorkFlowApi, $filter, $alert, GraphHelpers, MyDataSource, myMapreduceApi, mySparkApi) {
+  constructor($state, $scope, myWorkFlowApi, $filter, $alert, GraphHelpers, MyDataSource, myMapreduceApi, mySparkApi, $popover, $rootScope, $timeout) {
     this.dataSrc = new MyDataSource($scope);
     this.$state = $state;
     this.$scope = $scope;
@@ -13,6 +13,9 @@ class WorkflowsRunsStatusController {
     this.myMapreduceApi = myMapreduceApi;
     this.mySparkApi = mySparkApi;
     this.$filter = $filter;
+    this.$popover = $popover;
+    this.$rootScope = $rootScope;
+    this.$timeout = $timeout;
     this.runsCtrl = $scope.RunsController;
     this.onChangeFlag = 1;
 
@@ -39,7 +42,7 @@ class WorkflowsRunsStatusController {
         var edges = [],
             nodes = [],
             nodesFromBackend = angular.copy(res.nodes);
-
+console.log('res', res);
         this.GraphHelpers.addStartAndEnd(nodesFromBackend);
         this.GraphHelpers.expandNodes(nodesFromBackend, nodes);
         this.GraphHelpers.convertNodesToEdges(angular.copy(nodes), edges);
@@ -162,7 +165,7 @@ class WorkflowsRunsStatusController {
   }
 
   workflowTokenClick(node) {
-    console.log('instance', node.nodeId);
+    console.log('instance', node);
     let tokenparams = angular.extend(
       {
         runId: this.runsCtrl.runs.selected.runid,
@@ -175,11 +178,31 @@ class WorkflowsRunsStatusController {
       .$promise
       .then (res => {
         console.log('res', res);
+        var elem = angular.element(document.getElementById('token-' + node.nodeId));
+
+        var scope = this.$rootScope.$new();
+        scope.tokens = res;
+
+        var popover = this.$popover(elem, {
+          trigger: 'manual',
+          placement: 'auto',
+          target: elem,
+          template: '/assets/features/workflows/templates/tabs/runs/tabs/partial/token-popover.html',
+          container: 'main',
+          scope: scope
+        });
+
+        popover.$promise.then( () => {
+          this.$timeout(function () {
+            popover.show();
+          });
+        });
+
       });
   }
 
 }
 
-WorkflowsRunsStatusController.$inject = ['$state', '$scope', 'myWorkFlowApi', '$filter', '$alert', 'GraphHelpers', 'MyDataSource', 'myMapreduceApi', 'mySparkApi'];
+WorkflowsRunsStatusController.$inject = ['$state', '$scope', 'myWorkFlowApi', '$filter', '$alert', 'GraphHelpers', 'MyDataSource', 'myMapreduceApi', 'mySparkApi', '$popover', '$rootScope', '$timeout'];
 angular.module(`${PKG.name}.feature.workflows`)
   .controller('WorkflowsRunsStatusController', WorkflowsRunsStatusController);
