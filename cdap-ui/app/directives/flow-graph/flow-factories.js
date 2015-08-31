@@ -8,7 +8,7 @@ angular.module(PKG.name+'.commons')
   })
 
   .factory('FlowFactories', function () {
-    function genericRender(scope, filter, location, tip) {
+    function genericRender(scope, filter, location, tip, isWorkflow) {
       var nodes = scope.model.nodes;
       var edges = scope.model.edges;
       if (tip) {
@@ -30,11 +30,21 @@ angular.module(PKG.name+'.commons')
       // First set nodes and edges.
       angular.forEach(nodes, function (node) {
         var nodeLabel = '';
-        if (node.label && node.label.length) {
-          nodeLabel = node.label.length > 8? node.label.substr(0,5) + '...': node.label;
+
+        if (isWorkflow) {
+          if (node.label && node.label.length) {
+            nodeLabel = node.label.length > 24? node.label.substr(0,22) + '...': node.label;
+          } else {
+            nodeLabel = node.name.length > 24? node.name.substr(0,22) + '...': node.name;
+          }
         } else {
-          nodeLabel = node.name.length > 8? node.name.substr(0,5) + '...': node.name;
+          if (node.label && node.label.length) {
+            nodeLabel = node.label.length > 8? node.label.substr(0,5) + '...': node.label;
+          } else {
+            nodeLabel = node.name.length > 8? node.name.substr(0,5) + '...': node.name;
+          }
         }
+
         scope.instanceMap[node.name] = node;
         scope.labelMap[node.label || node.name] = node;
         g.setNode(node.name, { shape: scope.getShape(node.type), label: nodeLabel});

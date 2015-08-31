@@ -151,12 +151,6 @@ my-workflow-graph {
       stroke: @brand-danger;
     }
 
-    &.completed, &.failed {
-      + .label text {
-        fill: white;
-      }
-    }
-
     &.completed {
       fill: @brand-success;
     }
@@ -169,11 +163,8 @@ my-workflow-graph {
   .end-svg, .start-svg {
     stroke: @cdap-darkness;
     stroke-width: 5px;
-    + .label text {
-      fill: white;
-      font-size: 12px;
-    }
   }
+
   .start-svg { fill: @brand-success; }
   .end-svg { fill: @brand-danger; }
 
