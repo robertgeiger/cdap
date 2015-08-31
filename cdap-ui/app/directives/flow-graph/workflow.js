@@ -8,7 +8,8 @@ var baseDirective = {
     model: '=',
     onChangeFlag: '=',
     clickContext: '=',
-    click: '&'
+    click: '&',
+    tokenClick: '&'
   },
   controller: 'myFlowController'
 };
@@ -42,6 +43,19 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
 
           var shapeSvg = parent.insert('polygon', ':first-child')
               .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '));
+
+          parent.append('circle')
+            .attr('r', 10)
+            .attr('transform', 'translate(0, ' + (-defaultRadius - 25) + ')' )
+            .attr('class', 'workflow-token')
+            .attr('ng-click', 'console.log("hello")');
+
+          parent.append('text')
+            .text('T')
+            .attr('x', -5)
+            .attr('y', (-defaultRadius - 20))
+            .attr('class', 'token-label');
+
           var status = (scope.model.current && scope.model.current[node.elem.__data__]) || '';
           switch(status) {
             case 'COMPLETED':
@@ -59,6 +73,8 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             default:
               shapeSvg.attr('class', 'workflow-shapes foundation-shape job-svg');
           }
+
+
 
           node.intersect = function(point) {
             return dagreD3.intersect.polygon(node, points, point);
@@ -185,13 +201,24 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
       };
 
       scope.handleNodeClick = function(nodeId) {
+        console.log('nodeid', nodeId);
+        // scope.handleHideTip(nodeId);
+        // var instance = scope.instanceMap[nodeId];
+        // scope.$apply(function(scope) {
+        //   var fn = scope.click();
+        //   if ('undefined' !== typeof fn) {
+        //     fn.call(scope.clickContext, instance);
+        //   }
+        // });
+      };
 
-        scope.handleHideTip(nodeId);
-        var instance = scope.instanceMap[nodeId];
+      scope.toggleToken = function (nodeId) {
+        var node = scope.instanceMap[nodeId];
+
         scope.$apply(function(scope) {
-          var fn = scope.click();
+          var fn = scope.tokenClick();
           if ('undefined' !== typeof fn) {
-            fn.call(scope.clickContext, instance);
+            fn.call(scope.clickContext, node);
           }
         });
       };

@@ -40,6 +40,7 @@ angular.module(PKG.name + '.services')
       pollScheduleStatus: myHelpers.getConfig('GET', 'POLL', schedulepath + '/status', false, { interval: 2000 }),
       scheduleSuspend: myHelpers.getConfig('POST', 'REQUEST', schedulepath + '/suspend'),
       scheduleResume: myHelpers.getConfig('POST', 'REQUEST', schedulepath + '/resume'),
-      getCurrent: myHelpers.getConfig('GET', 'REQUEST', basepath + '/:runid/current', true)
+      getCurrent: myHelpers.getConfig('GET', 'REQUEST', basepath + '/:runid/current', true),
+      getNodeToken: myHelpers.getConfig('GET', 'REQUEST', basepath + '/runs/:runId/nodes/:nodeId/token')
     });
   });

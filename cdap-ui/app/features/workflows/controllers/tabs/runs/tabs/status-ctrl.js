@@ -161,6 +161,23 @@ class WorkflowsRunsStatusController {
     }
   }
 
+  workflowTokenClick(node) {
+    console.log('instance', node.nodeId);
+    let tokenparams = angular.extend(
+      {
+        runId: this.runsCtrl.runs.selected.runid,
+        nodeId: node.nodeId
+      },
+      params
+    );
+
+    this.myWorkFlowApi.getNodeToken(tokenparams)
+      .$promise
+      .then (res => {
+        console.log('res', res);
+      });
+  }
+
 }
 
 WorkflowsRunsStatusController.$inject = ['$state', '$scope', 'myWorkFlowApi', '$filter', '$alert', 'GraphHelpers', 'MyDataSource', 'myMapreduceApi', 'mySparkApi'];

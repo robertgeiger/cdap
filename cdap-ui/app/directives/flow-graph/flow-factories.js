@@ -170,7 +170,13 @@ angular.module(PKG.name+'.commons')
       // Set up onclick after rendering.
       svg
         .selectAll('g.node')
-        .on('click', scope.handleNodeClick);
+        .on('dblclick', scope.handleNodeClick);
+
+      if (isWorkflow) {
+        svg
+          .selectAll('text.token-label')
+          .on('click', scope.toggleToken);
+      }
 
       svg
         .selectAll('g.node text')
