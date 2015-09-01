@@ -23,7 +23,7 @@ angular.module(PKG.name+'.commons')
         ranksep: 100,
         rankdir: 'LR',
         marginx: 30,
-        marginy: 30
+        marginy: 50
       })
         .setDefaultEdgeLabel(function () { return {}; });
 
