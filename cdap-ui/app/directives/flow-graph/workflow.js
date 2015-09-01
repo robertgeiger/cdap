@@ -63,6 +63,11 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
           }
 
 
+          parent.insert('div')
+            .insert('span')
+            .attr('class', 'fa fa-refresh');
+
+
           switch(status) {
             case 'COMPLETED':
               shapeSvg.attr('class', 'workflow-shapes foundation-shape job-svg completed');
