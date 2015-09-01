@@ -227,15 +227,14 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
       };
 
       scope.handleNodeClick = function(nodeId) {
-        console.log('nodeid', nodeId);
-        // scope.handleHideTip(nodeId);
-        // var instance = scope.instanceMap[nodeId];
-        // scope.$apply(function(scope) {
-        //   var fn = scope.click();
-        //   if ('undefined' !== typeof fn) {
-        //     fn.call(scope.clickContext, instance);
-        //   }
-        // });
+        scope.handleHideTip(nodeId);
+        var instance = scope.instanceMap[nodeId];
+        scope.$apply(function(scope) {
+          var fn = scope.click();
+          if ('undefined' !== typeof fn) {
+            fn.call(scope.clickContext, instance);
+          }
+        });
       };
 
       scope.toggleToken = function (nodeId) {

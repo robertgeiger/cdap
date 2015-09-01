@@ -63,3 +63,40 @@ body.state-workflows {
     }
   }
 }
+
+my-pageslide {
+  border-bottom-left-radius: 5px;
+  border-top-left-radius: 5px;
+
+  div.sidepanel {
+    overflow-x: 'hidden';
+
+    .sidepanel-heading {
+      h3 { color: white; }
+    }
+
+    .nav-tabs {
+      & > li {
+        a {
+          color: white;
+
+          &:hover {
+            color: black;
+          }
+        }
+      }
+
+      & > li.active {
+        a { color: black; }
+      }
+    }
+
+    table.table {
+      margin-top: 0;
+
+      tr td {
+        font-size: 11px;
+      }
+    }
+  }
+}

@@ -1,10 +1,9 @@
 // FIXME: Needs to be re-thought.
 var runparams = {},
-    popovers = {},
     params;
 
 class WorkflowsRunsStatusController {
-  constructor($state, $scope, myWorkFlowApi, $filter, $alert, GraphHelpers, MyDataSource, myMapreduceApi, mySparkApi, $popover, $rootScope, $timeout) {
+  constructor($state, $scope, myWorkFlowApi, $filter, $alert, GraphHelpers, MyDataSource, myMapreduceApi, mySparkApi) {
     this.dataSrc = new MyDataSource($scope);
     this.$state = $state;
     this.$scope = $scope;
@@ -14,11 +13,9 @@ class WorkflowsRunsStatusController {
     this.myMapreduceApi = myMapreduceApi;
     this.mySparkApi = mySparkApi;
     this.$filter = $filter;
-    this.$popover = $popover;
-    this.$rootScope = $rootScope;
-    this.$timeout = $timeout;
     this.runsCtrl = $scope.RunsController;
     this.onChangeFlag = 1;
+    this.showSidepanel = false;
 
     this.data = {
       metrics: {},
@@ -176,48 +173,43 @@ class WorkflowsRunsStatusController {
       params
     );
 
-    this.myWorkFlowApi.getNodeToken(tokenparams)
+    this.selectedNode = node.nodeId;
+
+    this.myWorkFlowApi.getUserNodeToken(tokenparams)
       .$promise
       .then (res => {
-        var elem = angular.element(document.getElementById('token-' + node.nodeId));
-
         delete res.$promise;
         delete res.$resolved;
 
-        if (popovers[node.nodeId]) {
-          popovers[node.nodeId].popover.hide();
-          popovers[node.nodeId].scope.$destroy();
-        }
-
-        var scope = this.$rootScope.$new();
-        scope.tokens = res;
-        scope.isEmpty = Object.keys(res).length === 0;
-
-        var popover = this.$popover(elem, {
-          trigger: 'manual',
-          placement: 'auto',
-          target: elem,
-          template: '/assets/features/workflows/templates/tabs/runs/tabs/partial/token-popover.html',
-          container: 'main',
-          scope: scope
-        });
-
-        popovers[node.nodeId] = {
-          popover: popover,
-          scope: scope
+        this.usertokens = {
+          tokens: res,
+          isEmpty: Object.keys(res).length === 0
         };
 
-        popover.$promise.then( () => {
-          this.$timeout(function () {
-            popover.show();
-          });
-        });
+        this.showSidepanel = true;
 
       });
+
+    this.myWorkFlowApi.getSystemNodeToken(tokenparams)
+      .$promise
+      .then (res => {
+        delete res.$promise;
+        delete res.$resolved;
+
+        this.systemtokens = {
+          tokens: res,
+          isEmpty: Object.keys(res).length === 0
+        };
+      });
+
+  }
+
+  closeSidepanel() {
+    this.showSidepanel = false;
   }
 
 }
 
-WorkflowsRunsStatusController.$inject = ['$state', '$scope', 'myWorkFlowApi', '$filter', '$alert', 'GraphHelpers', 'MyDataSource', 'myMapreduceApi', 'mySparkApi', '$popover', '$rootScope', '$timeout'];
+WorkflowsRunsStatusController.$inject = ['$state', '$scope', 'myWorkFlowApi', '$filter', '$alert', 'GraphHelpers', 'MyDataSource', 'myMapreduceApi', 'mySparkApi'];
 angular.module(`${PKG.name}.feature.workflows`)
   .controller('WorkflowsRunsStatusController', WorkflowsRunsStatusController);
