@@ -4,18 +4,21 @@ angular.module(PKG.name+ '.commons')
       restrict: 'E',
       transclude: false,
       scope: {
-        location: '@',
         open: '=',
-        container: '@'
+        width: '@'
       },
       link: pageslide
     };
   });
 
 function pageslide(scope, elem) {
+  scope.width = scope.width || '600';
+
   var parent = angular.element(elem[0].parentElement);
-  console.log('parent', parent);
   var slide = elem[0];
+
+  var anchor = angular.element(document.getElementById('sidepanel-anchor'));
+  var offset = anchor[0].offsetTop;
 
   slide.style.position = 'absolute';
   slide.style.overflowY = 'auto';
@@ -23,7 +26,7 @@ function pageslide(scope, elem) {
   slide.style.width = '0px';
   slide.style.maxHeight = parent[0].offsetTop + 'px';
   slide.style.right = '0px';
-  slide.style.top = parent[0].offsetTop + 'px';
+  slide.style.top = offset + 'px';
   slide.style.backgroundColor = 'rgb(102, 110, 130)';
   slide.style.padding = '25px';
   slide.style.zIndex = 1000;
@@ -33,7 +36,7 @@ function pageslide(scope, elem) {
 
 
   function open(slider) {
-    slider.style.width = '600px';
+    slider.style.width = scope.width + 'px';
   }
 
   function close(slider) {
