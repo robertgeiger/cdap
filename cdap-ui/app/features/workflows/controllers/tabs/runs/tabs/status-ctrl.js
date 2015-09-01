@@ -1,5 +1,6 @@
 // FIXME: Needs to be re-thought.
 var runparams = {},
+    popovers = {},
     params;
 
 class WorkflowsRunsStatusController {
@@ -42,7 +43,7 @@ class WorkflowsRunsStatusController {
         var edges = [],
             nodes = [],
             nodesFromBackend = angular.copy(res.nodes);
-console.log('res', res);
+
         this.GraphHelpers.addStartAndEnd(nodesFromBackend);
         this.GraphHelpers.expandNodes(nodesFromBackend, nodes);
         this.GraphHelpers.convertNodesToEdges(angular.copy(nodes), edges);
@@ -164,8 +165,9 @@ console.log('res', res);
     }
   }
 
+
+
   workflowTokenClick(node) {
-    console.log('instance', node);
     let tokenparams = angular.extend(
       {
         runId: this.runsCtrl.runs.selected.runid,
@@ -177,11 +179,19 @@ console.log('res', res);
     this.myWorkFlowApi.getNodeToken(tokenparams)
       .$promise
       .then (res => {
-        console.log('res', res);
         var elem = angular.element(document.getElementById('token-' + node.nodeId));
+
+        delete res.$promise;
+        delete res.$resolved;
+
+        if (popovers[node.nodeId]) {
+          popovers[node.nodeId].popover.hide();
+          popovers[node.nodeId].scope.$destroy();
+        }
 
         var scope = this.$rootScope.$new();
         scope.tokens = res;
+        scope.isEmpty = Object.keys(res).length === 0;
 
         var popover = this.$popover(elem, {
           trigger: 'manual',
@@ -191,6 +201,11 @@ console.log('res', res);
           container: 'main',
           scope: scope
         });
+
+        popovers[node.nodeId] = {
+          popover: popover,
+          scope: scope
+        };
 
         popover.$promise.then( () => {
           this.$timeout(function () {

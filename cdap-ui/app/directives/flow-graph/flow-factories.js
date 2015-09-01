@@ -19,7 +19,7 @@ angular.module(PKG.name+'.commons')
       var g = new dagreD3.graphlib.Graph();
 
       g.setGraph({
-        nodesep: 60,
+        nodesep: 90,
         ranksep: 100,
         rankdir: 'LR',
         marginx: 30,
