@@ -7,7 +7,7 @@
     </h4>
   </div>
   <div class="popover-content">
-    <div class="table-responsive">
+    <div class="table-responsive" ng-if="!isEmpty">
       <table class="table table-bordered">
         <thead>
           <th>Key</th>
@@ -21,6 +21,10 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="well text-center" ng-if="isEmpty">
+      <h4>No Token</h4>
     </div>
 
   </div>
