@@ -22,53 +22,65 @@
         <h3>Token: {{ StatusController.selectedNode }}</h3>
       </div>
 
-      <tabset>
-        <tab heading="User">
-          <div ng-if="!StatusController.usertokens.isEmpty">
-            <table class="table table-bordered">
-              <thead>
-                <th>Key</th>
-                <th>Value</th>
-              </thead>
 
-              <tbody>
-                <tr ng-repeat="(key, value) in StatusController.usertokens.tokens">
-                  <td>{{ key }}</td>
-                  <td>{{ value }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <ul class="nav nav-tabs slanted-tabs" role="tablist" ng-init="StatucController.activeTab = 0">
+        <li role="presentation"
+            ng-class="{'active': StatucController.activeTab === 0}"
+            ng-click="StatucController.activeTab = 0">
+          <a href="" role="tab">User</a>
+        </li>
+        <li role="presentation"
+            ng-class="{'active': StatucController.activeTab === 1}"
+            ng-click="StatucController.activeTab = 1">
+          <a href="" role="tab">Schema</a>
+        </li>
+      </ul>
 
-          <div class="well text-center" ng-if="StatusController.usertokens.isEmpty">
-            <h4>No Token</h4>
-          </div>
+      <div class="tab-content" ng-if="StatucController.activeTab === 0">
+        <div ng-if="!StatusController.usertokens.isEmpty">
+          <table class="table table-bordered">
+            <thead>
+              <th>Key</th>
+              <th>Value</th>
+            </thead>
 
-        </tab>
+            <tbody>
+              <tr ng-repeat="(key, value) in StatusController.usertokens.tokens">
+                <td>{{ key }}</td>
+                <td>{{ value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-        <tab heading="System">
-          <div ng-if="!StatusController.systemtokens.isEmpty">
-            <table class="table table-bordered">
-              <thead>
-                <th>Key</th>
-                <th>Value</th>
-              </thead>
+        <div class="well text-center" ng-if="StatusController.usertokens.isEmpty">
+          <h4>No Token</h4>
+        </div>
+      </div>
 
-              <tbody>
-                <tr ng-repeat="(key, value) in StatusController.systemtokens.tokens">
-                  <td>{{ key }}</td>
-                  <td>{{ value }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <div class="tab-content" ng-if="StatucController.activeTab === 1">
+        <div ng-if="!StatusController.systemtokens.isEmpty">
+          <table class="table table-bordered">
+            <thead>
+              <th>Key</th>
+              <th>Value</th>
+            </thead>
 
-          <div class="well text-center" ng-if="StatusController.systemtokens.isEmpty">
-            <h4>No Token</h4>
-          </div>
+            <tbody>
+              <tr ng-repeat="(key, value) in StatusController.systemtokens.tokens">
+                <td>{{ key }}</td>
+                <td>{{ value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-        </tab>
-      </tabset>
+        <div class="well text-center" ng-if="StatusController.systemtokens.isEmpty">
+          <h4>No Token</h4>
+        </div>
+      </div>
+
+
     </div>
 
     <div class="sidepanel" ng-if="!StatusController.selectedNode">
