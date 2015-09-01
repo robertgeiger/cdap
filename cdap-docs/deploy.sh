@@ -117,8 +117,12 @@ PROJECT_DOCS=${PROJECT}-docs
 ZIP_FILE=${PROJECT}-docs-${VERSION}-web.zip
 FILE_PATH=${BUILD_WORKING_DIR}/${PROJECT}/${PROJECT_DOCS}/build
 DOCS_SERVERS="${DOCS_SERVER1} ${DOCS_SERVER2}"
-REMOTE_STG_DIR="${REMOTE_STG_BASE}/${PROJECT}/${REMOTE_DIR}"		# e.g. /var/www/html/staging/cdap/develop
-REMOTE_DOCS_DIR="${REMOTE_DOCS_BASE}/${PROJECT}/${REMOTE_DIR}"		# e.g. /var/www/docs/cdap/release
+REMOTE_STG_DIR="${REMOTE_STG_BASE}/${PROJECT}"		# e.g. /var/www/html/staging/cdap
+REMOTE_DOCS_DIR="${REMOTE_DOCS_BASE}/${PROJECT}"		# e.g. /var/www/docs/cdap
+if [[ "${REMOTE_DIR}" != '' ]]; then
+  REMOTE_STG_DIR="${REMOTE_STG_DIR}/${REMOTE_DIR}"		# e.g. /var/www/html/staging/cdap/REMOTE_DIR
+  REMOTE_DOCS_DIR="${REMOTE_DOCS_DIR}/${REMOTE_DIR}"		# e.g. /var/www/docs/cdap/REMOTE_DIR
+fi
 
 SSH_OPTS='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 RSYNC_OPTS='-aPh'
@@ -205,7 +209,7 @@ decho "DEPLOY_TO_DOCS=${DEPLOY_TO_DOCS}"
 if [[ "${DEPLOY_TO_STG}" == 'yes' ]]; then
   decho "Deploying artifacts to Staging server"
   deploy ${USER} ${STG_SERVER} ${REMOTE_STG_DIR} ${ZIP_FILE} ${FILE_PATH} ${VERSION} ${BRANCH}
-  decho "Deployed at: http://${STG_SERVER}/${BRANCH}"
+  decho "Deployed at: http://${STG_SERVER}/"
 fi
 
 ### RELEASE => Docs Servers
