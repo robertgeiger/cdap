@@ -57,6 +57,7 @@ angular.module(PKG.name + '.services')
       scheduleSuspend: myHelpers.getConfig('POST', 'REQUEST', schedulepath + '/suspend'),
       scheduleResume: myHelpers.getConfig('POST', 'REQUEST', schedulepath + '/resume'),
       getCurrent: myHelpers.getConfig('GET', 'REQUEST', basepath + '/:runid/current', true),
-      getNodeToken: myHelpers.getConfig('GET', 'REQUEST', basepath + '/runs/:runId/nodes/:nodeId/token')
+      getUserNodeToken: myHelpers.getConfig('GET', 'REQUEST', basepath + '/runs/:runId/nodes/:nodeId/token?scope=user'),
+      getSystemNodeToken: myHelpers.getConfig('GET', 'REQUEST', basepath + '/runs/:runId/nodes/:nodeId/token?scope=system')
     });
   });

@@ -20,4 +20,78 @@
                      data-click-context="StatusController"
                      data-click="StatusController.workflowProgramClick"
                      data-token-click="StatusController.workflowTokenClick"></my-workflow-graph>
+
+
+  <my-pageslide open="StatusController.showSidepanel">
+    <button
+      class="btn btn-default"
+      ng-click="StatusController.showSidepanel = !StatusController.showSidepanel"
+    >
+      <i class="fa pull-left"
+        ng-class="{ 'fa-arrow-left': !StatusController.showSidepanel, 'fa-arrow-right': StatusController.showSidepanel }"
+      ></i>
+    </button>
+
+    <div class="sidepanel" ng-if="StatusController.showSidepanel && StatusController.selectedNode">
+      <div class="sidepanel-heading">
+        <h3>Token: {{ StatusController.selectedNode }}</h3>
+      </div>
+
+      <tabset>
+        <tab heading="User">
+          <div ng-if="!StatusController.usertokens.isEmpty">
+            <table class="table table-bordered">
+              <thead>
+                <th>Key</th>
+                <th>Value</th>
+              </thead>
+
+              <tbody>
+                <tr ng-repeat="(key, value) in StatusController.usertokens.tokens">
+                  <td>{{ key }}</td>
+                  <td>{{ value }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="well text-center" ng-if="StatusController.usertokens.isEmpty">
+            <h4>No Token</h4>
+          </div>
+
+        </tab>
+
+        <tab heading="System">
+          <div ng-if="!StatusController.systemtokens.isEmpty">
+            <table class="table table-bordered">
+              <thead>
+                <th>Key</th>
+                <th>Value</th>
+              </thead>
+
+              <tbody>
+                <tr ng-repeat="(key, value) in StatusController.systemtokens.tokens">
+                  <td>{{ key }}</td>
+                  <td>{{ value }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="well text-center" ng-if="StatusController.systemtokens.isEmpty">
+            <h4>No Token</h4>
+          </div>
+
+        </tab>
+      </tabset>
+    </div>
+
+    <div class="sidepanel" ng-if="!StatusController.selectedNode">
+      <div class="sidepanel-heading text-center" ng-if="StatusController.showSidepanel">
+        <h3>No workflow node selected</h3>
+      </div>
+    </div>
+
+  </my-pageslide>
+
 </div>
