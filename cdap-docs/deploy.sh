@@ -92,8 +92,8 @@ set_remote_dir () {
 DEBUG=${DEBUG:-no} #(optional)
 DEPLOY_TO_STG=${DEPLOY_TO_STG:-no}
 DEPLOY_TO_DOCS=${DEPLOY_TO_DOCS:-no}
-REMOTE_STG_BASE=${REMOTE_STG_BASE:-/var/www/html/staging/}
-REMOTE_DOCS_BASE=${REMOTE_DOCS_BASE:-/var/www/docs/}
+REMOTE_STG_BASE=${REMOTE_STG_BASE:-/var/www/html/staging}
+REMOTE_DOCS_BASE=${REMOTE_DOCS_BASE:-/var/www/docs}
 
 ## bamboo global variables
 # DOCS_SERVER1
@@ -205,6 +205,7 @@ decho "DEPLOY_TO_DOCS=${DEPLOY_TO_DOCS}"
 if [[ "${DEPLOY_TO_STG}" == 'yes' ]]; then
   decho "Deploying artifacts to Staging server"
   deploy ${USER} ${STG_SERVER} ${REMOTE_STG_DIR} ${ZIP_FILE} ${FILE_PATH} ${VERSION} ${BRANCH}
+  decho "Deployed at: http://${STG_SERVER}/${BRANCH}"
 fi
 
 ### RELEASE => Docs Servers
