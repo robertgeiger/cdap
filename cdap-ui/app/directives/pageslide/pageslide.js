@@ -14,7 +14,7 @@ angular.module(PKG.name+ '.commons')
 function pageslide(scope, elem) {
   scope.width = scope.width || '600';
 
-  var parent = angular.element(elem[0].parentElement);
+  // var parent = angular.element(elem[0].parentElement);
   var slide = elem[0];
 
   var anchor = angular.element(document.getElementById('sidepanel-anchor'));
@@ -24,9 +24,9 @@ function pageslide(scope, elem) {
   slide.style.overflowY = 'auto';
   slide.style.overflowX = 'hidden';
   slide.style.width = '0px';
-  slide.style.maxHeight = parent[0].offsetTop + 'px';
   slide.style.right = '0px';
   slide.style.top = offset + 'px';
+  slide.style.bottom = '52px'; // height of footer
   slide.style.backgroundColor = 'rgb(102, 110, 130)';
   slide.style.padding = '25px';
   slide.style.zIndex = 1000;
