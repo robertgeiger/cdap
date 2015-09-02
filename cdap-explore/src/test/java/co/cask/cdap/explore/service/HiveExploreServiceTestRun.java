@@ -18,6 +18,7 @@ package co.cask.cdap.explore.service;
 
 import co.cask.cdap.api.dataset.DatasetDefinition;
 import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.view.ViewProperties;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.discovery.RandomEndpointStrategy;
 import co.cask.cdap.explore.client.ExploreExecutionResult;
@@ -370,15 +371,21 @@ public class HiveExploreServiceTestRun extends BaseHiveExploreServiceTest {
     Id.DatasetInstance myTable4 = Id.DatasetInstance.from(NAMESPACE_ID, "my_table_4");
     Id.DatasetInstance myTable5 = Id.DatasetInstance.from(NAMESPACE_ID, "my_table_5");
     Id.DatasetInstance myTable6 = Id.DatasetInstance.from(NAMESPACE_ID, "my_table_6");
+    Id.View myView1 = Id.View.from(NAMESPACE_ID, "my_view_1");
     datasetFramework.addInstance("keyStructValueTable", myTable2, DatasetProperties.EMPTY);
     datasetFramework.addInstance("keyStructValueTable", myTable3, DatasetProperties.EMPTY);
     datasetFramework.addInstance("keyStructValueTable", myTable4, DatasetProperties.EMPTY);
     datasetFramework.addInstance("keyStructValueTable", myTable5, DatasetProperties.EMPTY);
     datasetFramework.addInstance("keyStructValueTable", myTable6, DatasetProperties.EMPTY);
+    QueryStatus status = waitForCompletionStatus(
+      exploreTableManager.createOrReplaceView(
+        myView1, new ViewProperties(null, "select * from " + getDatasetHiveName(myTable2))),
+      200, TimeUnit.MILLISECONDS, 50);
+    Assert.assertEquals(QueryStatus.OpStatus.FINISHED, status.getStatus());
 
     try {
       QueryHandle handle = exploreService.execute(NAMESPACE_ID, "show tables");
-      QueryStatus status = waitForCompletionStatus(handle, 200, TimeUnit.MILLISECONDS, 50);
+      status = waitForCompletionStatus(handle, 200, TimeUnit.MILLISECONDS, 50);
       Assert.assertEquals(QueryStatus.OpStatus.FINISHED, status.getStatus());
 
       List<QueryResult> firstPreview = exploreService.previewResults(handle);
@@ -387,7 +394,8 @@ public class HiveExploreServiceTestRun extends BaseHiveExploreServiceTest {
         new QueryResult(ImmutableList.<Object>of(getDatasetHiveName(myTable2))),
         new QueryResult(ImmutableList.<Object>of(getDatasetHiveName(myTable3))),
         new QueryResult(ImmutableList.<Object>of(getDatasetHiveName(myTable4))),
-        new QueryResult(ImmutableList.<Object>of(getDatasetHiveName(myTable5)))
+        new QueryResult(ImmutableList.<Object>of(getDatasetHiveName(myTable5))),
+        new QueryResult(ImmutableList.<Object>of(getViewHiveName(myView1)))
       ), firstPreview);
 
 
@@ -424,6 +432,10 @@ public class HiveExploreServiceTestRun extends BaseHiveExploreServiceTest {
       datasetFramework.deleteInstance(myTable4);
       datasetFramework.deleteInstance(myTable5);
       datasetFramework.deleteInstance(myTable6);
+      status = waitForCompletionStatus(
+        exploreTableManager.delete(myView1),
+        200, TimeUnit.MILLISECONDS, 50);
+      Assert.assertEquals(QueryStatus.OpStatus.FINISHED, status.getStatus());
     }
   }
 

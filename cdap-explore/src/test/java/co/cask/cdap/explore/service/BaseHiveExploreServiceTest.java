@@ -219,6 +219,10 @@ public class BaseHiveExploreServiceTest {
     transactionManager.stopAndWait();
   }
 
+  protected static String getViewHiveName(Id.View viewId) {
+    return "view_" + viewId.getId().replaceAll("\\.", "_").replaceAll("-", "_");
+  }
+
   protected static String getDatasetHiveName(Id.DatasetInstance datasetID) {
     return "dataset_" + datasetID.getId().replaceAll("\\.", "_").replaceAll("-", "_");
   }
@@ -296,6 +300,10 @@ public class BaseHiveExploreServiceTest {
   protected static void dropStream(Id.Stream streamId) throws Exception {
     streamAdmin.drop(streamId);
     streamMetaStore.removeStream(streamId);
+  }
+
+  protected static void setStreamProperties(Id.Stream stream, StreamProperties properties) throws IOException {
+    setStreamProperties(stream.getNamespaceId(), stream.getId(), properties);
   }
 
   protected static void setStreamProperties(String namespace, String streamName,
