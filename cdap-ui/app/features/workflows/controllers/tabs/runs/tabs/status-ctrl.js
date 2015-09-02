@@ -32,6 +32,7 @@ class WorkflowsRunsStatusController {
     this.runsCtrl = $scope.RunsController;
     this.onChangeFlag = 1;
     this.showSidepanel = false;
+    this.activeTab = 0;
 
     this.data = {
       metrics: {},

@@ -81,33 +81,76 @@ body.state-workflows {
 }
 
 my-pageslide {
-  border-bottom-left-radius: 5px;
-  border-top-left-radius: 5px;
 
-  div.sidepanel {
-    overflow-x: 'hidden';
+  div.left-column {
+    width: 5%;
+    float: left;
+    height: 100%;
+    background-color: @cdap-darkness;
+    padding-top: 5px;
+    cursor: pointer;
 
-    .sidepanel-heading {
-      h3 { color: white; }
+    &.hidden {
+      width: 100%;
     }
 
-    ul.nav-tabs.slanted-tabs {
-      & > li {
-        a {
-          color: white;
+
+    h3.vertical {
+      transform: rotate(90deg);
+      color: white;
+      white-space: nowrap;
+
+      .token-title {
+        margin-left: 5px;
+      }
+    }
+
+  }
+
+  div.sidepanel-content {
+    width: 95%;
+    float: right;
+
+    .sidepanel-button {
+      position: absolute;
+      left: -15px;
+    }
+
+    div.sidepanel {
+      overflow-x: 'hidden';
+
+      .well {
+        border-radius: 0;
+      }
+
+      .sidepanel-heading {
+        h3 {
+          margin-top: 0;
+          margin-bottom: 0;
+          padding: 10px 15px;
         }
       }
 
-      & > li.active {
-        a { color: black; }
+      .sidepanel-tabs {
+        padding: 0 10px;
       }
-    }
 
-    table.table {
-      margin-top: 0;
+      div.btn-group.btn-group-justified {
+        margin-top: 5px;
+        a.btn {
+          border-radius: 0;
+        }
+      }
 
-      tr td {
-        font-size: 11px;
+      table.table {
+        margin-top: 0;
+        thead th {
+          font-size: 13px;
+        }
+
+        tr td {
+          font-size: 11px;
+        }
       }
     }
   }
