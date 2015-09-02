@@ -198,10 +198,14 @@ class WorkflowsRunsStatusController {
         delete res.$promise;
         delete res.$resolved;
 
-        this.usertokens = {
-          tokens: res,
-          isEmpty: Object.keys(res).length === 0
-        };
+        this.usertokens = [];
+        angular.forEach(res, (value, key) => {
+          console.info('test', value, key);
+          this.usertokens.push({
+            key: key,
+            value: value
+          });
+        });
 
         this.showSidepanel = true;
 
@@ -213,10 +217,14 @@ class WorkflowsRunsStatusController {
         delete res.$promise;
         delete res.$resolved;
 
-        this.systemtokens = {
-          tokens: res,
-          isEmpty: Object.keys(res).length === 0
-        };
+        this.systemtokens = [];
+        angular.forEach(res, (value, key) => {
+          this.systemtokens.push({
+            key: key,
+            value: value
+          });
+        });
+
       });
 
   }
