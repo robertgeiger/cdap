@@ -18,24 +18,26 @@ angular.module(PKG.name+ '.commons')
         slide.style.width = '0px';
         slide.style.right = '0px';
 
-        slide.style.bottom = '52px'; // height of footer
-        slide.style.backgroundColor = 'rgb(102, 110, 130)';
-        slide.style.padding = '25px';
+        slide.style.bottom = '58px'; // height of footer
+        slide.style.backgroundColor = '#F6F6F6';
+        slide.style.padding = '0';
         slide.style.zIndex = 1000;
         slide.style.transitionDuration = '0.5s';
         slide.style.webkitTransitionDuration = '0.5s';
         slide.style.transitionProperty = 'width, height';
+        slide.style.boxShadow = '-3px 0px 5px 0px rgba(0,0,0,0.25)';
 
         // The calculation of the offset top needs to happen after the template is rendered
         $timeout(function () {
           var anchor = angular.element(document.getElementById('sidepanel-anchor'));
-          var offset = anchor[0].offsetTop;
+          var offset = anchor[0].offsetTop + 2;
           slide.style.top = offset + 'px';
         });
 
 
         function open(slider) {
           slider.style.width = scope.width + 'px';
+          slide.style.backgroundColor = '#F6F6F6';
         }
 
         function close(slider) {

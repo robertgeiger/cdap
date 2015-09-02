@@ -39,7 +39,7 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
           ];
 
           parent.select('.label')
-            .attr('transform', 'translate(0,'+ (defaultRadius + 25) + ')');
+            .attr('transform', 'translate(0,'+ (defaultRadius + 20) + ')');
 
           var shapeSvg = parent.insert('polygon', ':first-child')
               .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '));
