@@ -96,7 +96,9 @@ public abstract class StreamMetaStoreTestBase {
     // test stream view
     FormatSpecification formatSpec = new FormatSpecification(
       Formats.AVRO, null, Collections.<String, String>emptyMap());
-    streamMetaStore.addStreamView(Id.Stream.View.from("foo", "view1"), new StreamViewProperties(stream, formatSpec));
+    streamMetaStore.addStreamView(Id.Stream.View.from("foo", "view1"),
+                                  new StreamViewProperties(Id.Stream.from("foo", "stream1"), formatSpec));
+
     Assert.assertEquals(
       Lists.newArrayList(new StreamViewSpecification("view1", formatSpec)),
       streamMetaStore.listStreamViews(Id.Namespace.from("foo")));

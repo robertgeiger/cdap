@@ -86,7 +86,7 @@ public class ExploreExecutorHttpHandler extends AbstractHttpHandler {
   }
 
   @PUT
-  @Path("views/{view}")
+  @Path("views/stream/{view}")
   public void createStreamViewTable(HttpRequest request, HttpResponder responder,
                                     @PathParam("namespace-id") String namespaceId,
                                     @PathParam("view") String viewName) throws Exception {
@@ -103,6 +103,11 @@ public class ExploreExecutorHttpHandler extends AbstractHttpHandler {
     properties = Validator.validate(properties);
 
     Id.Stream.View viewId = Id.Stream.View.from(namespaceId, viewName);
+    // update logic: recreate if exists
+    if (exploreTableManager.viewExists(viewId)) {
+      exploreTableManager.deleteView(viewId);
+    }
+
     try {
       QueryHandle handle = exploreTableManager.createView(viewId, properties);
       JsonObject json = new JsonObject();
@@ -115,7 +120,7 @@ public class ExploreExecutorHttpHandler extends AbstractHttpHandler {
   }
 
   @DELETE
-  @Path("views/{view}")
+  @Path("views/stream/{view}")
   public void deleteStreamViewTable(HttpRequest request, HttpResponder responder,
                                     @PathParam("namespace-id") String namespaceId,
                                     @PathParam("view") String viewName) throws ExploreException, SQLException {

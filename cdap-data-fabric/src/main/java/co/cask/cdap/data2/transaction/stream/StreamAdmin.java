@@ -18,8 +18,10 @@ package co.cask.cdap.data2.transaction.stream;
 
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamProperties;
+import co.cask.cdap.proto.StreamViewProperties;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import javax.annotation.Nullable;
@@ -36,6 +38,7 @@ public interface StreamAdmin {
 
   /**
    * Sets the number of consumer instances for the given consumer group in a stream.
+   *
    * @param streamId Id of the stream.
    * @param groupId The consumer group to alter.
    * @param instances Number of instances.
@@ -44,6 +47,7 @@ public interface StreamAdmin {
 
   /**
    * Sets the consumer groups information for the given stream.
+   *
    * @param streamId Id of the stream.
    * @param groupInfo A map from groupId to number of instances of each group.
    */
@@ -64,6 +68,7 @@ public interface StreamAdmin {
 
   /**
    * Overwrites existing configuration for the given stream.
+   *
    * @param streamId Id of the stream whose properties are being updated
    * @param properties New configuration of the stream.
    */
@@ -78,6 +83,7 @@ public interface StreamAdmin {
 
   /**
    * Creates stream if doesn't exist. If stream exists does nothing.
+   *
    * @param streamId Id of the stream to create
    * @throws Exception if creation fails
    */
@@ -85,6 +91,7 @@ public interface StreamAdmin {
 
   /**
    * Creates stream if doesn't exist. If stream exists, does nothing.
+   *
    * @param streamId Id of the stream to create
    * @param props additional properties
    * @throws Exception if creation fails
@@ -93,6 +100,7 @@ public interface StreamAdmin {
 
   /**
    * Wipes out stream data.
+   *
    * @param streamId Id of the stream to truncate
    * @throws Exception if cleanup fails
    */
@@ -100,6 +108,7 @@ public interface StreamAdmin {
 
   /**
    * Deletes stream from the system completely.
+   *
    * @param streamId Id of the stream to delete
    * @throws Exception if deletion fails
    */
@@ -112,4 +121,43 @@ public interface StreamAdmin {
    * @param streamId the stream being used
    */
   void register(Iterable<? extends Id> owners, Id.Stream streamId);
+
+  /**
+   * Creates a stream view if it doesn't exist. If stream view exists, update the existing stream view.
+   *
+   * @param viewId the stream view
+   * @param properties the stream view properties
+   * @return true if a new stream view was created, false if updated
+   */
+  boolean createOrUpdateView(Id.Stream.View viewId, StreamViewProperties properties) throws Exception;
+
+  /**
+   * Deletes a stream view.
+   *
+   * @param viewId the stream view
+   */
+  void deleteView(Id.Stream.View viewId) throws Exception;
+
+  /**
+   * Gets a stream view.
+   *
+   * @param viewId the stream view
+   */
+  StreamViewProperties getView(Id.Stream.View viewId);
+
+  /**
+   * Lists views for a stream.
+   *
+   * @param streamId the stream
+   * @return the list of views for the stream
+   */
+  List<StreamViewProperties> listViews(Id.Stream streamId);
+
+  /**
+   * Lists views for a namespace.
+   *
+   * @param namespace the namespace
+   * @return the list of views for the namespace
+   */
+  List<StreamViewProperties> listViews(Id.Namespace namespace);
 }

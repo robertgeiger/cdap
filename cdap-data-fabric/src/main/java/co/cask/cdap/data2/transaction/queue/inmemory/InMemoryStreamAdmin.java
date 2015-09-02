@@ -24,10 +24,12 @@ import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamProperties;
+import co.cask.cdap.proto.StreamViewProperties;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.annotation.Nullable;
@@ -102,6 +104,8 @@ public class InMemoryStreamAdmin extends InMemoryQueueAdmin implements StreamAdm
   public void drop(Id.Stream streamId) throws Exception {
     drop(QueueName.fromStream(streamId));
     streamMetaStore.removeStream(streamId);
+
+    TODO: remove associated views
   }
 
   @Override

@@ -34,6 +34,7 @@ import co.cask.cdap.notifications.feeds.NotificationFeedException;
 import co.cask.cdap.notifications.feeds.NotificationFeedManager;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamProperties;
+import co.cask.cdap.proto.StreamViewProperties;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -52,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -344,6 +346,36 @@ public class FileStreamAdmin implements StreamAdmin {
     usageRegistry.registerAll(owners, streamId);
   }
 
+  @Override
+  public boolean createOrUpdateView(Id.Stream.View viewId, StreamViewProperties properties) throws Exception {
+    exploreFacade.createOrUpdateStreamViewTable(viewId, properties);
+    streamMetaStore.addStreamView(viewId, properties);
+    return false;
+  }
+
+  @Override
+  public void deleteView(Id.Stream.View viewId) throws Exception {
+    if (exploreFacade.streamViewTableExists(viewId)) {
+      exploreFacade.deleteStreamViewTable(viewId);
+    }
+    streamMetaStore.removeStreamView(viewId);
+  }
+
+  @Override
+  public StreamViewProperties getView(Id.Stream.View viewId) {
+    return null;
+  }
+
+  @Override
+  public List<StreamViewProperties> listViews(Id.Stream streamId) {
+    return null;
+  }
+
+  @Override
+  public List<StreamViewProperties> listViews(Id.Namespace namespace) {
+    return null;
+  }
+
   /**
    * Returns the location that points the config file for the given stream.
    */
@@ -401,6 +433,8 @@ public class FileStreamAdmin implements StreamAdmin {
           Locations.mkdirsIfNotExists(deleted);
           streamLocation.renameTo(deleted.append(streamId.getId() + System.currentTimeMillis()));
           streamMetaStore.removeStream(streamId);
+
+          TODO: remove associated views
         } catch (Exception e) {
           throw Throwables.propagate(e);
         }

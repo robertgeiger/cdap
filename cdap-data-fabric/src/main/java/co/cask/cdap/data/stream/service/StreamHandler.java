@@ -35,6 +35,7 @@ import co.cask.cdap.data2.transaction.stream.StreamConfig;
 import co.cask.cdap.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamProperties;
+import co.cask.cdap.proto.StreamViewProperties;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.BodyConsumer;
 import co.cask.http.HandlerContext;
@@ -45,6 +46,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closeables;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -68,6 +70,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -282,6 +285,19 @@ public final class StreamHandler extends AbstractHttpHandler {
     responder.sendStatus(HttpResponseStatus.OK);
   }
 
+  @GET
+  @Path("/{stream}/views")
+  public void listViews(HttpRequest request, HttpResponder responder,
+                        @PathParam("namespace-id") String namespaceId,
+                        @PathParam("stream") String stream) throws Exception {
+
+    Id.Stream streamId = Id.Stream.from(namespaceId, stream);
+    checkStreamExists(streamId);
+
+    List<StreamViewProperties> views = streamAdmin.listViews(streamId);
+    responder.sendJson(HttpResponseStatus.OK, views, new TypeToken<List<StreamViewProperties>>() { }.getType(), GSON);
+  }
+
   private void checkStreamExists(Id.Stream streamId) throws Exception {
     if (!streamAdmin.exists(streamId)) {
       throw new NotFoundException(streamId);
@@ -326,8 +342,8 @@ public final class StreamHandler extends AbstractHttpHandler {
   }
 
   /**
-   * Gets stream properties from the request. If there is request is invalid, response will be made and {@code null}
-   * will be return.
+   * Gets stream properties from the request.
+   * If the request is invalid, {@link BadRequestException} will be thrown.
    */
   private StreamProperties getAndValidateConfig(Reader reader) throws BadRequestException {
     StreamProperties properties;

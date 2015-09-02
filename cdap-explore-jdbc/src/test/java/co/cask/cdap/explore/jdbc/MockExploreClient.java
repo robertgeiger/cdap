@@ -25,6 +25,7 @@ import co.cask.cdap.proto.ColumnDesc;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.QueryResult;
 import co.cask.cdap.proto.QueryStatus;
+import co.cask.cdap.proto.StreamViewProperties;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.ForwardingListenableFuture;
@@ -174,9 +175,10 @@ public class MockExploreClient extends AbstractIdleService implements ExploreCli
   }
 
   @Override
-  public ListenableFuture<Void> createStreamViewTable(Id.Stream.View view) {
+  public ListenableFuture<Void> createOrUpdateStreamViewTable(Id.Stream.View view, StreamViewProperties properties) {
     return null;
   }
+
 
   @Override
   public ListenableFuture<Void> deleteStreamViewTable(Id.Stream.View view) {

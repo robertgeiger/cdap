@@ -16,7 +16,6 @@
 package co.cask.cdap.proto;
 
 import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.schema.Schema;
 
 import java.util.Objects;
 
@@ -27,12 +26,10 @@ public class StreamViewProperties {
 
   private final Id.Stream stream;
   private final FormatSpecification format;
-  private final Schema schema;
 
-  public StreamViewProperties(Id.Stream stream, FormatSpecification format, Schema schema) {
+  public StreamViewProperties(Id.Stream stream, FormatSpecification format) {
     this.stream = stream;
     this.format = format;
-    this.schema = schema;
   }
 
   public Id.Stream getStream() {
@@ -43,20 +40,16 @@ public class StreamViewProperties {
     return format;
   }
 
-  public Schema getSchema() {
-    return schema;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     StreamViewProperties that = (StreamViewProperties) o;
-    return Objects.equals(stream, stream) && Objects.equals(format, that.format) && Objects.equals(schema, that.schema);
+    return Objects.equals(stream, stream) && Objects.equals(format, that.format);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stream, format, schema);
+    return Objects.hash(stream, format);
   }
 }

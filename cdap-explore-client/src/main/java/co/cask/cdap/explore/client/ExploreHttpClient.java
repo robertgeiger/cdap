@@ -91,20 +91,20 @@ abstract class ExploreHttpClient implements Explore {
     }
   }
 
-  protected QueryHandle doCreateStreamViewTable(Id.Stream.View view,
-                                                StreamViewProperties props) throws ExploreException {
-    HttpResponse response = doPut(String.format("namespaces/%s/data/explore/stream-views/%s",
-                                                 view.getNamespaceId(), view.getId()),
-                                   GSON.toJson(props), null);
+  protected QueryHandle doCreateOrUpdateStreamViewTable(Id.Stream.View view,
+                                                        StreamViewProperties props) throws ExploreException {
+    HttpResponse response = doPut(String.format("namespaces/%s/data/explore/views/stream/%s",
+                                                view.getNamespaceId(), view.getId()),
+                                  GSON.toJson(props), null);
     if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
-    throw new ExploreException(String.format("Cannot create table for view %s. Reason: %s",
+    throw new ExploreException(String.format("Cannot create or update table for view %s. Reason: %s",
                                              view.toString(), response));
   }
 
   protected QueryHandle doDeleteStreamViewTable(Id.Stream.View view) throws ExploreException {
-    HttpResponse response = doDelete(String.format("namespaces/%s/data/explore/stream-views/%s",
+    HttpResponse response = doDelete(String.format("namespaces/%s/data/explore/views/stream/%s",
                                                  view.getNamespaceId(), view.getId()));
     if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));

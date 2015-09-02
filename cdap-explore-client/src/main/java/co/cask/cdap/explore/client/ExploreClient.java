@@ -39,29 +39,29 @@ public interface ExploreClient extends Closeable {
   /**
    * Enables ad-hoc exploration of the given {@link co.cask.cdap.api.data.batch.RecordScannable}.
    *
-   * @param datasetInstance dataset instance id.
+   * @param datasetInstance dataset instance id
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
-   *         the success of the enable operation.
+   *         the success of the enable operation
    */
   ListenableFuture<Void> enableExploreDataset(Id.DatasetInstance datasetInstance);
 
   /**
    * Disable ad-hoc exploration of the given {@link co.cask.cdap.api.data.batch.RecordScannable}.
    *
-   * @param datasetInstance dataset instance id.
+   * @param datasetInstance dataset instance id
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
-   *         the success of the disable operation.
+   *         the success of the disable operation
    */
   ListenableFuture<Void> disableExploreDataset(Id.DatasetInstance datasetInstance);
 
   /**
    * Enables ad-hoc exploration of the given stream.
    *
-   * @param stream stream id.
+   * @param stream stream id
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
-   *         the success of the enable operation.
+   *         the success of the enable operation
    *
-   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views.
+   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views
    */
   @Deprecated
   ListenableFuture<Void> enableExploreStream(Id.Stream stream);
@@ -69,11 +69,11 @@ public interface ExploreClient extends Closeable {
   /**
    * Disable ad-hoc exploration of the given stream.
    *
-   * @param stream stream id.
+   * @param stream stream id
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
-   *         the success of the enable operation.
+   *         the success of the enable operation
    *
-   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views.
+   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views
    */
   @Deprecated
   ListenableFuture<Void> disableExploreStream(Id.Stream stream);
@@ -85,7 +85,7 @@ public interface ExploreClient extends Closeable {
    * @param key the partition key
    * @param path the file system path of the partition
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
-   *         the success of the operation.
+   *         the success of the operation
    */
   ListenableFuture<Void> addPartition(Id.DatasetInstance datasetInstance, PartitionKey key, String path);
 
@@ -95,7 +95,7 @@ public interface ExploreClient extends Closeable {
    * @param datasetInstance instance of the dataset
    * @param key the partition key
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
-   *         the success of the operation.
+   *         the success of the operation
    */
   ListenableFuture<Void> dropPartition(Id.DatasetInstance datasetInstance, PartitionKey key);
 
@@ -103,9 +103,9 @@ public interface ExploreClient extends Closeable {
    * Execute a Hive SQL statement asynchronously. The returned {@link ListenableFuture} can be used to get the
    * schema of the operation, and it contains an iterator on the results of the statement.
    *
-   * @param namespace namespace to run the statement in.
-   * @param statement SQL statement.
-   * @return {@link ListenableFuture} eventually containing the results of the statement execution.
+   * @param namespace namespace to run the statement in
+   * @param statement SQL statement
+   * @return {@link ListenableFuture} eventually containing the results of the statement execution
    */
   ListenableFuture<ExploreExecutionResult> submit(Id.Namespace namespace, String statement);
 
@@ -119,13 +119,13 @@ public interface ExploreClient extends Closeable {
    *
    * @param catalog a catalog name; must match the catalog name as it is stored in the database;
    *                "" retrieves those without a catalog;
-   *                null means that the catalog name should not be used to narrow the search.
+   *                null means that the catalog name should not be used to narrow the search
    * @param schemaPattern a schema name pattern; must match the schema name as it is stored in the database;
    *                      "" retrieves those without a schema;
-   *                      null means that the schema name should not be used to narrow the search.
-   * @param tableNamePattern a table name pattern; must match the table name as it is stored in the database.
-   * @param columnNamePattern a column name pattern; must match the column name as it is stored in the database.
-   * @return {@link ListenableFuture} eventually containing the columns of interest.
+   *                      null means that the schema name should not be used to narrow the search
+   * @param tableNamePattern a table name pattern; must match the table name as it is stored in the database
+   * @param columnNamePattern a column name pattern; must match the column name as it is stored in the database
+   * @return {@link ListenableFuture} eventually containing the columns of interest
    */
   ListenableFuture<ExploreExecutionResult> columns(@Nullable String catalog, @Nullable String schemaPattern,
                                                    String tableNamePattern, String columnNamePattern);
@@ -144,11 +144,11 @@ public interface ExploreClient extends Closeable {
    *
    * @param catalog a catalog name; must match the catalog name as it is stored in the database;
    *                "" retrieves those without a catalog;
-   *                null means that the catalog name should not be used to narrow the search.
+   *                null means that the catalog name should not be used to narrow the search
    * @param schemaPattern a schema name pattern; must match the schema name as it is stored in the database;
    *                      "" retrieves those without a schema;
-   *                      null means that the schema name should not be used to narrow the search.
-   * @return {@link ListenableFuture} eventually containing the schemas of interest.
+   *                      null means that the schema name should not be used to narrow the search
+   * @return {@link ListenableFuture} eventually containing the schemas of interest
    */
   ListenableFuture<ExploreExecutionResult> schemas(@Nullable String catalog, @Nullable String schemaPattern);
 
@@ -160,12 +160,12 @@ public interface ExploreClient extends Closeable {
    *
    * @param catalog a catalog name; must match the catalog name as it is stored in the database;
    *                "" retrieves those without a catalog;
-   *                null means that the catalog name should not be used to narrow the search.
+   *                null means that the catalog name should not be used to narrow the search
    * @param schemaPattern a schema name pattern; must match the schema name as it is stored in the database;
    *                      "" retrieves those without a schema;
-   *                      null means that the schema name should not be used to narrow the search.
+   *                      null means that the schema name should not be used to narrow the search
    * @param functionNamePattern a function name pattern; must match the function name as it is stored in the database
-   * @return {@link ListenableFuture} eventually containing the functions of interest.
+   * @return {@link ListenableFuture} eventually containing the functions of interest
    */
   ListenableFuture<ExploreExecutionResult> functions(@Nullable String catalog, @Nullable String schemaPattern,
                                                      String functionNamePattern);
@@ -187,15 +187,15 @@ public interface ExploreClient extends Closeable {
    *
    * @param catalog a catalog name; must match the catalog name as it is stored in the database;
    *                "" retrieves those without a catalog;
-   *                null means that the catalog name should not be used to narrow the search.
+   *                null means that the catalog name should not be used to narrow the search
    * @param schemaPattern a schema name pattern; must match the schema name as it is stored in the database;
    *                      "" retrieves those without a schema;
-   *                      null means that the schema name should not be used to narrow the search.
-   * @param tableNamePattern a table name pattern; must match the table name as it is stored in the database.
+   *                      null means that the schema name should not be used to narrow the search
+   * @param tableNamePattern a table name pattern; must match the table name as it is stored in the database
    * @param tableTypes a list of table types, which must come from
    *                   "TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY", "LOCAL TEMPORARY", "ALIAS", "SYNONYM";
-   *                   null returns all types.
-   * @return {@link ListenableFuture} eventually containing the tables of interest.
+   *                   null returns all types
+   * @return {@link ListenableFuture} eventually containing the tables of interest
    */
   ListenableFuture<ExploreExecutionResult> tables(@Nullable String catalog, @Nullable String schemaPattern,
                                                   String tableNamePattern, @Nullable List<String> tableTypes);
@@ -205,7 +205,7 @@ public interface ExploreClient extends Closeable {
    *
    * See {@link java.sql.DatabaseMetaData#getTableTypes()}.
    *
-   * @return {@link ListenableFuture} eventually containing the different table types available in Explore.
+   * @return {@link ListenableFuture} eventually containing the different table types available in Explore
    */
   ListenableFuture<ExploreExecutionResult> tableTypes();
 
@@ -214,40 +214,46 @@ public interface ExploreClient extends Closeable {
    *
    * See {@link java.sql.DatabaseMetaData#getTypeInfo()}.
    *
-   * @return {@link ListenableFuture} eventually containing the different data types available in Explore.
+   * @return {@link ListenableFuture} eventually containing the different data types available in Explore
    */
   ListenableFuture<ExploreExecutionResult> dataTypes();
 
   /**
    * Creates a namespace in Explore.
    *
-   * @param namespace namespace to create.
-   * @return {@link ListenableFuture} eventually creating the namespace (database in Hive).
+   * @param namespace namespace to create
+   * @return {@link ListenableFuture} eventually creating the namespace (database in Hive)
    */
   ListenableFuture<ExploreExecutionResult> addNamespace(Id.Namespace namespace);
 
   /**
    * Deletes a namespace in Explore.
    *
-   * @param namespace namespace to delete.
-   * @return {@link ListenableFuture} eventually deleting the namespace (database in Hive).
+   * @param namespace namespace to delete
+   * @return {@link ListenableFuture} eventually deleting the namespace (database in Hive)
    */
   ListenableFuture<ExploreExecutionResult> removeNamespace(Id.Namespace namespace);
 
   /**
-   * Creates a table for a stream view.
+   * Creates or updates a table for a stream view.
    *
-   * @param view the stream view to create the table for.
-   * @param properties properties of the stream view.
-   * @return {@link ListenableFuture} eventually creating the stream view table.
+   * @param view the stream view to create the table for
+   * @param properties properties of the stream view
+   * @return {@link ListenableFuture} eventually creating the stream view table
    */
-  ListenableFuture<Void> createStreamViewTable(Id.Stream.View view, StreamViewProperties properties);
+  ListenableFuture<Void> createOrUpdateStreamViewTable(Id.Stream.View view, StreamViewProperties properties);
 
   /**
    * Deletes a table belonging to a stream view.
    *
-   * @param view the stream view to delete the table for.
-   * @return {@link ListenableFuture} eventually deleting the stream view table.
+   * @param view the stream view to delete the table for
+   * @return {@link ListenableFuture} eventually deleting the stream view table
    */
   ListenableFuture<Void> deleteStreamViewTable(Id.Stream.View view);
+
+  /**
+   * @param viewId the stream view
+   * @return true if the table associated with a stream view exists
+   */
+  ListenableFuture<Boolean> streamViewTableExists(Id.Stream.View viewId);
 }

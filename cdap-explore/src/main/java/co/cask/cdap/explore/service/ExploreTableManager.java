@@ -106,7 +106,7 @@ public class ExploreTableManager {
       Constants.Explore.FORMAT_SPEC, GSON.toJson(properties.getFormat()));
 
     String createStatement = new CreateStatementBuilder(viewId.getId(), tableName)
-      .setSchema(properties.getSchema())
+      .setSchema(properties.getFormat().getSchema())
       .setTableComment("CDAP stream view")
       .buildWithStorageHandler(StreamStorageHandler.class.getName(), serdeProperties);
 

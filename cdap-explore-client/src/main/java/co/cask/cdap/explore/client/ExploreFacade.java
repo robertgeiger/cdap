@@ -53,17 +53,28 @@ public class ExploreFacade {
     }
   }
 
-  public void createStreamViewTable(Id.Stream.View view, StreamViewProperties properties)
+  /**
+   * Creates or updates a table for a stream view.
+   *
+   * @param view the stream view
+   * @param properties the stream view properties
+   */
+  public void createOrUpdateStreamViewTable(Id.Stream.View view, StreamViewProperties properties)
     throws ExploreException, SQLException {
 
     if (!exploreEnabled) {
       return;
     }
 
-    ListenableFuture<Void> futureSuccess = exploreClient.createStreamViewTable(view, properties);
-    handleExploreFuture(futureSuccess, "create", "stream-view", view);
+    ListenableFuture<Void> futureSuccess = exploreClient.createOrUpdateStreamViewTable(view, properties);
+    handleExploreFuture(futureSuccess, "createOrUpdate", "stream-view", view);
   }
 
+  /**
+   * Deletes the table associated with a stream view.
+   *
+   * @param view the stream view
+   */
   public void deleteStreamViewTable(Id.Stream.View view) throws ExploreException, SQLException {
     if (!exploreEnabled) {
       return;
@@ -71,6 +82,15 @@ public class ExploreFacade {
 
     ListenableFuture<Void> futureSuccess = exploreClient.deleteStreamViewTable(view);
     handleExploreFuture(futureSuccess, "delete", "stream-view", view);
+  }
+
+  public boolean streamViewTableExists(Id.Stream.View viewId) throws ExploreException, SQLException {
+    if (!exploreEnabled) {
+      return false;
+    }
+
+    ListenableFuture<Boolean> futureSuccess = exploreClient.streamViewTableExists(viewId);
+    return handleExploreFuture(futureSuccess, "exists", "stream-view", viewId);
   }
 
   /**
@@ -176,10 +196,10 @@ public class ExploreFacade {
   }
 
   // wait for the enable/disable operation to finish and log and throw exceptions as appropriate if there was an error.
-  private void handleExploreFuture(ListenableFuture future, String operation, String type, Id objectId)
+  private <T> T handleExploreFuture(ListenableFuture<T> future, String operation, String type, Id objectId)
     throws ExploreException, SQLException {
     try {
-      future.get(20, TimeUnit.SECONDS);
+      return future.get(20, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       LOG.error("Caught exception", e);
       Thread.currentThread().interrupt();
@@ -205,5 +225,4 @@ public class ExploreFacade {
       throw Throwables.propagate(e);
     }
   }
-
 }

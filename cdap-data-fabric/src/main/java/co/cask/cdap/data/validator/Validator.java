@@ -39,6 +39,10 @@ public class Validator {
       throw new BadRequestException("Stream view properties must be specified");
     }
 
+    if (properties.getStream() == null) {
+      throw new BadRequestException("streamId must be specified");
+    }
+
     return new StreamViewProperties(
       properties.getStream(), properties.getFormat() == null ? null : validateFormatSpec(properties.getFormat()));
   }

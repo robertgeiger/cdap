@@ -80,11 +80,13 @@ public abstract class AbstractExploreClient extends ExploreHttpClient implements
   }
 
   @Override
-  public ListenableFuture<Void> createStreamViewTable(final Id.Stream.View view, final StreamViewProperties props) {
+  public ListenableFuture<Void> createOrUpdateStreamViewTable(
+    final Id.Stream.View view, final StreamViewProperties props) {
+
     ListenableFuture<ExploreExecutionResult> futureResults = getResultsFuture(new HandleProducer() {
       @Override
       public QueryHandle getHandle() throws ExploreException, SQLException {
-        return doCreateStreamViewTable(view, props);
+        return doCreateOrUpdateStreamViewTable(view, props);
       }
     });
 
