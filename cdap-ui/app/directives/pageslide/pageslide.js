@@ -13,7 +13,6 @@ angular.module(PKG.name+ '.commons')
         var slide = elem[0];
 
         slide.style.position = 'absolute';
-        // slide.style.overflowY = 'hidden';
         slide.style.overflowX = 'hidden';
         slide.style.width = '0px';
         slide.style.right = '0px';

@@ -184,7 +184,6 @@ class WorkflowsRunsStatusController {
 
         this.usertokens = [];
         angular.forEach(res, (value, key) => {
-          console.info('test', value, key);
           this.usertokens.push({
             key: key,
             value: value
