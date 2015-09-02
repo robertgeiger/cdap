@@ -697,6 +697,7 @@ public final class Constants {
 
     public static final String START_ON_DEMAND = "explore.start.on.demand";
 
+    public static final String VIEW_STORE_TABLE = "explore.view.store.table";
     public static final String DATASET_NAME = "explore.dataset.name";
     public static final String DATASET_NAMESPACE = "explore.dataset.namespace";
     public static final String STREAM_NAME = "explore.stream.name";

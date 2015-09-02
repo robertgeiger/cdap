@@ -15,6 +15,8 @@
  */
 package co.cask.cdap.api.view;
 
+import java.util.Objects;
+
 /**
  * Represents the properties of a view.
  */
@@ -40,5 +42,19 @@ public class ViewProperties {
 
   public String getSelectStatement() {
     return selectStatement;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ViewProperties that = (ViewProperties) o;
+    return Objects.equals(config, that.config) &&
+      Objects.equals(selectStatement, that.selectStatement);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(config, selectStatement);
   }
 }

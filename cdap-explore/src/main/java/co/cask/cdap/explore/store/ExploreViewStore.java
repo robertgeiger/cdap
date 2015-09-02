@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2015 Cask Data, Inc.
+ * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,9 +14,10 @@
  * the License.
  */
 
-package co.cask.cdap.explore.executor;
+package co.cask.cdap.explore.store;
 
 import co.cask.cdap.api.view.ViewProperties;
+import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ViewDetail;
 
@@ -46,7 +47,7 @@ public interface ExploreViewStore {
    *
    * @param viewId the view
    */
-  void delete(Id.View viewId);
+  void delete(Id.View viewId) throws NotFoundException;
 
   /**
    * @param namespaceId the namespace
@@ -58,5 +59,5 @@ public interface ExploreViewStore {
    * @param viewId the view
    * @return the details of a view
    */
-  ViewDetail get(Id.View viewId);
+  ViewDetail get(Id.View viewId) throws NotFoundException;
 }

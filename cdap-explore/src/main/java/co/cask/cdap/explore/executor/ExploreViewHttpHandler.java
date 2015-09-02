@@ -22,6 +22,7 @@ import co.cask.cdap.common.BadRequestException;
 import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.explore.service.ExploreTableManager;
+import co.cask.cdap.explore.store.ExploreViewStore;
 import co.cask.cdap.explore.view.RawViewConfigFormat;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ViewDetail;
@@ -128,7 +129,7 @@ public class ExploreViewHttpHandler extends AbstractExploreMetadataHttpHandler {
   @Path("/views/{view}")
   public void get(HttpRequest request, HttpResponder responder,
                   @PathParam("namespace") String namespace,
-                  @PathParam("view") String view) {
+                  @PathParam("view") String view) throws NotFoundException {
 
     Id.View viewId = Id.View.from(namespace, view);
     ViewDetail detail = store.get(viewId);

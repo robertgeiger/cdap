@@ -16,7 +16,7 @@
 
 package co.cask.cdap.proto;
 
-import co.cask.cdap.api.view.ViewConfig;
+import java.util.Objects;
 
 /**
  * Represents a view in an HTTP response.
@@ -24,12 +24,10 @@ import co.cask.cdap.api.view.ViewConfig;
 public class ViewDetail {
 
   private final String id;
-  private final ViewConfig config;
   private final String selectStatement;
 
-  public ViewDetail(String id, ViewConfig config, String selectStatement) {
+  public ViewDetail(String id, String selectStatement) {
     this.id = id;
-    this.config = config;
     this.selectStatement = selectStatement;
   }
 
@@ -37,11 +35,21 @@ public class ViewDetail {
     return id;
   }
 
-  public ViewConfig getConfig() {
-    return config;
-  }
-
   public String getSelectStatement() {
     return selectStatement;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ViewDetail that = (ViewDetail) o;
+    return Objects.equals(id, that.id) &&
+      Objects.equals(selectStatement, that.selectStatement);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, selectStatement);
   }
 }
