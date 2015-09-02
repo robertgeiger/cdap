@@ -13,7 +13,7 @@ angular.module(PKG.name+ '.commons')
         var slide = elem[0];
 
         slide.style.position = 'absolute';
-        slide.style.overflowY = 'auto';
+        // slide.style.overflowY = 'hidden';
         slide.style.overflowX = 'hidden';
         slide.style.width = '0px';
         slide.style.right = '0px';
@@ -38,6 +38,7 @@ angular.module(PKG.name+ '.commons')
         function open(slider) {
           slider.style.width = scope.width + 'px';
           slide.style.backgroundColor = '#F6F6F6';
+          angular.element(elem[0].childNodes[1])[0].style.height = elem[0].scrollHeight;
         }
 
         function close(slider) {
