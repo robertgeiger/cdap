@@ -18,16 +18,20 @@ package co.cask.cdap.data.stream.service;
 
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.StreamViewProperties;
+import co.cask.cdap.proto.StreamViewSpecification;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -35,10 +39,43 @@ import javax.annotation.Nullable;
  */
 public class InMemoryStreamMetaStore implements StreamMetaStore {
 
+  private final Multimap<String, String> views;
+  private final Map<Id.Stream.View, StreamViewProperties> viewProperties;
   private final Multimap<String, String> streams;
 
   public InMemoryStreamMetaStore() {
     this.streams = Multimaps.synchronizedMultimap(HashMultimap.<String, String>create());
+    this.views = HashMultimap.create();
+    this.viewProperties = Maps.newHashMap();
+  }
+
+  @Override
+  public void addStreamView(Id.Stream.View viewId, StreamViewProperties properties) throws Exception {
+    synchronized (views) {
+      views.put(viewId.getNamespaceId(), viewId.getId());
+      viewProperties.put(viewId, properties);
+    }
+  }
+
+  @Override
+  public void removeStreamView(Id.Stream.View viewId) throws Exception {
+    synchronized (views) {
+      views.remove(viewId.getNamespaceId(), viewId.getId());
+      viewProperties.remove(viewId);
+    }
+  }
+
+  @Override
+  public List<StreamViewSpecification> listStreamViews(final Id.Namespace namespaceId) throws Exception {
+    ImmutableList.Builder<StreamViewSpecification> builder = ImmutableList.builder();
+    builder.addAll(Collections2.transform(views.values(), new Function<String, StreamViewSpecification>() {
+      @Nullable
+      @Override
+      public StreamViewSpecification apply(@Nullable String input) {
+        return new StreamViewSpecification(input, viewProperties.get(Id.Stream.View.from(namespaceId, input)));
+      }
+    }));
+    return builder.build();
   }
 
   @Override

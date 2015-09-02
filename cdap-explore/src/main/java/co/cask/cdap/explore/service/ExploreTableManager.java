@@ -45,6 +45,7 @@ import co.cask.cdap.internal.io.ReflectionSchemaGenerator;
 import co.cask.cdap.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.QueryHandle;
+import co.cask.cdap.proto.StreamViewProperties;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -87,6 +88,45 @@ public class ExploreTableManager {
   }
 
   /**
+   * Creates table for a stream view.
+   *
+   * @param viewId the stream view
+   * @param properties properties of the stream view
+   */
+  public QueryHandle createView(Id.Stream.View viewId, StreamViewProperties properties)
+    throws ExploreException, SQLException, UnsupportedTypeException {
+
+    Id.Stream stream = properties.getStream();
+    String tableName = getStreamViewTableName(viewId);
+    LOG.debug("Creating stream view table {} for stream {}", viewId, properties.getStream());
+
+    Map<String, String> serdeProperties = ImmutableMap.of(
+      Constants.Explore.STREAM_NAME, stream.getId(),
+      Constants.Explore.STREAM_NAMESPACE, stream.getNamespaceId(),
+      Constants.Explore.FORMAT_SPEC, GSON.toJson(properties.getFormat()));
+
+    String createStatement = new CreateStatementBuilder(viewId.getId(), tableName)
+      .setSchema(properties.getSchema())
+      .setTableComment("CDAP stream view")
+      .buildWithStorageHandler(StreamStorageHandler.class.getName(), serdeProperties);
+
+    LOG.debug("Running create statement for view {} on stream {}: {}", viewId, stream, createStatement);
+
+    return exploreService.execute(viewId.getNamespace(), createStatement);
+  }
+
+  /**
+   * Deletes the table belonging to a stream view.
+   *
+   * @param viewId the stream view
+   */
+  public QueryHandle deleteView(Id.Stream.View viewId) throws ExploreException, SQLException {
+    LOG.debug("Disabling explore for stream view {}", viewId);
+    String deleteStatement = generateDeleteStatement(getStreamViewTableName(viewId));
+    return exploreService.execute(viewId.getNamespace(), deleteStatement);
+  }
+
+  /**
    * Enable exploration on a stream by creating a corresponding Hive table. Enabling exploration on a
    * stream that has already been enabled is a no-op. Assumes the stream actually exists.
    *
@@ -117,7 +157,7 @@ public class ExploreTableManager {
     String tableName = getStreamTableName(streamID);
     String createStatement = new CreateStatementBuilder(streamName, tableName)
       .setSchema(schema)
-      .setTableComment("CDAP Stream")
+      .setTableComment("CDAP stream")
       .buildWithStorageHandler(StreamStorageHandler.class.getName(), serdeProperties);
 
     LOG.debug("Running create statement for stream {}: {}", streamName, createStatement);
@@ -397,6 +437,10 @@ public class ExploreTableManager {
 
   private String getStreamTableName(Id.Stream streamId) {
     return cleanHiveTableName(String.format("stream_%s", streamId.getId()));
+  }
+
+  private String getStreamViewTableName(Id.Stream.View viewId) {
+    return cleanHiveTableName(String.format("view_%s", viewId.getId()));
   }
 
   private String getDatasetTableName(Id.DatasetInstance datasetID) {

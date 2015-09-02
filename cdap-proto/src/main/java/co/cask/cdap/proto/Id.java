@@ -76,6 +76,21 @@ public abstract class Id {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(getId(), getParent() != null ? getParent().hashCode() : null);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    Id otherId = (Id) obj;
+    return Objects.equal(otherId.getId(), getId()) && Objects.equal(otherId.getParent(), getParent());
+  }
+
+  @Override
   public String toString() {
     return getIdRep();
   }
@@ -1062,6 +1077,50 @@ public abstract class Id {
 
       return this.namespace.equals(that.namespace) &&
         this.streamName.equals(that.streamName);
+    }
+
+    /**
+     * Identifies a stream view.
+     */
+    public static final class View extends NamespacedId {
+      private final Namespace namespace;
+      private final String id;
+
+      private View(Namespace namespace, String id) {
+        Preconditions.checkNotNull(namespace, "Namespace cannot be null.");
+        Preconditions.checkNotNull(id, "ID is required");
+        Preconditions.checkArgument(isValidId(id), "Invalid ID: " + id);
+        this.namespace = namespace;
+        this.id = id;
+      }
+
+      @Override
+      public Namespace getNamespace() {
+        return namespace;
+      }
+
+      @Nullable
+      @Override
+      protected Id getParent() {
+        return namespace;
+      }
+
+      @Override
+      public String getId() {
+        return id;
+      }
+
+      public static View from(Id.Namespace namespace, String view) {
+        return new View(namespace, view);
+      }
+
+      public static View from(String namespace, String view) {
+        return new View(Id.Namespace.from(namespace), view);
+      }
+
+      public String getNamespaceId() {
+        return namespace.getId();
+      }
     }
   }
 

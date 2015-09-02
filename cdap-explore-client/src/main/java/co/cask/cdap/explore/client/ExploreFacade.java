@@ -23,6 +23,7 @@ import co.cask.cdap.explore.service.ExploreException;
 import co.cask.cdap.explore.service.HandleNotFoundException;
 import co.cask.cdap.explore.service.UnexpectedQueryStatusException;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.StreamViewProperties;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
@@ -52,32 +53,58 @@ public class ExploreFacade {
     }
   }
 
+  public void createStreamViewTable(Id.Stream.View view, StreamViewProperties properties)
+    throws ExploreException, SQLException {
+
+    if (!exploreEnabled) {
+      return;
+    }
+
+    ListenableFuture<Void> futureSuccess = exploreClient.createStreamViewTable(view, properties);
+    handleExploreFuture(futureSuccess, "create", "stream-view", view);
+  }
+
+  public void deleteStreamViewTable(Id.Stream.View view) throws ExploreException, SQLException {
+    if (!exploreEnabled) {
+      return;
+    }
+
+    ListenableFuture<Void> futureSuccess = exploreClient.deleteStreamViewTable(view);
+    handleExploreFuture(futureSuccess, "delete", "stream-view", view);
+  }
+
   /**
    * Enables ad-hoc exploration of the given stream.
    *
    * @param stream id of the stream.
+   *
+   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views.
    */
+  @Deprecated
   public void enableExploreStream(Id.Stream stream) throws ExploreException, SQLException {
     if (!exploreEnabled) {
       return;
     }
 
     ListenableFuture<Void> futureSuccess = exploreClient.enableExploreStream(stream);
-    handleExploreFuture(futureSuccess, "enable", "stream", stream.getId());
+    handleExploreFuture(futureSuccess, "enable", "stream", stream);
   }
 
   /**
    * Disables ad-hoc exploration of the given stream.
    *
    * @param stream id of the stream.
+   *
+   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views.
    */
+  @Deprecated
   public void disableExploreStream(Id.Stream stream) throws ExploreException, SQLException {
     if (!exploreEnabled) {
       return;
     }
 
     ListenableFuture<Void> futureSuccess = exploreClient.disableExploreStream(stream);
-    handleExploreFuture(futureSuccess, "disable", "stream", stream.getId());
+    handleExploreFuture(futureSuccess, "disable", "stream", stream);
   }
 
   /**
@@ -90,7 +117,7 @@ public class ExploreFacade {
     }
 
     ListenableFuture<Void> futureSuccess = exploreClient.enableExploreDataset(datasetInstance);
-    handleExploreFuture(futureSuccess, "enable", "dataset", datasetInstance.getId());
+    handleExploreFuture(futureSuccess, "enable", "dataset", datasetInstance);
   }
 
   /**
@@ -103,7 +130,7 @@ public class ExploreFacade {
     }
 
     ListenableFuture<Void> futureSuccess = exploreClient.disableExploreDataset(datasetInstance);
-    handleExploreFuture(futureSuccess, "disable", "dataset", datasetInstance.getId());
+    handleExploreFuture(futureSuccess, "disable", "dataset", datasetInstance);
   }
 
   public void addPartition(Id.DatasetInstance datasetInstance,
@@ -113,7 +140,7 @@ public class ExploreFacade {
     }
 
     ListenableFuture<Void> futureSuccess = exploreClient.addPartition(datasetInstance, key, location);
-    handleExploreFuture(futureSuccess, "add", "partition", datasetInstance.getId());
+    handleExploreFuture(futureSuccess, "add", "partition", datasetInstance);
   }
 
   public void dropPartition(Id.DatasetInstance datasetInstance,
@@ -123,7 +150,7 @@ public class ExploreFacade {
     }
 
     ListenableFuture<Void> futureSuccess = exploreClient.dropPartition(datasetInstance, key);
-    handleExploreFuture(futureSuccess, "drop", "partition", datasetInstance.getId());
+    handleExploreFuture(futureSuccess, "drop", "partition", datasetInstance);
   }
 
   public void createNamespace(Id.Namespace namespace) throws ExploreException, SQLException {
@@ -132,7 +159,7 @@ public class ExploreFacade {
     }
 
     ListenableFuture<ExploreExecutionResult> futureSuccess = exploreClient.addNamespace(namespace);
-    handleExploreFuture(futureSuccess, "add", "namespace", namespace.getId());
+    handleExploreFuture(futureSuccess, "add", "namespace", namespace);
   }
 
   public void removeNamespace(Id.Namespace namespace) throws ExploreException, SQLException {
@@ -141,7 +168,7 @@ public class ExploreFacade {
     }
 
     ListenableFuture<ExploreExecutionResult> futureSuccess = exploreClient.removeNamespace(namespace);
-    handleExploreFuture(futureSuccess, "remove", "namespace", namespace.getId());
+    handleExploreFuture(futureSuccess, "remove", "namespace", namespace);
   }
 
   private boolean isDatasetExplorable(Id.DatasetInstance datasetInstance) {
@@ -149,7 +176,7 @@ public class ExploreFacade {
   }
 
   // wait for the enable/disable operation to finish and log and throw exceptions as appropriate if there was an error.
-  private void handleExploreFuture(ListenableFuture future, String operation, String type, String name)
+  private void handleExploreFuture(ListenableFuture future, String operation, String type, Id objectId)
     throws ExploreException, SQLException {
     try {
       future.get(20, TimeUnit.SECONDS);
@@ -159,8 +186,8 @@ public class ExploreFacade {
     } catch (ExecutionException e) {
       Throwable t = Throwables.getRootCause(e);
       if (t instanceof ExploreException) {
-        LOG.error("{} explore did not finish successfully for {} instance {}.",
-                  operation, type, name);
+        LOG.error("{} explore did not finish successfully for {}: {}.",
+                  operation, type, objectId.toString());
         throw (ExploreException) t;
       } else if (t instanceof SQLException) {
         throw (SQLException) t;

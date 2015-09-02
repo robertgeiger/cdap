@@ -174,6 +174,16 @@ public class MockExploreClient extends AbstractIdleService implements ExploreCli
   }
 
   @Override
+  public ListenableFuture<Void> createStreamViewTable(Id.Stream.View view) {
+    return null;
+  }
+
+  @Override
+  public ListenableFuture<Void> deleteStreamViewTable(Id.Stream.View view) {
+    return null;
+  }
+
+  @Override
   protected void startUp() throws Exception {
     // Do nothing
   }

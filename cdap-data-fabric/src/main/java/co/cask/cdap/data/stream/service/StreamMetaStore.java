@@ -17,6 +17,8 @@ package co.cask.cdap.data.stream.service;
 
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.StreamViewProperties;
+import co.cask.cdap.proto.StreamViewSpecification;
 import com.google.common.collect.Multimap;
 
 import java.util.List;
@@ -27,6 +29,21 @@ import java.util.List;
 // TODO: The whole access pattern to MDS needs to be rethink, as we are now moving towards SOA and multiple components
 // needs to access MDS.
 public interface StreamMetaStore {
+
+  /**
+   * Adds a stream view to the meta store.
+   */
+  void addStreamView(Id.Stream.View viewId, StreamViewProperties properties) throws Exception;
+
+  /**
+   * Removes a stream view from the meta store.
+   */
+  void removeStreamView(Id.Stream.View viewId) throws Exception;
+
+  /**
+   * Lists all stream views stored for the {@code namespaceId}.
+   */
+  List<StreamViewSpecification> listStreamViews(Id.Namespace namespaceId) throws Exception;
 
   /**
    * Adds a stream to the meta store.

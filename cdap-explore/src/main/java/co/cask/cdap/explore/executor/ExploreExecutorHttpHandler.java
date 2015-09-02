@@ -23,9 +23,11 @@ import co.cask.cdap.api.dataset.lib.PartitionKey;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
 import co.cask.cdap.api.dataset.lib.Partitioning;
+import co.cask.cdap.common.BadRequestException;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
+import co.cask.cdap.data.validator.Validator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
@@ -34,6 +36,7 @@ import co.cask.cdap.explore.service.ExploreException;
 import co.cask.cdap.explore.service.ExploreTableManager;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.QueryHandle;
+import co.cask.cdap.proto.StreamViewProperties;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.common.reflect.TypeToken;
@@ -52,7 +55,9 @@ import java.io.Reader;
 import java.sql.SQLException;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
@@ -80,8 +85,52 @@ public class ExploreExecutorHttpHandler extends AbstractHttpHandler {
     this.datasetInstantiatorFactory = datasetInstantiatorFactory;
   }
 
+  @PUT
+  @Path("views/{view}")
+  public void createStreamViewTable(HttpRequest request, HttpResponder responder,
+                                    @PathParam("namespace-id") String namespaceId,
+                                    @PathParam("view") String viewName) throws Exception {
+
+    Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()));
+    StreamViewProperties properties;
+
+    try {
+      properties = GSON.fromJson(reader, StreamViewProperties.class);
+    } catch (Exception e) {
+      throw new BadRequestException("Invalid stream view configuration. " +
+        "Please check that the configuration is a valid JSON object with a valid schema.");
+    }
+    properties = Validator.validate(properties);
+
+    Id.Stream.View viewId = Id.Stream.View.from(namespaceId, viewName);
+    try {
+      QueryHandle handle = exploreTableManager.createView(viewId, properties);
+      JsonObject json = new JsonObject();
+      json.addProperty("handle", handle.getHandle());
+      responder.sendJson(HttpResponseStatus.OK, json);
+    } catch (UnsupportedTypeException e) {
+      LOG.error("Exception while generating create statement for stream view table {}", viewId, e);
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, e.getMessage());
+    }
+  }
+
+  @DELETE
+  @Path("views/{view}")
+  public void deleteStreamViewTable(HttpRequest request, HttpResponder responder,
+                                    @PathParam("namespace-id") String namespaceId,
+                                    @PathParam("view") String viewName) throws ExploreException, SQLException {
+
+    Id.Stream.View viewId = Id.Stream.View.from(namespaceId, viewName);
+
+    QueryHandle handle = exploreTableManager.deleteView(viewId);
+    JsonObject json = new JsonObject();
+    json.addProperty("handle", handle.getHandle());
+    responder.sendJson(HttpResponseStatus.OK, json);
+  }
+
   @POST
   @Path("streams/{stream}/enable")
+  @Deprecated
   public void enableStream(HttpRequest request, HttpResponder responder,
                            @PathParam("namespace-id") String namespaceId, @PathParam("stream") String streamName) {
     Id.Stream streamId = Id.Stream.from(namespaceId, streamName);
@@ -110,6 +159,7 @@ public class ExploreExecutorHttpHandler extends AbstractHttpHandler {
 
   @POST
   @Path("streams/{stream}/disable")
+  @Deprecated
   public void disableStream(HttpRequest request, HttpResponder responder,
                             @PathParam("namespace-id") String namespaceId, @PathParam("stream") String streamName) {
     Id.Stream streamId = Id.Stream.from(namespaceId, streamName);

@@ -25,6 +25,8 @@ import co.cask.cdap.data2.dataset2.lib.table.MDSKey;
 import co.cask.cdap.data2.dataset2.lib.table.MetadataStoreDataset;
 import co.cask.cdap.data2.dataset2.tx.Transactional;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.StreamViewProperties;
+import co.cask.cdap.proto.StreamViewSpecification;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
 import com.google.common.base.Supplier;
@@ -50,6 +52,7 @@ public final class MDSStreamMetaStore implements StreamMetaStore {
   // dependent
   private static final String STREAM_META_TABLE = "app.meta";
   private static final String TYPE_STREAM = "stream";
+  private static final String TYPE_STREAM_VIEW = "stream-view";
 
   private Transactional<StreamMds, MetadataStoreDataset> txnl;
 
@@ -71,6 +74,39 @@ public final class MDSStreamMetaStore implements StreamMetaStore {
           LOG.debug("Failed to access app.meta table", e);
           throw Throwables.propagate(e);
         }
+      }
+    });
+  }
+
+  @Override
+  public void addStreamView(final Id.Stream.View viewId, final StreamViewProperties properties) throws Exception {
+    txnl.executeUnchecked(new TransactionExecutor.Function<StreamMds, Void>() {
+      @Override
+      public Void apply(StreamMds mds) throws Exception {
+        mds.streams.write(getKey(viewId), new StreamViewSpecification(viewId.getId(), properties));
+        return null;
+      }
+    });
+  }
+
+  @Override
+  public void removeStreamView(final Id.Stream.View viewId) throws Exception {
+    txnl.executeUnchecked(new TransactionExecutor.Function<StreamMds, Void>() {
+      @Override
+      public Void apply(StreamMds mds) throws Exception {
+        mds.streams.deleteAll(getKey(viewId));
+        return null;
+      }
+    });
+  }
+
+  @Override
+  public List<StreamViewSpecification> listStreamViews(final Id.Namespace namespaceId) throws Exception {
+    return txnl.executeUnchecked(new TransactionExecutor.Function<StreamMds, List<StreamViewSpecification>>() {
+      @Override
+      public List<StreamViewSpecification> apply(StreamMds mds) throws Exception {
+        return mds.streams.list(new MDSKey.Builder().add(TYPE_STREAM_VIEW, namespaceId.getId()).build(),
+                                StreamViewSpecification.class);
       }
     });
   }
@@ -140,6 +176,11 @@ public final class MDSStreamMetaStore implements StreamMetaStore {
           return builder.build();
         }
       });
+  }
+
+  private MDSKey getKey(Id.Stream.View viewId) {
+    return new MDSKey.Builder()
+      .add(TYPE_STREAM_VIEW, viewId.getNamespaceId(), viewId.getId()).build();
   }
 
   private MDSKey getKey(Id.Stream streamId) {

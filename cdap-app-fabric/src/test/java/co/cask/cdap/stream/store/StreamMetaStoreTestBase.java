@@ -16,17 +16,24 @@
 
 package co.cask.cdap.stream.store;
 
+import co.cask.cdap.api.data.format.FormatSpecification;
+import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.common.AlreadyExistsException;
 import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.data.stream.service.StreamMetaStore;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.StreamViewProperties;
+import co.cask.cdap.proto.StreamViewSpecification;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
 
 /**
  * Test the {@link StreamMetaStore} implementations.
@@ -67,7 +74,7 @@ public abstract class StreamMetaStoreTestBase {
     streamMetaStore.addStream(Id.Stream.from("foo1", "bar"));
     streamMetaStore.addStream(Id.Stream.from("foo2", "bar"));
     Assert.assertEquals(ImmutableList.of(
-      new StreamSpecification.Builder().setName("bar").create()),
+                          new StreamSpecification.Builder().setName("bar").create()),
                         streamMetaStore.listStreams(Id.Namespace.from("foo1")));
     Assert.assertEquals(
       ImmutableMultimap.builder()
@@ -85,5 +92,14 @@ public abstract class StreamMetaStoreTestBase {
       streamMetaStore.listStreams());
 
     streamMetaStore.removeStream(Id.Stream.from("foo1", "bar"));
+
+    // test stream view
+    FormatSpecification formatSpec = new FormatSpecification(
+      Formats.AVRO, null, Collections.<String, String>emptyMap());
+    streamMetaStore.addStreamView(Id.Stream.View.from("foo", "view1"), new StreamViewProperties(stream, formatSpec));
+    Assert.assertEquals(
+      Lists.newArrayList(new StreamViewSpecification("view1", formatSpec)),
+      streamMetaStore.listStreamViews(Id.Namespace.from("foo")));
+    streamMetaStore.removeStreamView(Id.Stream.View.from("foo", "view1"));
   }
 }

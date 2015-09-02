@@ -34,6 +34,7 @@ import co.cask.cdap.proto.QueryHandle;
 import co.cask.cdap.proto.QueryInfo;
 import co.cask.cdap.proto.QueryResult;
 import co.cask.cdap.proto.QueryStatus;
+import co.cask.cdap.proto.StreamViewProperties;
 import co.cask.cdap.proto.TableInfo;
 import co.cask.cdap.proto.TableNameInfo;
 import co.cask.common.http.HttpMethod;
@@ -90,6 +91,29 @@ abstract class ExploreHttpClient implements Explore {
     }
   }
 
+  protected QueryHandle doCreateStreamViewTable(Id.Stream.View view,
+                                                StreamViewProperties props) throws ExploreException {
+    HttpResponse response = doPut(String.format("namespaces/%s/data/explore/stream-views/%s",
+                                                 view.getNamespaceId(), view.getId()),
+                                   GSON.toJson(props), null);
+    if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
+      return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
+    }
+    throw new ExploreException(String.format("Cannot create table for view %s. Reason: %s",
+                                             view.toString(), response));
+  }
+
+  protected QueryHandle doDeleteStreamViewTable(Id.Stream.View view) throws ExploreException {
+    HttpResponse response = doDelete(String.format("namespaces/%s/data/explore/stream-views/%s",
+                                                 view.getNamespaceId(), view.getId()));
+    if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
+      return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
+    }
+    throw new ExploreException(String.format("Cannot delete table for view %s. Reason: %s",
+                                             view.toString(), response));
+  }
+
+  @Deprecated
   protected QueryHandle doEnableExploreStream(Id.Stream stream) throws ExploreException {
     HttpResponse response = doPost(String.format("namespaces/%s/data/explore/streams/%s/enable",
                                                  stream.getNamespaceId(), stream.getId()), null, null);
@@ -97,9 +121,10 @@ abstract class ExploreHttpClient implements Explore {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
     throw new ExploreException(String.format("Cannot enable explore on stream %s. Reason: %s",
-                                             stream.getId(), response));
+                                             stream.toString(), response));
   }
 
+  @Deprecated
   protected QueryHandle doDisableExploreStream(Id.Stream stream) throws ExploreException {
     HttpResponse response = doPost(String.format("namespaces/%s/data/explore/streams/%s/disable",
                                                  stream.getNamespaceId(), stream.getId()), null, null);
@@ -107,7 +132,7 @@ abstract class ExploreHttpClient implements Explore {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
     throw new ExploreException(String.format("Cannot disable explore on stream %s. Reason: %s",
-                                             stream.getId(), response));
+                                             stream.toString(), response));
   }
 
   protected QueryHandle doAddPartition(Id.DatasetInstance datasetInstance,
@@ -122,7 +147,7 @@ abstract class ExploreHttpClient implements Explore {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
     throw new ExploreException(String.format("Cannot add partition with key %s to dataset %s. Reason: %s",
-                                             key, datasetInstance.getId(), response));
+                                             key, datasetInstance.toString(), response));
   }
 
   protected QueryHandle doDropPartition(Id.DatasetInstance datasetInstance, PartitionKey key) throws ExploreException {
@@ -135,7 +160,7 @@ abstract class ExploreHttpClient implements Explore {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
     throw new ExploreException(String.format("Cannot drop partition with key %s from dataset %s. Reason: %s",
-                                             key, datasetInstance.getId(), response));
+                                             key, datasetInstance.toString(), response));
   }
 
   protected QueryHandle doEnableExploreDataset(Id.DatasetInstance datasetInstance) throws ExploreException {
@@ -145,7 +170,7 @@ abstract class ExploreHttpClient implements Explore {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
     throw new ExploreException(String.format("Cannot enable explore on dataset %s. Reason: %s",
-                                             datasetInstance.getId(), response));
+                                             datasetInstance.toString(), response));
   }
 
   protected QueryHandle doDisableExploreDataset(Id.DatasetInstance datasetInstance) throws ExploreException {
@@ -156,7 +181,7 @@ abstract class ExploreHttpClient implements Explore {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
     throw new ExploreException(String.format("Cannot disable explore on dataset %s. Reason: %s",
-                                             datasetInstance.getId(), response));
+                                             datasetInstance.toString(), response));
   }
 
   @Override

@@ -19,6 +19,7 @@ package co.cask.cdap.explore.client;
 import co.cask.cdap.api.dataset.lib.PartitionKey;
 import co.cask.cdap.explore.service.MetaDataInfo;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.StreamViewProperties;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
@@ -59,7 +60,10 @@ public interface ExploreClient extends Closeable {
    * @param stream stream id.
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
    *         the success of the enable operation.
+   *
+   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views.
    */
+  @Deprecated
   ListenableFuture<Void> enableExploreStream(Id.Stream stream);
 
   /**
@@ -68,7 +72,10 @@ public interface ExploreClient extends Closeable {
    * @param stream stream id.
    * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
    *         the success of the enable operation.
+   *
+   * @deprecated As of 3.2.0, multiple tables can be associated with a stream via stream views.
    */
+  @Deprecated
   ListenableFuture<Void> disableExploreStream(Id.Stream stream);
 
   /**
@@ -226,4 +233,21 @@ public interface ExploreClient extends Closeable {
    * @return {@link ListenableFuture} eventually deleting the namespace (database in Hive).
    */
   ListenableFuture<ExploreExecutionResult> removeNamespace(Id.Namespace namespace);
+
+  /**
+   * Creates a table for a stream view.
+   *
+   * @param view the stream view to create the table for.
+   * @param properties properties of the stream view.
+   * @return {@link ListenableFuture} eventually creating the stream view table.
+   */
+  ListenableFuture<Void> createStreamViewTable(Id.Stream.View view, StreamViewProperties properties);
+
+  /**
+   * Deletes a table belonging to a stream view.
+   *
+   * @param view the stream view to delete the table for.
+   * @return {@link ListenableFuture} eventually deleting the stream view table.
+   */
+  ListenableFuture<Void> deleteStreamViewTable(Id.Stream.View view);
 }

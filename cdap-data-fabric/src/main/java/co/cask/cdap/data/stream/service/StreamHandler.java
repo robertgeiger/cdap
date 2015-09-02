@@ -16,9 +16,7 @@
 package co.cask.cdap.data.stream.service;
 
 import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.format.RecordFormat;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.metrics.MetricsCollectionService;
 import co.cask.cdap.api.metrics.MetricsContext;
 import co.cask.cdap.common.BadRequestException;
@@ -31,9 +29,9 @@ import co.cask.cdap.data.stream.StreamFileWriterFactory;
 import co.cask.cdap.data.stream.service.upload.ContentWriterFactory;
 import co.cask.cdap.data.stream.service.upload.LengthBasedContentWriterFactory;
 import co.cask.cdap.data.stream.service.upload.StreamBodyConsumerFactory;
+import co.cask.cdap.data.validator.Validator;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
-import co.cask.cdap.format.RecordFormats;
 import co.cask.cdap.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamProperties;
@@ -277,12 +275,8 @@ public final class StreamHandler extends AbstractHttpHandler {
     Id.Stream streamId = Id.Stream.from(namespaceId, stream);
     checkStreamExists(streamId);
 
-    StreamProperties properties = getAndValidateConfig(request, responder);
-    // null is returned if the requested config is invalid. An appropriate response will have already been written
-    // to the responder so we just need to return.
-    if (properties == null) {
-      return;
-    }
+    Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()));
+    StreamProperties properties = getAndValidateConfig(reader);
 
     streamAdmin.updateConfig(streamId, properties);
     responder.sendStatus(HttpResponseStatus.OK);
@@ -335,59 +329,16 @@ public final class StreamHandler extends AbstractHttpHandler {
    * Gets stream properties from the request. If there is request is invalid, response will be made and {@code null}
    * will be return.
    */
-  private StreamProperties getAndValidateConfig(HttpRequest request, HttpResponder responder) {
-    Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()));
+  private StreamProperties getAndValidateConfig(Reader reader) throws BadRequestException {
     StreamProperties properties;
     try {
       properties = GSON.fromJson(reader, StreamProperties.class);
     } catch (Exception e) {
-      responder.sendString(HttpResponseStatus.BAD_REQUEST, "Invalid stream configuration. Please check that the " +
+      throw new BadRequestException("Invalid stream configuration. Please check that the " +
         "configuration is a valid JSON Object with a valid schema.");
-      return null;
     }
 
-    // Validate ttl
-    Long ttl = properties.getTTL();
-    if (ttl != null && ttl < 0) {
-      responder.sendString(HttpResponseStatus.BAD_REQUEST, "TTL value should be positive.");
-      return null;
-    }
-
-    // Validate format
-    FormatSpecification formatSpec = properties.getFormat();
-    if (formatSpec != null) {
-      String formatName = formatSpec.getName();
-      if (formatName == null) {
-        responder.sendString(HttpResponseStatus.BAD_REQUEST, "A format name must be specified.");
-        return null;
-      }
-      try {
-        // if a format is given, make sure it is a valid format,
-        // check that we can instantiate the format class
-        RecordFormat<?, ?> format = RecordFormats.createInitializedFormat(formatSpec);
-        // the request may contain a null schema, in which case the default schema of the format should be used.
-        // create a new specification object that is guaranteed to have a non-null schema.
-        formatSpec = new FormatSpecification(formatSpec.getName(),
-                                                format.getSchema(), formatSpec.getSettings());
-      } catch (UnsupportedTypeException e) {
-        responder.sendString(HttpResponseStatus.BAD_REQUEST,
-                             "Format " + formatName + " does not support the requested schema.");
-        return null;
-      } catch (Exception e) {
-        responder.sendString(HttpResponseStatus.BAD_REQUEST,
-                             "Invalid format, unable to instantiate format " + formatName);
-        return null;
-      }
-    }
-
-    // Validate notification threshold
-    Integer threshold = properties.getNotificationThresholdMB();
-    if (threshold != null && threshold <= 0) {
-      responder.sendString(HttpResponseStatus.BAD_REQUEST, "Threshold value should be greater than zero.");
-      return null;
-    }
-
-    return new StreamProperties(ttl, formatSpec, threshold);
+    return Validator.validate(properties);
   }
 
   private RejectedExecutionHandler createAsyncRejectedExecutionHandler() {
