@@ -4,7 +4,8 @@
                      data-on-change-flag="StatusController.onChangeFlag"
                      data-click-context="StatusController"
                      data-click="StatusController.workflowProgramClick"
-                     data-token-click="StatusController.workflowTokenClick"></my-workflow-graph>
+                     data-token-click="StatusController.workflowTokenClick"
+                     data-workflow-status="StatusController.runStatus"></my-workflow-graph>
 
 
   <my-pageslide open="StatusController.showSidepanel" width="600">
@@ -58,7 +59,7 @@
             </div>
 
             <div class="well text-center" ng-if="StatusController.usertokens.length === 0">
-              <h4>No Token</h4>
+              <h4>No token data</h4>
             </div>
           </div>
 
@@ -82,7 +83,7 @@
             </div>
 
             <div class="well text-center" ng-if="StatusController.systemtokens.length === 0">
-              <h4>No Token</h4>
+              <h4>No token data</h4>
             </div>
           </div>
         </div>
