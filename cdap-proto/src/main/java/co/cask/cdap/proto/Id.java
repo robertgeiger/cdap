@@ -967,6 +967,51 @@ public abstract class Id {
   }
 
   /**
+   * Uniquely identifies a view.
+   */
+  public static final class View extends NamespacedId {
+    private final Namespace namespace;
+    private final String id;
+
+    public View(Namespace namespace, String id) {
+      Preconditions.checkNotNull(namespace, "Namespace cannot be null.");
+      Preconditions.checkNotNull(id, "ID cannot be null.");
+      Preconditions.checkArgument(isValidId(id), "ID can only contain alphanumeric, " +
+        "'-' and '_' characters: %s", id);
+      this.namespace = namespace;
+      this.id = id;
+    }
+
+    @Override
+    public Namespace getNamespace() {
+      return namespace;
+    }
+
+    @Nullable
+    @Override
+    protected Id getParent() {
+      return namespace;
+    }
+
+    public String getNamespaceId() {
+      return namespace.getId();
+    }
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    public static View from(Namespace namespace, String id) {
+      return new View(namespace, id);
+    }
+
+    public static View from(String namespace, String id) {
+      return new View(Id.Namespace.from(namespace), id);
+    }
+  }
+
+  /**
    * Id.Stream uniquely identifies a stream.
    */
   public static final class Stream extends NamespacedId {

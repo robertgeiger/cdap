@@ -61,7 +61,7 @@ import javax.annotation.Nullable;
  *
  * We only support a subset of what Hive can do. For example, there is no support for SKEWED BY or CLUSTERED BY.
  */
-public class CreateStatementBuilder {
+public class CreateTableStatementBuilder {
   private final String name;
   private final String hiveTableName;
   private String hiveSchema;
@@ -71,7 +71,7 @@ public class CreateStatementBuilder {
   private Partitioning partitioning;
   private Map<String, String> tableProperties;
 
-  public CreateStatementBuilder(String name, String hiveTableName) {
+  public CreateTableStatementBuilder(String name, String hiveTableName) {
     this.name = name;
     this.hiveTableName = hiveTableName;
     this.tableProperties = addRequiredTableProperties(Maps.<String, String>newHashMap());
@@ -80,7 +80,7 @@ public class CreateStatementBuilder {
   /**
    * Set the schema for the table. Throws an exception if it is not valid for Hive.
    */
-  public CreateStatementBuilder setSchema(Schema schema) throws UnsupportedTypeException {
+  public CreateTableStatementBuilder setSchema(Schema schema) throws UnsupportedTypeException {
     this.hiveSchema = SchemaConverter.toHiveSchema(schema);
     return this;
   }
@@ -88,7 +88,7 @@ public class CreateStatementBuilder {
   /**
    * Set the hive schema for the table. Should be of the form "column_name column_type, ...".
    */
-  public CreateStatementBuilder setSchema(String hiveSchema) {
+  public CreateTableStatementBuilder setSchema(String hiveSchema) {
     this.hiveSchema = "(" + hiveSchema + ")";
     return this;
   }
@@ -96,7 +96,7 @@ public class CreateStatementBuilder {
   /**
    * Set table properties. CDAP name and version must not be in the given properties, as they are added by the builder.
    */
-  public CreateStatementBuilder setTableProperties(Map<String, String> tableProperties) {
+  public CreateTableStatementBuilder setTableProperties(Map<String, String> tableProperties) {
     this.tableProperties = addRequiredTableProperties(tableProperties);
     return this;
   }
@@ -104,7 +104,7 @@ public class CreateStatementBuilder {
   /**
    * Set the location of the Hive table.
    */
-  public CreateStatementBuilder setLocation(String location) {
+  public CreateTableStatementBuilder setLocation(String location) {
     this.location = location;
     return this;
   }
@@ -112,7 +112,7 @@ public class CreateStatementBuilder {
   /**
    * Set the location of the Hive table.
    */
-  public CreateStatementBuilder setLocation(Location location) {
+  public CreateTableStatementBuilder setLocation(Location location) {
     this.location = location.toURI().toString();
     return this;
   }
@@ -120,7 +120,7 @@ public class CreateStatementBuilder {
   /**
    * Set partitions of the Hive table.
    */
-  public CreateStatementBuilder setPartitioning(Partitioning partitioning) {
+  public CreateTableStatementBuilder setPartitioning(Partitioning partitioning) {
     this.partitioning = partitioning;
     return this;
   }
@@ -128,7 +128,7 @@ public class CreateStatementBuilder {
   /**
    * Set a comment for the Hive table.
    */
-  public CreateStatementBuilder setTableComment(String tableComment) {
+  public CreateTableStatementBuilder setTableComment(String tableComment) {
     this.tableComment = tableComment;
     return this;
   }
@@ -136,7 +136,7 @@ public class CreateStatementBuilder {
   /**
    * Set the row format serde without properties.
    */
-  public CreateStatementBuilder setRowFormatSerde(String rowFormatSerde) {
+  public CreateTableStatementBuilder setRowFormatSerde(String rowFormatSerde) {
     return setRowFormatSerde(rowFormatSerde, null);
   }
 
@@ -144,7 +144,7 @@ public class CreateStatementBuilder {
    * Set the row format serde with properties. Corresponds to using:
    * ROW FORMAT SERDE serde_name [WITH SERDEPROPERTIES (property_name=property_value, ...)].
    */
-  public CreateStatementBuilder setRowFormatSerde(String rowFormatSerde,
+  public CreateTableStatementBuilder setRowFormatSerde(String rowFormatSerde,
                                                   @Nullable Map<String, String> serdeProperties) {
     Preconditions.checkArgument(rowFormat == null, "row format can only be set once.");
     StringBuilder strBuilder = new StringBuilder()
@@ -164,7 +164,7 @@ public class CreateStatementBuilder {
    * ROW FORMAT DELIMITED [FIELDS TERMINATED BY char [ESCAPED BY char]]
    * The escapedBy char can only be given if terminatedBy is not null.
    */
-  public CreateStatementBuilder setRowFormatDelimited(@Nullable String terminatedBy, @Nullable String escapedBy) {
+  public CreateTableStatementBuilder setRowFormatDelimited(@Nullable String terminatedBy, @Nullable String escapedBy) {
     Preconditions.checkArgument(rowFormat == null, "row format can only be set once.");
     StringBuilder strBuilder = new StringBuilder()
       .append("DELIMITED");

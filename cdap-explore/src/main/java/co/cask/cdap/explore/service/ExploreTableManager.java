@@ -32,12 +32,14 @@ import co.cask.cdap.api.dataset.lib.PartitionKey;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.Partitioning;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.view.ViewProperties;
 import co.cask.cdap.common.DatasetNotFoundException;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
 import co.cask.cdap.data2.dataset2.lib.table.ObjectMappedTableModule;
-import co.cask.cdap.explore.table.CreateStatementBuilder;
+import co.cask.cdap.explore.table.CreateTableStatementBuilder;
+import co.cask.cdap.explore.table.CreateViewStatementBuilder;
 import co.cask.cdap.hive.datasets.DatasetStorageHandler;
 import co.cask.cdap.hive.objectinspector.ObjectInspectorFactory;
 import co.cask.cdap.hive.stream.StreamStorageHandler;
@@ -115,7 +117,7 @@ public class ExploreTableManager {
       Constants.Explore.FORMAT_SPEC, GSON.toJson(formatSpec));
 
     String tableName = getStreamTableName(streamID);
-    String createStatement = new CreateStatementBuilder(streamName, tableName)
+    String createStatement = new CreateTableStatementBuilder(streamName, tableName)
       .setSchema(schema)
       .setTableComment("CDAP Stream")
       .buildWithStorageHandler(StreamStorageHandler.class.getName(), serdeProperties);
@@ -135,8 +137,29 @@ public class ExploreTableManager {
    */
   public QueryHandle disableStream(Id.Stream streamID) throws ExploreException, SQLException {
     LOG.debug("Disabling explore for stream {}", streamID);
-    String deleteStatement = generateDeleteStatement(getStreamTableName(streamID));
+    String deleteStatement = generateDeleteTableStatement(getStreamTableName(streamID));
     return exploreService.execute(streamID.getNamespace(), deleteStatement);
+  }
+
+  /**
+   * Creates or replaces the table for a view.
+   *
+   * @param viewId the view
+   * @param properties the properties of the view
+   */
+  public QueryHandle createOrReplaceView(
+    Id.View viewId, ViewProperties properties) throws ExploreException, SQLException {
+
+    LOG.debug("Creating view {} with properties {}", viewId, GSON.toJson(properties));
+    CreateViewStatementBuilder builder = new CreateViewStatementBuilder(
+      viewId.getId(), getViewTableName(viewId), properties.getSelectStatement());
+    return exploreService.execute(viewId.getNamespace(), builder.build());
+  }
+
+  public QueryHandle delete(Id.View viewId) throws ExploreException, SQLException {
+    LOG.debug("Deleting view {}", viewId);
+    String deleteStatement = generateDeleteViewStatement(getViewTableName(viewId));
+    return exploreService.execute(viewId.getNamespace(), deleteStatement);
   }
 
   /**
@@ -207,7 +230,7 @@ public class ExploreTableManager {
 
         // otherwise, derive the schema from the record type
         LOG.debug("Enabling explore for dataset instance {}", datasetName);
-        createStatement = new CreateStatementBuilder(datasetName, getDatasetTableName(datasetID))
+        createStatement = new CreateTableStatementBuilder(datasetName, getDatasetTableName(datasetID))
           .setSchema(hiveSchemaFor(recordType))
           .setTableComment("CDAP Dataset")
           .buildWithStorageHandler(DatasetStorageHandler.class.getName(), serdeProperties);
@@ -249,7 +272,7 @@ public class ExploreTableManager {
 
     try {
       Schema schema = Schema.parseJson(schemaStr);
-      String createStatement = new CreateStatementBuilder(datasetID.getId(), getDatasetTableName(datasetID))
+      String createStatement = new CreateTableStatementBuilder(datasetID.getId(), getDatasetTableName(datasetID))
         .setSchema(schema)
         .setTableComment("CDAP Dataset")
         .buildWithStorageHandler(DatasetStorageHandler.class.getName(), serdeProperties);
@@ -289,7 +312,7 @@ public class ExploreTableManager {
     String datasetType = spec.getType();
     if (ObjectMappedTableModule.FULL_NAME.equals(datasetType) ||
       ObjectMappedTableModule.SHORT_NAME.equals(datasetType)) {
-      deleteStatement = generateDeleteStatement(tableName);
+      deleteStatement = generateDeleteTableStatement(tableName);
       LOG.debug("Running delete statement for dataset {} - {}", datasetID, deleteStatement);
       return exploreService.execute(datasetID.getNamespace(), deleteStatement);
     }
@@ -301,11 +324,11 @@ public class ExploreTableManager {
       }
 
       if (dataset instanceof RecordScannable || dataset instanceof RecordWritable) {
-        deleteStatement = generateDeleteStatement(tableName);
+        deleteStatement = generateDeleteTableStatement(tableName);
       } else if (dataset instanceof FileSet || dataset instanceof PartitionedFileSet) {
         Map<String, String> properties = spec.getProperties();
         if (FileSetProperties.isExploreEnabled(properties)) {
-          deleteStatement = generateDeleteStatement(tableName);
+          deleteStatement = generateDeleteTableStatement(tableName);
         }
       }
     } catch (IOException e) {
@@ -395,6 +418,10 @@ public class ExploreTableManager {
     return exploreService.execute(datasetID.getNamespace(), dropPartitionStatement);
   }
 
+  private String getViewTableName(Id.View viewId) {
+    return cleanHiveTableName(String.format("view_%s", viewId.getId()));
+  }
+
   private String getStreamTableName(Id.Stream streamId) {
     return cleanHiveTableName(String.format("stream_%s", streamId.getId()));
   }
@@ -424,7 +451,7 @@ public class ExploreTableManager {
       baseLocation = ((FileSet) dataset).getBaseLocation();
     }
 
-    CreateStatementBuilder createStatementBuilder = new CreateStatementBuilder(datasetID.getId(), tableName)
+    CreateTableStatementBuilder createTableStatementBuilder = new CreateTableStatementBuilder(datasetID.getId(), tableName)
       .setLocation(baseLocation)
       .setPartitioning(partitioning)
       .setTableProperties(tableProperties);
@@ -432,7 +459,7 @@ public class ExploreTableManager {
     String format = FileSetProperties.getExploreFormat(properties);
     if (format != null) {
       if ("parquet".equals(format)) {
-        return createStatementBuilder.setSchema(FileSetProperties.getExploreSchema(properties))
+        return createTableStatementBuilder.setSchema(FileSetProperties.getExploreSchema(properties))
           .buildWithFileFormat("parquet");
       }
       // for text and csv, we know what to do
@@ -446,7 +473,7 @@ public class ExploreTableManager {
       } else if ("csv".equals(format)) {
         delimiter = ",";
       }
-      return createStatementBuilder.setSchema(schema)
+      return createTableStatementBuilder.setSchema(schema)
         .setRowFormatDelimited(delimiter, null)
         .buildWithFileFormat("TEXTFILE");
     } else {
@@ -457,12 +484,16 @@ public class ExploreTableManager {
 
       Preconditions.checkArgument(serde != null && inputFormat != null && outputFormat != null,
                                   "All of SerDe, InputFormat and OutputFormat must be given in dataset properties");
-      return createStatementBuilder.setRowFormatSerde(serde)
+      return createTableStatementBuilder.setRowFormatSerde(serde)
         .buildWithFormats(inputFormat, outputFormat);
     }
   }
 
-  private String generateDeleteStatement(String name) {
+  private String generateDeleteViewStatement(String name) {
+    return String.format("DROP VIEW IF EXISTS %s", cleanHiveTableName(name));
+  }
+
+  private String generateDeleteTableStatement(String name) {
     return String.format("DROP TABLE IF EXISTS %s", cleanHiveTableName(name));
   }
 
