@@ -9,7 +9,8 @@ var baseDirective = {
     onChangeFlag: '=',
     clickContext: '=',
     click: '&',
-    tokenClick: '&'
+    tokenClick: '&',
+    workflowStatus: '='
   },
   controller: 'myFlowController'
 };
@@ -158,7 +159,7 @@ module.directive('myWorkflowGraph', function ($filter, $location, FlowFactories)
             .attr('points', points.map(function(p) { return p.x + ',' + p.y; }).join(' '))
             .attr('class', 'workflow-shapes foundation-shape conditional-svg');
 
-          if (node.label === 'IF') {
+          if (node.label === 'IF' && (scope.workflowStatus === 'COMPLETED' || scope.workflowStatus === 'FAILED')) {
             parent.append('circle')
               .attr('r', 10)
               .attr('transform', 'translate(0, ' + (-defaultRadius - 25) + ')' )
