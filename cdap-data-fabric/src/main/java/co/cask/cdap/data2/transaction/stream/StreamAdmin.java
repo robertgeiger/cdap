@@ -19,6 +19,7 @@ package co.cask.cdap.data2.transaction.stream;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamProperties;
 import co.cask.cdap.proto.StreamViewProperties;
+import co.cask.cdap.proto.StreamViewSpecification;
 
 import java.io.IOException;
 import java.util.List;
@@ -151,7 +152,7 @@ public interface StreamAdmin {
    * @param streamId the stream
    * @return the list of views for the stream
    */
-  List<StreamViewProperties> listViews(Id.Stream streamId);
+  List<StreamViewSpecification> listViews(Id.Stream streamId);
 
   /**
    * Lists views for a namespace.
@@ -159,5 +160,5 @@ public interface StreamAdmin {
    * @param namespace the namespace
    * @return the list of views for the namespace
    */
-  List<StreamViewProperties> listViews(Id.Namespace namespace);
+  List<StreamViewSpecification> listViews(Id.Namespace namespace) throws Exception;
 }

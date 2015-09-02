@@ -108,6 +108,19 @@ public abstract class AbstractExploreClient extends ExploreHttpClient implements
   }
 
   @Override
+  public ListenableFuture<Boolean> streamViewTableExists(final Id.Stream.View viewId) {
+    ListenableFuture<ExploreExecutionResult> futureResults = getResultsFuture(new HandleProducer() {
+      @Override
+      public QueryHandle getHandle() throws ExploreException, SQLException {
+        return doStreamViewTableExists(viewId);
+      }
+    });
+
+    // Exceptions will be thrown in case of an error in the futureHandle
+    return Futures.transform(futureResults, Functions.<Boolean>constant(null));
+  }
+
+  @Override
   public ListenableFuture<Void> disableExploreDataset(final Id.DatasetInstance datasetInstance) {
     ListenableFuture<ExploreExecutionResult> futureResults = getResultsFuture(new HandleProducer() {
       @Override

@@ -21,6 +21,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamViewProperties;
 import co.cask.cdap.proto.StreamViewSpecification;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -75,6 +76,31 @@ public class InMemoryStreamMetaStore implements StreamMetaStore {
         return new StreamViewSpecification(input, viewProperties.get(Id.Stream.View.from(namespaceId, input)));
       }
     }));
+    return builder.build();
+  }
+
+  @Override
+  public StreamViewProperties getStreamView(Id.Stream.View viewId) {
+    return viewProperties.get(viewId);
+  }
+
+  @Override
+  public List<StreamViewSpecification> listStreamViews(Id.Stream streamId) {
+    ImmutableList.Builder<StreamViewSpecification> builder = ImmutableList.builder();
+    builder.addAll(Collections2.transform(
+      Collections2.filter(viewProperties.entrySet(), new Predicate<Map.Entry<Id.Stream.View, StreamViewProperties>>() {
+                            @Override
+                            public boolean apply(@Nullable Map.Entry<Id.Stream.View, StreamViewProperties> input) {
+                              return false;
+                            }
+                          },
+                          new Function<Map.Entry<Id.Stream.View, StreamViewProperties>, StreamViewSpecification>() {
+                            @Nullable
+                            @Override
+                            public StreamViewSpecification apply(@Nullable Map.Entry<Id.Stream.View, StreamViewProperties> input) {
+                              return new StreamViewSpecification();
+                            }
+                          }));
     return builder.build();
   }
 

@@ -35,6 +35,7 @@ import co.cask.cdap.notifications.feeds.NotificationFeedManager;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamProperties;
 import co.cask.cdap.proto.StreamViewProperties;
+import co.cask.cdap.proto.StreamViewSpecification;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -363,17 +364,17 @@ public class FileStreamAdmin implements StreamAdmin {
 
   @Override
   public StreamViewProperties getView(Id.Stream.View viewId) {
-    return null;
+    return streamMetaStore.getStreamView(viewId);
   }
 
   @Override
-  public List<StreamViewProperties> listViews(Id.Stream streamId) {
-    return null;
+  public List<StreamViewSpecification> listViews(Id.Stream streamId) {
+    return streamMetaStore.listStreamViews(streamId);
   }
 
   @Override
-  public List<StreamViewProperties> listViews(Id.Namespace namespace) {
-    return null;
+  public List<StreamViewSpecification> listViews(Id.Namespace namespace) throws Exception {
+    return streamMetaStore.listStreamViews(namespace);
   }
 
   /**

@@ -203,6 +203,7 @@ public class ExploreFacade {
     } catch (InterruptedException e) {
       LOG.error("Caught exception", e);
       Thread.currentThread().interrupt();
+      throw Throwables.propagate(e);
     } catch (ExecutionException e) {
       Throwable t = Throwables.getRootCause(e);
       if (t instanceof ExploreException) {
@@ -219,6 +220,8 @@ public class ExploreFacade {
         UnexpectedQueryStatusException sE = (UnexpectedQueryStatusException) t;
         LOG.error("{} explore operation ended in an unexpected state - {}", operation, sE.getStatus().name(), e);
         throw Throwables.propagate(e);
+      } else {
+        throw Throwables.propagate(t);
       }
     } catch (TimeoutException e) {
       LOG.error("Error running {} explore - operation timed out", operation, e);

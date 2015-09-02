@@ -105,12 +105,16 @@ abstract class ExploreHttpClient implements Explore {
 
   protected QueryHandle doDeleteStreamViewTable(Id.Stream.View view) throws ExploreException {
     HttpResponse response = doDelete(String.format("namespaces/%s/data/explore/views/stream/%s",
-                                                 view.getNamespaceId(), view.getId()));
+                                                   view.getNamespaceId(), view.getId()));
     if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
       return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
     }
     throw new ExploreException(String.format("Cannot delete table for view %s. Reason: %s",
                                              view.toString(), response));
+  }
+
+  protected QueryHandle doStreamViewTableExists(Id.Stream.View viewId) {
+
   }
 
   @Deprecated

@@ -31,21 +31,6 @@ import java.util.List;
 public interface StreamMetaStore {
 
   /**
-   * Adds a stream view to the meta store.
-   */
-  void addStreamView(Id.Stream.View viewId, StreamViewProperties properties) throws Exception;
-
-  /**
-   * Removes a stream view from the meta store.
-   */
-  void removeStreamView(Id.Stream.View viewId) throws Exception;
-
-  /**
-   * Lists all stream views stored for the {@code namespaceId}.
-   */
-  List<StreamViewSpecification> listStreamViews(Id.Namespace namespaceId) throws Exception;
-
-  /**
    * Adds a stream to the meta store.
    */
   void addStream(Id.Stream streamId) throws Exception;
@@ -69,4 +54,29 @@ public interface StreamMetaStore {
    * List all stream specifications with their associated {@link Id.Namespace}.
    */
   Multimap<Id.Namespace, StreamSpecification> listStreams() throws Exception;
+
+  /**
+   * Adds a stream view to the meta store.
+   */
+  void addStreamView(Id.Stream.View viewId, StreamViewProperties properties) throws Exception;
+
+  /**
+   * Removes a stream view from the meta store.
+   */
+  void removeStreamView(Id.Stream.View viewId) throws Exception;
+
+  /**
+   * Lists all stream views stored for the {@code namespaceId}.
+   */
+  List<StreamViewSpecification> listStreamViews(Id.Namespace namespaceId) throws Exception;
+
+  /**
+   * Gets the properties of a stream view.
+   */
+  StreamViewProperties getStreamView(Id.Stream.View viewId);
+
+  /**
+   * Lists all views associated with a stream.
+   */
+  List<StreamViewSpecification> listStreamViews(Id.Stream streamId);
 }
