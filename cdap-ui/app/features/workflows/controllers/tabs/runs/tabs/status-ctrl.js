@@ -110,7 +110,7 @@ class WorkflowsRunsStatusController {
         angular.forEach(activeNodes, node => {
           var runid = response.properties[node.nodeId];
           var mapreduceParams;
-console.info('testNode', node.type, node.nodeId, response);
+
           if (node.program.programType === 'MAPREDUCE') {
             mapreduceParams = {
               namespace: this.$state.params.namespace,
@@ -167,14 +167,14 @@ console.info('testNode', node.type, node.nodeId, response);
          this.runsCtrl.runs.selected.properties[instance.nodeId]
         ) {
         stateParams.destinationType = 'Mapreduce';
-        this.$state.go('mapreduce.detail.runs.run', stateParams);
+        this.$state.go('mapreduce.detail.run', stateParams);
 
       } else if (instance.program.programType === 'SPARK' &&
                 this.runsCtrl.runs.selected.properties[instance.nodeId]
                ) {
 
         stateParams.destinationType = 'Spark';
-        this.$state.go('spark.detail.runs.run', stateParams);
+        this.$state.go('spark.detail.run', stateParams);
       }
     }
   }
