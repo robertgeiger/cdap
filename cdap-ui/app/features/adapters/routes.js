@@ -3,6 +3,7 @@ angular.module(PKG.name + '.feature.adapters')
     $stateProvider
       .state('hydrator', {
         url: '/hydrator',
+        parent: 'ns',
         abstract: true,
         data: {
           authorizedRoles: MYAUTH_ROLE.all,
@@ -25,7 +26,7 @@ angular.module(PKG.name + '.feature.adapters')
           url: '',
           templateUrl: '/assets/features/adapters/templates/list.html',
           controller: 'HydratorListController',
-          controlelrAs: 'ListController'
+          controllerAs: 'ListController'
         })
 
         // Adater create controller + template rename will happen parallel in adapter create revamp

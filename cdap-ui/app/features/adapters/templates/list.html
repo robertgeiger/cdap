@@ -1,10 +1,22 @@
-<div ng-repeat="apps in ListController.appslist">
-  <div>
-    {{app.name}}
-  </div>
+<h2>My Pipelines</h2>
+<div class="table-responsive">
+  <table class="table table-curved" cask-sortable>
+    <thead>
+      <tr ng-class="{'sort-enabled': ListController.appsList.length>0}">
+        <th data-predicate="name">Name</th>
+        <th data-predicate="template">Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="app in ListController.appsList | orderBy:sortable.predicate:sortable.reverse ">
+        <td>{{app.name}}</td>
+        <td>{{app.template}}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
-<div ng-if="ListController.appslist.length == 0">
+<div ng-if="ListController.appsList.length == 0">
   <div class="well well-lg">
     <h3>No ETLApps published</h3>
   </div>
