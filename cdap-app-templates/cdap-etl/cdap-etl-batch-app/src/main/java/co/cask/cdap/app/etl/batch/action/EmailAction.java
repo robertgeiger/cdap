@@ -14,13 +14,14 @@
  * the License.
  */
 
-package co.cask.cdap.app.etl.batch;
+package co.cask.cdap.app.etl.batch.action;
 
 import co.cask.cdap.api.workflow.AbstractWorkflowAction;
 import co.cask.cdap.api.workflow.WorkflowActionNode;
 import co.cask.cdap.api.workflow.WorkflowActionSpecification;
 import co.cask.cdap.api.workflow.WorkflowContext;
 import co.cask.cdap.api.workflow.WorkflowToken;
+import co.cask.cdap.app.etl.batch.ETLBatchApplication;
 import co.cask.cdap.template.etl.common.ETLStage;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

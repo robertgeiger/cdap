@@ -17,6 +17,7 @@
 package co.cask.cdap.app.etl.batch;
 
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
+import co.cask.cdap.app.etl.batch.action.EmailAction;
 import co.cask.cdap.app.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.common.utils.Networks;
 import co.cask.cdap.proto.Id;

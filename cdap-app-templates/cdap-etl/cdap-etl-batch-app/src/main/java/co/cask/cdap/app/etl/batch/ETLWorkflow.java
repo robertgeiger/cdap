@@ -17,9 +17,10 @@
 package co.cask.cdap.app.etl.batch;
 
 import co.cask.cdap.api.workflow.AbstractWorkflow;
+import co.cask.cdap.app.etl.batch.action.EmailAction;
+import co.cask.cdap.app.etl.batch.action.SymlinkAction;
 import co.cask.cdap.app.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.template.etl.common.ETLStage;
-import com.google.common.base.Throwables;
 
 /**
  * Workflow for scheduling Batch ETL MapReduce Driver.
@@ -41,12 +42,15 @@ public class ETLWorkflow extends AbstractWorkflow {
     addMapReduce(ETLMapReduce.NAME);
     if (config.getActions() != null) {
       for (ETLStage action : config.getActions()) {
-        if (!action.getName().equals("Email")) {
-          throw new IllegalArgumentException(String.format("Only \'Email\' actions are supported. " +
+        if (action.getName().equals("Email")) {
+          addAction(new EmailAction(action));
+        } else if (action.getName().equals("Symlink")) {
+          addAction(new SymlinkAction(action));
+        } else {
+          throw new IllegalArgumentException(String.format("Only \'Email\' and \'Symlink\' actions are supported. " +
                                                              "You cannot create an action of type %s.",
                                                            action.getName()));
         }
-        addAction(new EmailAction(action));
       }
     }
   }
