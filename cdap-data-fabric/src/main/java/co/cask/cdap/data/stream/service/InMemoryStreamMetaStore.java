@@ -31,6 +31,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -63,6 +64,19 @@ public class InMemoryStreamMetaStore implements StreamMetaStore {
     synchronized (views) {
       views.remove(viewId.getNamespaceId(), viewId.getId());
       viewProperties.remove(viewId);
+    }
+  }
+
+  @Override
+  public void removeStreamViews(Id.Stream streamId) {
+    Iterator<Map.Entry<Id.Stream.View, StreamViewProperties>> it = viewProperties.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<Id.Stream.View, StreamViewProperties> entry = it.next();
+      if (entry.getValue().getStream().equals(streamId)) {
+        it.remove();
+        Id.Stream.View viewId =
+        views.remove()
+      }
     }
   }
 

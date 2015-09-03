@@ -250,10 +250,4 @@ public interface ExploreClient extends Closeable {
    * @return {@link ListenableFuture} eventually deleting the stream view table
    */
   ListenableFuture<Void> deleteStreamViewTable(Id.Stream.View view);
-
-  /**
-   * @param viewId the stream view
-   * @return true if the table associated with a stream view exists
-   */
-  ListenableFuture<Boolean> streamViewTableExists(Id.Stream.View viewId);
 }

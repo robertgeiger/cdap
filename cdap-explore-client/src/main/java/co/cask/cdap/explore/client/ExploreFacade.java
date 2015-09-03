@@ -84,15 +84,6 @@ public class ExploreFacade {
     handleExploreFuture(futureSuccess, "delete", "stream-view", view);
   }
 
-  public boolean streamViewTableExists(Id.Stream.View viewId) throws ExploreException, SQLException {
-    if (!exploreEnabled) {
-      return false;
-    }
-
-    ListenableFuture<Boolean> futureSuccess = exploreClient.streamViewTableExists(viewId);
-    return handleExploreFuture(futureSuccess, "exists", "stream-view", viewId);
-  }
-
   /**
    * Enables ad-hoc exploration of the given stream.
    *

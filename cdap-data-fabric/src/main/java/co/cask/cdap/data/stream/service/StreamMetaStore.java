@@ -79,4 +79,11 @@ public interface StreamMetaStore {
    * Lists all views associated with a stream.
    */
   List<StreamViewSpecification> listStreamViews(Id.Stream streamId);
+
+  /**
+   * Removes all views associated with a stream.
+   *
+   * @param streamId the stream
+   */
+  void removeStreamViews(Id.Stream streamId);
 }

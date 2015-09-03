@@ -113,10 +113,6 @@ abstract class ExploreHttpClient implements Explore {
                                              view.toString(), response));
   }
 
-  protected QueryHandle doStreamViewTableExists(Id.Stream.View viewId) {
-
-  }
-
   @Deprecated
   protected QueryHandle doEnableExploreStream(Id.Stream stream) throws ExploreException {
     HttpResponse response = doPost(String.format("namespaces/%s/data/explore/streams/%s/enable",

@@ -434,8 +434,7 @@ public class FileStreamAdmin implements StreamAdmin {
           Locations.mkdirsIfNotExists(deleted);
           streamLocation.renameTo(deleted.append(streamId.getId() + System.currentTimeMillis()));
           streamMetaStore.removeStream(streamId);
-
-          TODO: remove associated views
+          streamMetaStore.removeStreamViews(streamId);
         } catch (Exception e) {
           throw Throwables.propagate(e);
         }
