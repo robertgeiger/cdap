@@ -144,7 +144,7 @@ class WorkflowsRunsStatusController {
           }
         });
 
-        if (['STOPPED', 'KILLED', 'COMPLETED'].indexOf(this.runStatus) !== -1) {
+        if (['STOPPED', 'KILLED', 'COMPLETED', 'FAILED'].indexOf(this.runStatus) !== -1) {
           this.myWorkFlowApi.stopPollRunDetail(runparams);
         }
 
