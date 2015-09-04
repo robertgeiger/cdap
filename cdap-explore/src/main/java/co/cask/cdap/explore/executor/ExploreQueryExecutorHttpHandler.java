@@ -17,43 +17,111 @@
 package co.cask.cdap.explore.executor;
 
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.explore.service.ExploreException;
 import co.cask.cdap.explore.service.ExploreService;
 import co.cask.cdap.explore.service.HandleNotFoundException;
 import co.cask.cdap.proto.ColumnDesc;
+import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.QueryHandle;
+import co.cask.cdap.proto.QueryInfo;
 import co.cask.cdap.proto.QueryResult;
 import co.cask.cdap.proto.QueryStatus;
+import co.cask.http.AbstractHttpHandler;
 import co.cask.http.ChunkResponder;
 import co.cask.http.HttpResponder;
+import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
+import com.google.common.primitives.Longs;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBufferInputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.lang.reflect.Type;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
 /**
  *
  */
 @Path(Constants.Gateway.API_VERSION_3)
-public class ExploreQueryExecutorHttpHandler extends AbstractQueryExecutorHttpHandler {
+public class ExploreQueryExecutorHttpHandler extends AbstractHttpHandler {
   private static final Logger LOG = LoggerFactory.getLogger(ExploreQueryExecutorHttpHandler.class);
+
+  protected static final Gson GSON = new Gson();
+  protected static final int DOWNLOAD_FETCH_CHUNK_SIZE = 1000;
+
+  protected static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+
   private final ExploreService exploreService;
 
   @Inject
   public ExploreQueryExecutorHttpHandler(ExploreService exploreService) {
     this.exploreService = exploreService;
+  }
+
+  @POST
+  @Path("/namespaces/{namespace}/data/explore/queries")
+  public void query(HttpRequest request, HttpResponder responder, @PathParam("namespace") String namespaceId) {
+    try {
+      Map<String, String> args = decodeArguments(request);
+      String query = args.get("query");
+      LOG.trace("Received query: {}", query);
+      responder.sendJson(HttpResponseStatus.OK, exploreService.execute(Id.Namespace.from(namespaceId), query));
+    } catch (IllegalArgumentException e) {
+      LOG.debug("Got exception:", e);
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, e.getMessage());
+    } catch (SQLException e) {
+      LOG.debug("Got exception:", e);
+      responder.sendString(HttpResponseStatus.BAD_REQUEST, String.format("[SQLState %s] %s",
+                                                                         e.getSQLState(), e.getMessage()));
+    } catch (Throwable e) {
+      LOG.error("Got exception:", e);
+      responder.sendStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @GET
+  @Path("/namespaces/{namespace}/data/explore/queries")
+  public void getQueryLiveHandles(HttpRequest request, HttpResponder responder,
+                                  @PathParam("namespace") String namespaceId,
+                                  @QueryParam("offset") @DefaultValue("9223372036854775807") long offset,
+                                  @QueryParam("cursor") @DefaultValue("next") String cursor,
+                                  @QueryParam("limit") @DefaultValue("50") int limit) {
+    try {
+      boolean isForward = "next".equals(cursor);
+
+      List<QueryInfo> queries = exploreService.getQueries(Id.Namespace.from(namespaceId));
+      // return the queries by after filtering (> offset) and limiting number of queries
+      responder.sendJson(HttpResponseStatus.OK, filterQueries(queries, offset, isForward, limit));
+    } catch (Exception e) {
+      LOG.error("Got exception:", e);
+      responder.sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Error");
+    }
   }
 
   @DELETE
@@ -256,4 +324,78 @@ public class ExploreQueryExecutorHttpHandler extends AbstractQueryExecutorHttpHa
       }
     }
   }
+
+  protected List<QueryInfo> filterQueries(List<QueryInfo> queries, final long offset,
+                                          final boolean isForward, final int limit) {
+    // Reverse the list if the pagination is in the reverse from the offset until the max limit
+    if (!isForward) {
+      queries = Lists.reverse(queries);
+    }
+
+    return FluentIterable.from(queries)
+      .filter(new Predicate<QueryInfo>() {
+        @Override
+        public boolean apply(@Nullable QueryInfo queryInfo) {
+          if (isForward) {
+            return queryInfo.getTimestamp() < offset;
+          } else {
+            return queryInfo.getTimestamp() > offset;
+          }
+        }
+      })
+      .limit(limit)
+      .toSortedImmutableList(new Comparator<QueryInfo>() {
+        @Override
+        public int compare(QueryInfo first, QueryInfo second) {
+          //sort descending.
+          return Longs.compare(second.getTimestamp(), first.getTimestamp());
+        }
+      });
+  }
+
+  // get arguments contained in the request body
+  protected Map<String, String> decodeArguments(HttpRequest request) throws IOException {
+    ChannelBuffer content = request.getContent();
+    if (!content.readable()) {
+      return ImmutableMap.of();
+    }
+    try (Reader reader = new InputStreamReader(new ChannelBufferInputStream(content), Charsets.UTF_8)) {
+      Map<String, String> args = GSON.fromJson(reader, STRING_MAP_TYPE);
+      return args == null ? ImmutableMap.<String, String>of() : args;
+    } catch (JsonSyntaxException e) {
+      LOG.info("Failed to parse runtime arguments on {}", request.getUri(), e);
+      throw e;
+    }
+  }
+
+  protected String getCSVHeaders(List<ColumnDesc> schema)
+    throws HandleNotFoundException, SQLException, ExploreException {
+    StringBuffer sb = new StringBuffer();
+    boolean first = true;
+    for (ColumnDesc columnDesc : schema) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(',');
+      }
+      sb.append(columnDesc.getName());
+    }
+    return sb.toString();
+  }
+
+  protected String appendCSVRow(StringBuffer sb, QueryResult result)
+    throws HandleNotFoundException, SQLException, ExploreException {
+    boolean first = true;
+    for (Object o : result.getColumns()) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(',');
+      }
+      // Using GSON toJson will serialize objects - in particular, strings will be quoted
+      sb.append(GSON.toJson(o));
+    }
+    return sb.toString();
+  }
+
 }
