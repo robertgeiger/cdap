@@ -19,6 +19,7 @@ package co.cask.cdap.explore.client;
 import co.cask.cdap.api.dataset.lib.PartitionKey;
 import co.cask.cdap.explore.service.MetaDataInfo;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.internal.CreateTableRequest;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
@@ -34,6 +35,25 @@ public interface ExploreClient extends Closeable {
    * Returns true if the explore service is up and running.
    */
   boolean isServiceAvailable();
+
+  /**
+   * Creates a table.
+   *
+   * @param table the table
+   * @param request the table creation request
+   * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
+   *         the success of the enable operation.
+   */
+  ListenableFuture<Void> createTable(Id.Table table, CreateTableRequest request);
+
+  /**
+   * Deletes a table.
+   *
+   * @param table the table
+   * @return a {@code Future} object that can either successfully complete, or enter a failed state depending on
+   *         the success of the enable operation.
+   */
+  ListenableFuture<Void> deleteTable(Id.Table table);
 
   /**
    * Enables ad-hoc exploration of the given {@link co.cask.cdap.api.data.batch.RecordScannable}.

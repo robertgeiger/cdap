@@ -135,7 +135,7 @@ public class BaseHiveExploreServiceTest {
   protected static StreamHttpService streamHttpService;
   protected static StreamService streamService;
   protected static ExploreClient exploreClient;
-  protected static ExploreTableManager exploreTableManager;
+  protected static ExploreDatasetManager exploreDatasetManager;
   private static StreamAdmin streamAdmin;
   private static StreamMetaStore streamMetaStore;
   private static AbstractNamespaceClient namespaceClient;
@@ -185,7 +185,7 @@ public class BaseHiveExploreServiceTest {
     streamHttpService = injector.getInstance(StreamHttpService.class);
     streamHttpService.startAndWait();
 
-    exploreTableManager = injector.getInstance(ExploreTableManager.class);
+    exploreDatasetManager = injector.getInstance(ExploreDatasetManager.class);
 
     streamAdmin = injector.getInstance(StreamAdmin.class);
     streamMetaStore = injector.getInstance(StreamMetaStore.class);

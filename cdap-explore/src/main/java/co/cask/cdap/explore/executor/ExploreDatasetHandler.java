@@ -31,8 +31,8 @@ import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
+import co.cask.cdap.explore.service.ExploreDatasetManager;
 import co.cask.cdap.explore.service.ExploreException;
-import co.cask.cdap.explore.service.ExploreTableManager;
 import co.cask.cdap.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.QueryHandle;
@@ -71,17 +71,17 @@ public class ExploreDatasetHandler extends AbstractHttpHandler {
     .registerTypeAdapter(Schema.class, new SchemaTypeAdapter())
     .create();
 
-  private final ExploreTableManager exploreTableManager;
+  private final ExploreDatasetManager exploreDatasetManager;
   private final DatasetFramework datasetFramework;
   private final StreamAdmin streamAdmin;
   private final SystemDatasetInstantiatorFactory datasetInstantiatorFactory;
 
   @Inject
-  public ExploreDatasetHandler(ExploreTableManager exploreTableManager,
+  public ExploreDatasetHandler(ExploreDatasetManager exploreDatasetManager,
                                DatasetFramework datasetFramework,
                                StreamAdmin streamAdmin,
                                SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
-    this.exploreTableManager = exploreTableManager;
+    this.exploreDatasetManager = exploreDatasetManager;
     this.datasetFramework = datasetFramework;
     this.streamAdmin = streamAdmin;
     this.datasetInstantiatorFactory = datasetInstantiatorFactory;
@@ -102,7 +102,7 @@ public class ExploreDatasetHandler extends AbstractHttpHandler {
     }
 
     try {
-      QueryHandle handle = exploreTableManager.enableStream(streamId, streamConfig.getFormat());
+      QueryHandle handle = exploreDatasetManager.enableStream(streamId, streamConfig.getFormat());
       JsonObject json = new JsonObject();
       json.addProperty("handle", handle.getHandle());
       responder.sendJson(HttpResponseStatus.OK, json);
@@ -131,7 +131,7 @@ public class ExploreDatasetHandler extends AbstractHttpHandler {
     }
 
     try {
-      QueryHandle handle = exploreTableManager.disableStream(streamId);
+      QueryHandle handle = exploreDatasetManager.disableStream(streamId);
       JsonObject json = new JsonObject();
       json.addProperty("handle", handle.getHandle());
       responder.sendJson(HttpResponseStatus.OK, json);
@@ -162,7 +162,7 @@ public class ExploreDatasetHandler extends AbstractHttpHandler {
     }
 
     try {
-      QueryHandle handle = exploreTableManager.enableDataset(datasetID, datasetSpec);
+      QueryHandle handle = exploreDatasetManager.enableDataset(datasetID, datasetSpec);
       JsonObject json = new JsonObject();
       json.addProperty("handle", handle.getHandle());
       responder.sendJson(HttpResponseStatus.OK, json);
@@ -205,7 +205,7 @@ public class ExploreDatasetHandler extends AbstractHttpHandler {
     }
 
     try {
-      QueryHandle handle = exploreTableManager.disableDataset(datasetID, spec);
+      QueryHandle handle = exploreDatasetManager.disableDataset(datasetID, spec);
       JsonObject json = new JsonObject();
       json.addProperty("handle", handle.getHandle());
       responder.sendJson(HttpResponseStatus.OK, json);
@@ -268,7 +268,7 @@ public class ExploreDatasetHandler extends AbstractHttpHandler {
         return;
       }
 
-      QueryHandle handle = exploreTableManager.addPartition(datasetInstanceId, partitionKey, fsPath);
+      QueryHandle handle = exploreDatasetManager.addPartition(datasetInstanceId, partitionKey, fsPath);
       JsonObject json = new JsonObject();
       json.addProperty("handle", handle.getHandle());
       responder.sendJson(HttpResponseStatus.OK, json);
@@ -331,7 +331,7 @@ public class ExploreDatasetHandler extends AbstractHttpHandler {
         return;
       }
 
-      QueryHandle handle = exploreTableManager.dropPartition(datasetInstanceId, partitionKey);
+      QueryHandle handle = exploreDatasetManager.dropPartition(datasetInstanceId, partitionKey);
       JsonObject json = new JsonObject();
       json.addProperty("handle", handle.getHandle());
       responder.sendJson(HttpResponseStatus.OK, json);

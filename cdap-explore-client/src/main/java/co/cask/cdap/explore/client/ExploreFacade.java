@@ -23,6 +23,7 @@ import co.cask.cdap.explore.service.ExploreException;
 import co.cask.cdap.explore.service.HandleNotFoundException;
 import co.cask.cdap.explore.service.UnexpectedQueryStatusException;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.internal.CreateTableRequest;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
@@ -50,6 +51,35 @@ public class ExploreFacade {
     if (!exploreEnabled) {
       LOG.warn("Explore functionality for datasets is disabled. All calls to enable explore will be no-ops");
     }
+  }
+
+  /**
+   * Creates a table.
+   *
+   * @param table id of the table.
+   * @param request the table creation request.
+   */
+  public void createTable(Id.Table table, CreateTableRequest request) throws ExploreException, SQLException {
+    if (!exploreEnabled) {
+      return;
+    }
+
+    ListenableFuture<Void> futureSuccess = exploreClient.createTable(table, request);
+    handleExploreFuture(futureSuccess, "create", "table", table.getId());
+  }
+
+  /**
+   * Deletes a table.
+   *
+   * @param table id of the table.
+   */
+  public void createTable(Id.Table table) throws ExploreException, SQLException {
+    if (!exploreEnabled) {
+      return;
+    }
+
+    ListenableFuture<Void> futureSuccess = exploreClient.deleteTable(table);
+    handleExploreFuture(futureSuccess, "delete", "table", table.getId());
   }
 
   /**

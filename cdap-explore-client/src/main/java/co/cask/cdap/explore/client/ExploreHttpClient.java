@@ -16,6 +16,7 @@
 
 package co.cask.cdap.explore.client;
 
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.PartitionKey;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
 import co.cask.cdap.common.conf.Constants;
@@ -28,6 +29,7 @@ import co.cask.cdap.explore.utils.ColumnsArgs;
 import co.cask.cdap.explore.utils.FunctionsArgs;
 import co.cask.cdap.explore.utils.SchemasArgs;
 import co.cask.cdap.explore.utils.TablesArgs;
+import co.cask.cdap.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.ColumnDesc;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.QueryHandle;
@@ -36,6 +38,7 @@ import co.cask.cdap.proto.QueryResult;
 import co.cask.cdap.proto.QueryStatus;
 import co.cask.cdap.proto.TableInfo;
 import co.cask.cdap.proto.TableNameInfo;
+import co.cask.cdap.proto.internal.CreateTableRequest;
 import co.cask.common.http.HttpMethod;
 import co.cask.common.http.HttpRequest;
 import co.cask.common.http.HttpRequests;
@@ -45,6 +48,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
@@ -68,7 +72,9 @@ import javax.annotation.Nullable;
  */
 abstract class ExploreHttpClient implements Explore {
   private static final Logger LOG = LoggerFactory.getLogger(ExploreHttpClient.class);
-  private static final Gson GSON = new Gson();
+  private static final Gson GSON = new GsonBuilder()
+    .registerTypeAdapter(Schema.class, new SchemaTypeAdapter())
+    .create();
 
   private static final Type MAP_TYPE_TOKEN = new TypeToken<Map<String, String>>() { }.getType();
   private static final Type TABLES_TYPE = new TypeToken<List<TableNameInfo>>() { }.getType();
@@ -88,6 +94,24 @@ abstract class ExploreHttpClient implements Explore {
       LOG.info("Caught exception when checking Explore availability", e);
       return false;
     }
+  }
+
+  protected QueryHandle doCreateTable(Id.Table table, CreateTableRequest request) throws ExploreException {
+    HttpResponse response = doPost(String.format("namespaces/%s/data/explore/tables/%s",
+                                                 table.getNamespaceId(), table.getId()), GSON.toJson(request), null);
+    if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
+      return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
+    }
+    throw new ExploreException(String.format("Cannot create table %s. Reason: %s", table, response));
+  }
+
+  protected QueryHandle doDeleteTable(Id.Table table) throws ExploreException {
+    HttpResponse response = doDelete(String.format("namespaces/%s/data/explore/tables/%s",
+                                                   table.getNamespaceId(), table.getId()));
+    if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
+      return QueryHandle.fromId(parseResponseAsMap(response, "handle"));
+    }
+    throw new ExploreException(String.format("Cannot delete table %s. Reason: %s", table, response));
   }
 
   protected QueryHandle doEnableExploreStream(Id.Stream stream) throws ExploreException {

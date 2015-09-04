@@ -30,9 +30,9 @@ import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
 import co.cask.cdap.explore.service.Explore;
+import co.cask.cdap.explore.service.ExploreDatasetManager;
 import co.cask.cdap.explore.service.ExploreException;
 import co.cask.cdap.explore.service.ExploreService;
-import co.cask.cdap.explore.service.ExploreTableManager;
 import co.cask.cdap.explore.service.HandleNotFoundException;
 import co.cask.cdap.explore.service.HiveStreamRedirector;
 import co.cask.cdap.explore.service.MetaDataInfo;
@@ -149,7 +149,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
   private final ScheduledExecutorService metastoreClientsExecutorService;
   private final StreamAdmin streamAdmin;
   private final DatasetFramework datasetFramework;
-  private final ExploreTableManager exploreTableManager;
+  private final ExploreDatasetManager exploreDatasetManager;
   private final SystemDatasetInstantiatorFactory datasetInstantiatorFactory;
 
   private final ThreadLocal<Supplier<IMetaStoreClient>> metastoreClientLocal;
@@ -177,7 +177,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     this.metastoreClientReferenceQueue = new ReferenceQueue<>();
     this.datasetFramework = datasetFramework;
     this.streamAdmin = streamAdmin;
-    this.exploreTableManager = new ExploreTableManager(this, datasetInstantiatorFactory);
+    this.exploreDatasetManager = new ExploreDatasetManager(this, datasetInstantiatorFactory);
     this.datasetInstantiatorFactory = datasetInstantiatorFactory;
 
     // Create a Timer thread to periodically collect metastore clients that are no longer in used and call close on them
@@ -1065,7 +1065,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
         TimePartitionedFileSet tpfs = (TimePartitionedFileSet) dataset;
         Set<PartitionDetail> partitionDetails = tpfs.getPartitions(null);
         if (!partitionDetails.isEmpty()) {
-          QueryHandle handle = exploreTableManager.addPartitions(datasetID, partitionDetails);
+          QueryHandle handle = exploreDatasetManager.addPartitions(datasetID, partitionDetails);
           QueryStatus status = waitForCompletion(handle);
           // if add partitions failed, stop
           if (status.getStatus() != QueryStatus.OpStatus.FINISHED) {
@@ -1095,7 +1095,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
 
   private void enableDataset(Id.DatasetInstance datasetID, DatasetSpecification spec) throws Exception {
     LOG.info("Enabling exploration on dataset {}", datasetID);
-    QueryHandle enableHandle = exploreTableManager.enableDataset(datasetID, spec);
+    QueryHandle enableHandle = exploreDatasetManager.enableDataset(datasetID, spec);
     // wait until enable is done
     QueryStatus status = waitForCompletion(enableHandle);
     // if enable failed, stop
@@ -1123,7 +1123,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     // enable the table in the default namespace
     LOG.info("Enabling exploration on stream {}", streamID);
     StreamConfig streamConfig = streamAdmin.getConfig(streamID);
-    QueryHandle enableHandle = exploreTableManager.enableStream(streamID, streamConfig.getFormat());
+    QueryHandle enableHandle = exploreDatasetManager.enableStream(streamID, streamConfig.getFormat());
     // wait til enable is done
     QueryStatus status = waitForCompletion(enableHandle);
     // if enable failed, stop

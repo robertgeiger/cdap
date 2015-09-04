@@ -1073,6 +1073,77 @@ public abstract class Id {
   }
 
   /**
+   * Uniquely identifies an Explore table.
+   */
+  public static final class Table extends NamespacedId {
+    private final Namespace namespace;
+    private final String id;
+
+    private Table(Namespace namespace, String id) {
+      Preconditions.checkNotNull(namespace, "Namespace cannot be null.");
+      Preconditions.checkNotNull(id, "ID cannot be null.");
+      Preconditions.checkArgument(isValidDatasetId(id), "Invalid characters found in ID. '" +
+        id + "'. Module id can contain alphabets, numbers or _, -, . or $ characters");
+      this.namespace = namespace;
+      this.id = id;
+    }
+
+    @Override
+    public Namespace getNamespace() {
+      return namespace;
+    }
+
+    public String getNamespaceId() {
+      return namespace.getId();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      Table that = (Table) o;
+      return namespace.equals(that.namespace) && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(namespace, id);
+    }
+
+    @Override
+    public String toString() {
+      return Objects.toStringHelper(this)
+        .add("namespace", namespace)
+        .add("id", id)
+        .toString();
+    }
+
+    public static Table from(Namespace namespaceId, String id) {
+      return new Table(namespaceId, id);
+    }
+
+    public static Table from(String namespaceId, String id) {
+      return new Table(Namespace.from(namespaceId), id);
+    }
+
+    @Nullable
+    @Override
+    protected Id getParent() {
+      return namespace;
+    }
+
+    @Override
+    public String getId() {
+      return id;
+    }
+  }
+
+  /**
    * Dataset Type Id identifies a given dataset module.
    */
   public static final class DatasetType extends NamespacedId {
