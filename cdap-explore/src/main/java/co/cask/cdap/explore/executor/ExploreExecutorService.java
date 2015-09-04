@@ -43,7 +43,7 @@ import java.net.InetSocketAddress;
 import java.util.Set;
 
 /**
- * Provides various REST endpoints to execute SQL commands via {@link ExploreQueryExecutorHttpHandler}.
+ * Provides various REST endpoints to execute SQL commands via {@link ExploreQueryHandler}.
  * In charge of starting and stopping the {@link co.cask.cdap.explore.service.ExploreService}.
  */
 public class ExploreExecutorService extends AbstractIdleService {

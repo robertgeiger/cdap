@@ -56,14 +56,14 @@ import javax.ws.rs.PathParam;
  * Handler that implements explore metadata APIs.
  */
 @Path(Constants.Gateway.API_VERSION_3 + "/data/explore")
-public class ExploreMetadataHttpHandler extends AbstractHttpHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(ExploreMetadataHttpHandler.class);
+public class ExploreMetadataHandler extends AbstractHttpHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(ExploreMetadataHandler.class);
   private static final Gson GSON = new Gson();
 
   private final ExploreService exploreService;
 
   @Inject
-  public ExploreMetadataHttpHandler(ExploreService exploreService) {
+  public ExploreMetadataHandler(ExploreService exploreService) {
     this.exploreService = exploreService;
   }
 

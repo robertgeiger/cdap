@@ -69,8 +69,8 @@ import javax.ws.rs.QueryParam;
  *
  */
 @Path(Constants.Gateway.API_VERSION_3)
-public class ExploreQueryExecutorHttpHandler extends AbstractHttpHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(ExploreQueryExecutorHttpHandler.class);
+public class ExploreQueryHandler extends AbstractHttpHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(ExploreQueryHandler.class);
 
   protected static final Gson GSON = new Gson();
   protected static final int DOWNLOAD_FETCH_CHUNK_SIZE = 1000;
@@ -80,7 +80,7 @@ public class ExploreQueryExecutorHttpHandler extends AbstractHttpHandler {
   private final ExploreService exploreService;
 
   @Inject
-  public ExploreQueryExecutorHttpHandler(ExploreService exploreService) {
+  public ExploreQueryHandler(ExploreService exploreService) {
     this.exploreService = exploreService;
   }
 

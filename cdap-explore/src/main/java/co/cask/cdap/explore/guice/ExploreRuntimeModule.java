@@ -21,10 +21,10 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.runtime.RuntimeModule;
 import co.cask.cdap.data2.datafabric.dataset.RemoteDatasetFramework;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtilFactory;
-import co.cask.cdap.explore.executor.ExploreExecutorHttpHandler;
+import co.cask.cdap.explore.executor.ExploreDatasetHandler;
 import co.cask.cdap.explore.executor.ExploreExecutorService;
-import co.cask.cdap.explore.executor.ExploreMetadataHttpHandler;
-import co.cask.cdap.explore.executor.ExploreQueryExecutorHttpHandler;
+import co.cask.cdap.explore.executor.ExploreMetadataHandler;
+import co.cask.cdap.explore.executor.ExploreQueryHandler;
 import co.cask.cdap.explore.executor.ExploreStatusHandler;
 import co.cask.cdap.explore.service.ExploreService;
 import co.cask.cdap.explore.service.ExploreServiceUtils;
@@ -97,12 +97,12 @@ public class ExploreRuntimeModule extends RuntimeModule {
 
     @Override
     protected void configure() {
-      Named exploreSeriveName = Names.named(Constants.Service.EXPLORE_HTTP_USER_SERVICE);
+      Named exploreServiceeName = Names.named(Constants.Service.EXPLORE_HTTP_USER_SERVICE);
       Multibinder<HttpHandler> handlerBinder =
-          Multibinder.newSetBinder(binder(), HttpHandler.class, exploreSeriveName);
-      handlerBinder.addBinding().to(ExploreQueryExecutorHttpHandler.class);
-      handlerBinder.addBinding().to(ExploreMetadataHttpHandler.class);
-      handlerBinder.addBinding().to(ExploreExecutorHttpHandler.class);
+          Multibinder.newSetBinder(binder(), HttpHandler.class, exploreServiceeName);
+      handlerBinder.addBinding().to(ExploreQueryHandler.class);
+      handlerBinder.addBinding().to(ExploreMetadataHandler.class);
+      handlerBinder.addBinding().to(ExploreDatasetHandler.class);
       handlerBinder.addBinding().to(ExploreStatusHandler.class);
       CommonHandlers.add(handlerBinder);
 

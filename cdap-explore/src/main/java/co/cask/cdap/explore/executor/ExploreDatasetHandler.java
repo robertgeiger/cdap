@@ -16,6 +16,7 @@
 
 package co.cask.cdap.explore.executor;
 
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.dataset.DatasetSpecification;
@@ -32,12 +33,14 @@ import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
 import co.cask.cdap.explore.service.ExploreException;
 import co.cask.cdap.explore.service.ExploreTableManager;
+import co.cask.cdap.internal.io.SchemaTypeAdapter;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.QueryHandle;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import org.jboss.netty.buffer.ChannelBufferInputStream;
@@ -57,12 +60,16 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
 /**
- * Handler that implements internal explore APIs.
+ * Handler that implements table management for streams and datasets.
+ *
+ * TODO: Remove!
  */
 @Path(Constants.Gateway.API_VERSION_3 + "/namespaces/{namespace-id}/data/explore")
-public class ExploreExecutorHttpHandler extends AbstractHttpHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(ExploreExecutorHttpHandler.class);
-  private static final Gson GSON = new Gson();
+public class ExploreDatasetHandler extends AbstractHttpHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(ExploreDatasetHandler.class);
+  private static final Gson GSON = new GsonBuilder()
+    .registerTypeAdapter(Schema.class, new SchemaTypeAdapter())
+    .create();
 
   private final ExploreTableManager exploreTableManager;
   private final DatasetFramework datasetFramework;
@@ -70,10 +77,10 @@ public class ExploreExecutorHttpHandler extends AbstractHttpHandler {
   private final SystemDatasetInstantiatorFactory datasetInstantiatorFactory;
 
   @Inject
-  public ExploreExecutorHttpHandler(ExploreTableManager exploreTableManager,
-                                    DatasetFramework datasetFramework,
-                                    StreamAdmin streamAdmin,
-                                    SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
+  public ExploreDatasetHandler(ExploreTableManager exploreTableManager,
+                               DatasetFramework datasetFramework,
+                               StreamAdmin streamAdmin,
+                               SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
     this.exploreTableManager = exploreTableManager;
     this.datasetFramework = datasetFramework;
     this.streamAdmin = streamAdmin;
