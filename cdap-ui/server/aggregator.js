@@ -130,7 +130,7 @@ Aggregator.prototype.stopPollingAll = function() {
  * here.
  */
 Aggregator.prototype.pushConfiguration = function(resource) {
-  var templateid = resource.templateid;
+  var appid = resource.templateid;
   var pluginid = resource.pluginid;
   var config = {};
   var statusCode = 404;
@@ -138,7 +138,7 @@ Aggregator.prototype.pushConfiguration = function(resource) {
 
   try {
     // Check if the configuration is present within the plugin for a template
-    file = __dirname + '/../templates/' + templateid + '/' + pluginid + '.json';
+    file = __dirname + '/../templates/plugins/' + appid + '/' + pluginid + '.json';
     config = JSON.parse(fs.readFileSync(file, 'utf8'));
     statusCode = 200;
   } catch(e1) {
@@ -146,11 +146,11 @@ Aggregator.prototype.pushConfiguration = function(resource) {
       // Some times there might a plugin that is common across multiple templates
       // in which case, this is stored within the common directory. So, if the
       // template specific plugin check fails, then attempt to get it from common.
-      file = __dirname + '/../templates/common/' + pluginid + '.json';
+      file = __dirname + '/../templates/plugins/common/' + pluginid + '.json';
       config = JSON.parse(fs.readFileSync(file, 'utf8'));
       statusCode = 200;
     } catch (e2) {
-      log.debug('Unable to find template %s, plugin %s', templateid, pluginid);
+      log.debug('Unable to find template %s, plugin %s', appid, pluginid);
     }
   }
   this.connection.write(JSON.stringify({

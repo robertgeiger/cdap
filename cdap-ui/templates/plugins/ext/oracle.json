@@ -1,0 +1,16 @@
+{
+  "name":"Oracle",
+  "plugin":"Database",
+  "description":"Oracle Database plugin.",
+  "properties":{
+   "jdbcPluginName": "oracle",
+   "jdbcPluginType": "jdbc",
+   "connectionString":"jdbc:oracle://<hostname>:3306/<database>",
+   "schema" : {}
+  },
+  "lock":{
+    "jdbcPluginName" : true,
+    "jdbcPluginType" : true
+  },
+  "schema":{}
+}

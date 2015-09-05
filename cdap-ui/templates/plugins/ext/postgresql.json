@@ -1,0 +1,16 @@
+{
+  "name":"PostgreSQL",
+  "plugin":"Database",
+  "description":"PostgreSQL Database plugin.",
+  "properties":{
+   "jdbcPluginName": "mysql",
+   "jdbcPluginType": "jdbc",
+   "connectionString":"jdbc:postgresql://<hostname>:3306/<database>",
+   "schema" : {}
+  },
+  "lock":{
+    "jdbcPluginName" : true,
+    "jdbcPluginType" : true
+  },
+  "schema":{}
+}

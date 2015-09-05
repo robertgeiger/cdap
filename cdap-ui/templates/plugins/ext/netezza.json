@@ -1,0 +1,16 @@
+{
+  "name":"Netezza",
+  "plugin":"Database",
+  "description":"Netezza Database plugin.",
+  "properties":{
+   "jdbcPluginName": "netezza",
+   "jdbcPluginType": "jdbc",
+   "connectionString":"jdbc:netezza://<hostname>:3306/<database>",
+   "schema" : {}
+  },
+  "lock":{
+    "jdbcPluginName" : true,
+    "jdbcPluginType" : true
+  },
+  "schema":{}
+}

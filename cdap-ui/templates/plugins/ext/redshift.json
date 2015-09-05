@@ -1,0 +1,16 @@
+{
+  "name":"Redshift",
+  "plugin":"Database",
+  "description":"Amazon Warehouse Redshift",
+  "properties":{
+   "jdbcPluginName": "redshift",
+   "jdbcPluginType": "jdbc",
+   "connectionString":"jdbc:redshift://<hostname>:3306/<database>",
+   "schema" : {}
+  },
+  "lock":{
+    "jdbcPluginName" : true,
+    "jdbcPluginType" : true
+  },
+  "schema":{}
+}

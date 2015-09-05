@@ -1,0 +1,16 @@
+{
+  "name":"MySQL",
+  "plugin":"Database",
+  "description":"MySQL Database plugin.",
+  "properties":{
+   "jdbcPluginName": "mysql",
+   "jdbcPluginType": "jdbc",
+   "connectionString":"jdbc:mysql://<hostname>:3306/<database>"
+   "schema" : {}
+  },
+  "lock":{
+    "jdbcPluginName" : true,
+    "jdbcPluginType" : true
+  },
+  "schema":{}
+}

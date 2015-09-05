@@ -1,0 +1,23 @@
+{
+  ETLBatch"" : {
+     "artifact" : "etlbatch",
+     "sources" : [
+       "hive",
+       "mysql",
+       "redshift",
+       "postgresql",
+       "oracle",
+       "netezza"
+     ],
+     "transforms" : [
+     ],
+     "sinks" : [
+       "hive",
+       "mysql",
+       "redshift",
+       "postgresql",
+       "oracle",
+       "netezza"
+     ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name":"Hive",
+  "plugin":"Database",
+  "description":"Hive plugin.",
+  "properties":{
+   "jdbcPluginName": "hive",
+   "jdbcPluginType": "jdbc",
+   "connectionString":"jdbc:hive://<hostname>:<port>/<database>"
+   "schema" : {}
+  },
+  "lock":{
+    "jdbcPluginName" : true,
+    "jdbcPluginType" : true
+  },
+  "schema":{}
+}
