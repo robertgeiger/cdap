@@ -9,13 +9,13 @@ Troubleshooting CDAP
 Here are some selected examples of potential problems and possible resolutions.
 
 
-.. rubric:: Application Won't Start
-
+Application Won't Start
+=======================
 Check HDFS write permissions. It should show an obvious exception in the YARN logs.
  
 
-.. rubric:: CDAP services on distributed CDAP don’t start up due to ``java.lang.ClassNotFoundException``
-
+CDAP Services on Distributed CDAP don’t start with ``java.lang.ClassNotFoundException``
+=======================================================================================
 If the CDAP services on a distributed CDAP environment wouldn't start up, you will see errors
 in the logs. You will find in the logs for ``cdap-master`` under ``/var/log/cdap/master*.log``
 errors such as these::
@@ -49,8 +49,8 @@ Things to check as possible solutions:
    If the classpath is incorrect, review the :ref:`installation instructions <install>` and correct.
    
 
-.. rubric:: No Metrics or Logs
-
+No Metrics or Logs
+==================
 Make sure the *Kafka* server is running, and make sure local the logs directory is created and accessible.
 On the initial startup, the number of available seed brokers must be greater than or equal to the
 *Kafka* default replication factor.
@@ -64,19 +64,19 @@ metrics will not show up though the application will still run::
                replication factor: 2 larger than available brokers: 1
 
 
-.. rubric:: Only the First Flowlet Showing Activity
-
+Only the First Flowlet Showing Activity
+=======================================
 Check that YARN has the capacity to start any of the remaining containers.
 
 
-.. rubric:: YARN Application Shows ACCEPTED For Some Time But Then Fails
+YARN Application Shows ACCEPTED For a Time But Then Fails
+=========================================================
+It's possible that YARN can't extract the .JARs to the ``/tmp``, either due to a lack of
+disk space or permissions.
 
-It's possible that YARN can't extract the .JARs to the ``/tmp``,
-either due to a lack of disk space or permissions.
 
-
-.. rubric:: Log Saver Process Throws an Out-of-Memory Error, CDAP UI Shows Service Not OK
-
+Log Saver Process Throws an Out-of-Memory Error
+===============================================
 The CDAP Log Saver uses an internal buffer that may overflow and result in Out-of-Memory
 Errors when applications create excessive amounts of logs. One symptom of this is that the CDAP
 UI *Services Explorer* shows the ``log.saver`` service as not OK, in addition to seeing error
@@ -98,3 +98,27 @@ In the ``cdap-site.xml``, you can:
 See the ``log.saver`` parameter section of the :ref:`Appendix cdap-site.xml
 <appendix-cdap-site.xml>` for a list of these configuration parameters and their
 values that can be adjusted.
+
+Recovering from a Co-Processor Crash
+====================================
+[insert background explanation]
+
+Steps to recovery:
+
+#. Stop all CDAP apps
+#. Stop CDAP master
+#. Install version |version| of CDAP
+#. Allow the region server to continue execution even when the co-processor fails by setting 
+   ``hbase.coprocessor.abortonerror`` to ``false`` in ``hbase-site.xml``
+#. Restart HBase
+#. Run the :ref:`upgrade tool <install-upgrade-tool>` (part of :ref:`upgrading an existing
+   version <install-upgrade>`) to upgrade the CDAP tables
+#. Delete any tables that have an underscore in the table name, assuming the table does not have any data; 
+   if the table has data, then it needs to be manually upgraded
+#. Reset ``hbase.coprocessor.abortonerror`` back to ``true`` in ``hbase-site.xml``
+#. Restart HBase
+#. Start CDAP master
+#. Start CDAP apps
+
+**Note:** Check that the CDAP master is stopped when HABase is running with
+``hbase.coprocessor.abortonerror`` set to false, to prevent data inconsistency.

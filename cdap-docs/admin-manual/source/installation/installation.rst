@@ -775,6 +775,8 @@ please follow the upgrade instructions for the earlier versions and upgrade firs
 
      $ kinit -kt <keytab> <principal>
 
+   .. _install-upgrade-tool:
+
 #. Run the upgrade tool, as the user that runs CDAP Master (the CDAP user)::
 
      $ /opt/cdap/master/bin/svc-master run co.cask.cdap.data.tools.UpgradeTool upgrade
