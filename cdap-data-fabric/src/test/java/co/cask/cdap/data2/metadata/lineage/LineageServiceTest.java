@@ -259,12 +259,9 @@ public class LineageServiceTest {
         new Relation(dataset2, program1, AccessType.WRITE, toSet(twillRunId(run1)), toSet(flowlet1)),
         new Relation(dataset2, program2, AccessType.READ, toSet(twillRunId(run2)), toSet(flowlet2)),
         new Relation(dataset3, program2, AccessType.WRITE, toSet(twillRunId(run2)), toSet(flowlet2)),
-        new Relation(dataset2, program4, AccessType.READ, toSet(twillRunId(run4)),
-                     Collections.<Id.NamespacedId>emptySet()),
-        new Relation(dataset3, program4, AccessType.READ, toSet(twillRunId(run4)),
-                     Collections.<Id.NamespacedId>emptySet()),
-        new Relation(dataset7, program4, AccessType.WRITE, toSet(twillRunId(run4)),
-                     Collections.<Id.NamespacedId>emptySet())
+        new Relation(dataset2, program4, AccessType.READ, toSet(twillRunId(run4)), emptySet()),
+        new Relation(dataset3, program4, AccessType.READ, toSet(twillRunId(run4)), emptySet()),
+        new Relation(dataset7, program4, AccessType.WRITE, toSet(twillRunId(run4)), emptySet())
       ),
       lineage.getRelations());
 
@@ -286,10 +283,8 @@ public class LineageServiceTest {
         new Relation(dataset2, program1, AccessType.WRITE, toSet(twillRunId(run1)), toSet(flowlet1)),
         new Relation(dataset2, program2, AccessType.READ, toSet(twillRunId(run2)), toSet(flowlet2)),
         new Relation(dataset5, program2, AccessType.WRITE, toSet(twillRunId(run2)), toSet(flowlet2)),
-        new Relation(dataset5, program3, AccessType.READ, toSet(twillRunId(run3)),
-                     Collections.<Id.NamespacedId>emptySet()),
-        new Relation(dataset6, program3, AccessType.WRITE, toSet(twillRunId(run3)),
-                     Collections.<Id.NamespacedId>emptySet())
+        new Relation(dataset5, program3, AccessType.READ, toSet(twillRunId(run3)), emptySet()),
+        new Relation(dataset6, program3, AccessType.WRITE, toSet(twillRunId(run3)), emptySet())
       ),
       lineage.getRelations());
 
