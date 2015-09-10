@@ -269,12 +269,12 @@ public class LineageServiceTest {
     //                                |
     //                                |
     //                           D0 ->|
+    //
     lineage = lineageService.computeLineage(dataset6, 500, 20000, 100);
     Assert.assertNotNull(lineage);
 
     Assert.assertEquals(ImmutableSet.of(program1, program2, program3), lineage.getPrograms());
-    Assert.assertEquals(ImmutableSet.of(dataset0, dataset1, dataset2, dataset5, dataset6),
-                        lineage.getData());
+    Assert.assertEquals(ImmutableSet.of(dataset0, dataset1, dataset2, dataset5, dataset6), lineage.getData());
 
     Assert.assertEquals(
       ImmutableSet.of(
@@ -288,6 +288,24 @@ public class LineageServiceTest {
       ),
       lineage.getRelations());
 
+    // Lineage for D2 should be D1 -> P1 -> D2
+    //                                |
+    //                                |
+    //                           D0 ->|
+    //
+    lineage = lineageService.computeLineage(dataset2, 500, 20000, 100);
+    Assert.assertNotNull(lineage);
+
+    Assert.assertEquals(ImmutableSet.of(program1), lineage.getPrograms());
+    Assert.assertEquals(ImmutableSet.of(dataset0, dataset1, dataset2), lineage.getData());
+
+    Assert.assertEquals(
+      ImmutableSet.of(
+        new Relation(dataset0, program1, AccessType.READ, toSet(twillRunId(run1)), toSet(flowlet1)),
+        new Relation(dataset1, program1, AccessType.READ, toSet(twillRunId(run1)), toSet(flowlet1)),
+        new Relation(dataset2, program1, AccessType.WRITE, toSet(twillRunId(run1)), toSet(flowlet1))
+      ),
+      lineage.getRelations());
   }
 
   @SafeVarargs
