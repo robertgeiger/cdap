@@ -308,6 +308,83 @@ public class LineageServiceTest {
         new Relation(dataset3, program2, AccessType.WRITE, toSet(twillRunId(run2)), toSet(flowlet2))
         ),
       lineage.getRelations());
+
+    // Lineage for D1 should be empty
+    lineage = lineageService.computeLineage(dataset1, 500, 20000, 100);
+    Assert.assertNotNull(lineage);
+
+    Assert.assertEquals(ImmutableSet.of(), lineage.getPrograms());
+    Assert.assertEquals(ImmutableSet.of(dataset1), lineage.getData());
+    Assert.assertEquals(ImmutableSet.of(), lineage.getRelations());
+  }
+
+  @Test
+  public void testBranchLoopLineage() throws Exception {
+    // Lineage for:
+    //
+    //  |-------------------------------------|
+    //  |                                     |
+    //  |                                     |
+    //  |    -> D4       -> D5 -> P3 -> D6 -> P5
+    //  |    |           |                    ^
+    //  V    |           |                    |
+    // D1 -> P1 -> D2 -> P2 -> D3 ----------->|
+    //       |     |           |
+    //       |     |           |
+    // D0 -->|     ---------------> P4 -> D7
+
+    LineageStore lineageStore = new LineageStore(getTxExecFactory(), dsFrameworkUtil.getFramework(),
+                                                 Id.DatasetInstance.from("default", "testBranchLoopLineage"));
+    LineageService lineageService = new LineageService(lineageStore);
+
+    // Define datasets
+    Id.DatasetInstance dataset0 = Id.DatasetInstance.from("default", "dataset0");
+    Id.DatasetInstance dataset1 = Id.DatasetInstance.from("default", "dataset1");
+    Id.DatasetInstance dataset2 = Id.DatasetInstance.from("default", "dataset2");
+    Id.DatasetInstance dataset3 = Id.DatasetInstance.from("default", "dataset3");
+    Id.DatasetInstance dataset4 = Id.DatasetInstance.from("default", "dataset4");
+    Id.DatasetInstance dataset5 = Id.DatasetInstance.from("default", "dataset5");
+    Id.DatasetInstance dataset6 = Id.DatasetInstance.from("default", "dataset6");
+    Id.DatasetInstance dataset7 = Id.DatasetInstance.from("default", "dataset7");
+
+    // Define programs and runs
+    Id.Program program1 = Id.Program.from("default", "app1", ProgramType.FLOW, "flow1");
+    Id.Flow.Flowlet flowlet1 = Id.Flow.Flowlet.from(program1.getApplication(), program1.getId(), "flowlet1");
+    Id.Run run1 = new Id.Run(program1, RunIds.generate(10000).getId());
+
+    Id.Program program2 = Id.Program.from("default", "app2", ProgramType.FLOW, "flow2");
+    Id.Flow.Flowlet flowlet2 = Id.Flow.Flowlet.from(program2.getApplication(), program2.getId(), "flowlet2");
+    Id.Run run2 = new Id.Run(program2, RunIds.generate(900).getId());
+
+    Id.Program program3 = Id.Program.from("default", "app3", ProgramType.WORKER, "worker3");
+    Id.Run run3 = new Id.Run(program3, RunIds.generate(800).getId());
+
+    Id.Program program4 = Id.Program.from("default", "app4", ProgramType.SERVICE, "service4");
+    Id.Run run4 = new Id.Run(program4, RunIds.generate(800).getId());
+
+    Id.Program program5 = Id.Program.from("default", "app5", ProgramType.SERVICE, "service5");
+    Id.Run run5 = new Id.Run(program4, RunIds.generate(700).getId());
+
+    // Add accesses
+    lineageStore.addAccess(run1, dataset0, AccessType.READ, "metadata10", flowlet1);
+    lineageStore.addAccess(run1, dataset1, AccessType.READ, "metadata11", flowlet1);
+    lineageStore.addAccess(run1, dataset2, AccessType.WRITE, "metadata12", flowlet1);
+    lineageStore.addAccess(run1, dataset4, AccessType.WRITE, "metadata14", flowlet1);
+
+    lineageStore.addAccess(run2, dataset2, AccessType.READ, "metadata22", flowlet2);
+    lineageStore.addAccess(run2, dataset3, AccessType.WRITE, "metadata23", flowlet2);
+    lineageStore.addAccess(run2, dataset5, AccessType.WRITE, "metadata25", flowlet2);
+
+    lineageStore.addAccess(run3, dataset5, AccessType.READ, "metadata35");
+    lineageStore.addAccess(run3, dataset6, AccessType.WRITE, "metadata36");
+
+    lineageStore.addAccess(run4, dataset2, AccessType.READ, "metadata42");
+    lineageStore.addAccess(run4, dataset3, AccessType.READ, "metadata43");
+    lineageStore.addAccess(run4, dataset7, AccessType.WRITE, "metadata47");
+
+    lineageStore.addAccess(run5, dataset3, AccessType.READ, "metadata53");
+    lineageStore.addAccess(run5, dataset6, AccessType.READ, "metadata56");
+    lineageStore.addAccess(run5, dataset1, AccessType.WRITE, "metadata51");
   }
 
   @SafeVarargs
