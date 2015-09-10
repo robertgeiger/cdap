@@ -78,21 +78,20 @@ public class LineageService {
     for (int i = 0; i < levels; ++i) {
       LOG.trace("Level {}", i);
       toVisitPrograms.clear();
-      for (Id.DatasetInstance d : toVisitDatasets) {
+      for (final Id.DatasetInstance d : toVisitDatasets) {
         if (!visitedDatasets.contains(d)) {
           LOG.trace("Visiting dataset {}", d);
           visitedDatasets.add(d);
-          // Fetch related programs
-          Set<Relation> programRelations = lineageStore.getRelations(d, start, end);
+          // Fetch related programs.
           // Any read access of source Dataset can be pruned,
           // since those accessed do not contribute to lineage of source Dataset.
           // We are only interested relations that lead to write access to source Dataset.
           Iterable<Relation> prunedRelations =
-            Iterables.filter(programRelations,
+            Iterables.filter(lineageStore.getRelations(d, start, end),
                              new Predicate<Relation>() {
                                @Override
                                public boolean apply(Relation relation) {
-                                 return !(relation.getData().equals(sourceDataset) &&
+                                 return !(relation.getData().equals(d) &&
                                    relation.getAccess() == AccessType.READ);
                                }
                              });
@@ -103,16 +102,27 @@ public class LineageService {
       }
 
       toVisitDatasets.clear();
-      for (Id.Program p : toVisitPrograms) {
+      for (final Id.Program p : toVisitPrograms) {
         if (!visitedPrograms.contains(p)) {
           LOG.trace("Visiting program {}", p);
           visitedPrograms.add(p);
-          // Fetch related datasets
-          Set<Relation> datasetRelations = lineageStore.getRelations(p, start, end);
-          LOG.trace("Got dataset relations {}", datasetRelations);
-          relations.addAll(datasetRelations);
+          // Fetch related datasets.
+          // Any write access of source Program can be pruned,
+          // since those accessed do not contribute to lineage of source Dataset.
+          // We are only interested relations that lead to write access to source Dataset.
+          Iterable<Relation> prunedRelations =
+            Iterables.filter(lineageStore.getRelations(p, start, end),
+                             new Predicate<Relation>() {
+                               @Override
+                               public boolean apply(Relation relation) {
+                                 return !(relation.getProgram().equals(p) &&
+                                   relation.getAccess() == AccessType.WRITE);
+                               }
+                             });
+          LOG.trace("Got pruned dataset relations {}", prunedRelations);
+          Iterables.addAll(relations, prunedRelations);
           Iterables.addAll(toVisitDatasets,
-                           Iterables.transform(datasetRelations, RELATION_TO_DATASET_INSTANCE_FUNCTION));
+                           Iterables.transform(prunedRelations, RELATION_TO_DATASET_INSTANCE_FUNCTION));
         }
       }
     }
