@@ -214,7 +214,8 @@ public class InMemoryDatasetFramework implements DatasetFramework {
       DatasetSpecification spec = def.configure(datasetInstanceId.getId(), props);
       def.getAdmin(DatasetContext.from(datasetInstanceId.getNamespaceId()), spec, null).create();
       instances.put(datasetInstanceId.getNamespace(), datasetInstanceId, spec);
-      LOG.info("Created dataset {} of type {}", datasetInstanceId, datasetType);
+      LOG.info("Created dataset {} of type {} in namespace {}",
+               datasetInstanceId.getId(), datasetType, datasetInstanceId.getNamespaceId());
     } finally {
       writeLock.unlock();
     }

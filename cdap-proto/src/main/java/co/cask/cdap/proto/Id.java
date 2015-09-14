@@ -67,7 +67,7 @@ public abstract class Id {
     return getId();
   }
 
-  public String getIdRep() {
+  public final String getIdRep() {
     Id parent = getParent();
     if (parent == null) {
       return getIdType() + ":" + getIdForRep();
@@ -76,9 +76,10 @@ public abstract class Id {
     }
   }
 
+  // TODO: remove (use getIdRep() instead)
   @Override
-  public String toString() {
-    return getIdRep();
+  public final String toString() {
+    throw new UnsupportedOperationException();
   }
 
   @Nullable
@@ -169,18 +170,6 @@ public abstract class Id {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      return id.equals(((Namespace) o).id);
-    }
-
-    @Override
     public int hashCode() {
       return id.hashCode();
     }
@@ -193,12 +182,6 @@ public abstract class Id {
     @Override
     protected Id getParent() {
       return null;
-    }
-
-    // TODO: remove (use super toString() which returns getIdRep())
-    @Override
-    public String toString() {
-      return id;
     }
   }
 
@@ -377,12 +360,6 @@ public abstract class Id {
       int result = application.hashCode();
       result = 31 * result + id.hashCode();
       return result;
-    }
-
-    @Override
-    public String toString() {
-      return String.format("%s.%s.%s.%s",
-                           type.name().toLowerCase(), application.getNamespaceId(), application.getId(), id);
     }
 
     public static Program from(Application appId, ProgramType type, String pgmId) {
@@ -636,13 +613,6 @@ public abstract class Id {
     }
 
     @Override
-    public String toString() {
-      return Objects.toStringHelper(this)
-        .add("application", application)
-        .add("id", id).toString();
-    }
-
-    @Override
     public boolean equals(Object o) {
       if (this == o) {
         return true;
@@ -793,16 +763,6 @@ public abstract class Id {
       public NotificationFeed build() {
         return new NotificationFeed(namespaceId, category, name, description);
       }
-    }
-
-    @Override
-    public String toString() {
-      return Objects.toStringHelper(this)
-        .add("namespace", namespace)
-        .add("category", category)
-        .add("name", name)
-        .add("description", description)
-        .toString();
     }
 
     @Override
@@ -1046,14 +1006,6 @@ public abstract class Id {
       return Objects.hashCode(namespace, typeName);
     }
 
-    @Override
-    public String toString() {
-      return Objects.toStringHelper(this)
-        .add("namespace", namespace)
-        .add("typeName", typeName)
-        .toString();
-    }
-
     public static DatasetType from(Namespace id, String typeId) {
       return new DatasetType(id, typeId);
     }
@@ -1125,14 +1077,6 @@ public abstract class Id {
     @Override
     public int hashCode() {
       return Objects.hashCode(namespace, moduleId);
-    }
-
-    @Override
-    public String toString() {
-      return Objects.toStringHelper(this)
-       .add("namespace", namespace)
-       .add("module", moduleId)
-       .toString();
     }
 
     public static DatasetModule from(Namespace id, String moduleId) {
@@ -1251,11 +1195,6 @@ public abstract class Id {
     public ArtifactId toArtifactId() {
       return new ArtifactId(name, version,
                             Namespace.SYSTEM.equals(namespace) ? ArtifactScope.SYSTEM : ArtifactScope.USER);
-    }
-
-    @Override
-    public String toString() {
-      return String.format("%s:%s-%s", namespace.getId(), name, version.getVersion());
     }
 
     @Override

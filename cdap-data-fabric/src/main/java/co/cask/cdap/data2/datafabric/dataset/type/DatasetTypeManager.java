@@ -104,8 +104,9 @@ public class DatasetTypeManager extends AbstractIdleService {
   public void addModule(final Id.DatasetModule datasetModuleId, final String className, final Location jarLocation)
     throws DatasetModuleConflictException {
 
-    LOG.info("adding module: {}, className: {}, jarLocation: {}",
-             datasetModuleId, className, jarLocation == null ? "[local]" : jarLocation.toURI());
+    LOG.info("Adding module {} in namespace {}: className: {}, jarLocation: {}",
+             datasetModuleId.getId(), datasetModuleId.getNamespaceId(),
+             className, jarLocation == null ? "[local]" : jarLocation.toURI());
 
     try {
       mdsDatasets.execute(new TxCallable<MDSDatasets, Void>() {
@@ -113,7 +114,7 @@ public class DatasetTypeManager extends AbstractIdleService {
         public Void call(MDSDatasets datasets) throws DatasetModuleConflictException {
           DatasetModuleMeta existing = datasets.getTypeMDS().getModule(datasetModuleId);
           if (existing != null && !allowDatasetUncheckedUpgrade) {
-            String msg = String.format("cannot add module %s, module with the same name already exists: %s",
+            String msg = String.format("Cannot add module %s, module with the same name already exists: %s",
                                        datasetModuleId, existing);
             LOG.warn(msg);
             throw new DatasetModuleConflictException(msg);
@@ -152,8 +153,8 @@ public class DatasetTypeManager extends AbstractIdleService {
           for (Id.DatasetType usedType : reg.getUsedTypes()) {
             DatasetModuleMeta usedModule = datasets.getTypeMDS().getModuleByType(usedType);
             Preconditions.checkState(usedModule != null,
-                                     String.format("Found a null used module for type %s for while adding module %s",
-                                                   usedType, datasetModuleId));
+                                     "Found a null used module for type %s for while adding module %s in namespace %s",
+                                     usedType, datasetModuleId.getId(), datasetModuleId.getNamespaceId());
             // adding all used types and the module itself, in this very order to keep the order of loading modules
             // for instantiating a type
             moduleDependencies.addAll(usedModule.getUsesModules());
