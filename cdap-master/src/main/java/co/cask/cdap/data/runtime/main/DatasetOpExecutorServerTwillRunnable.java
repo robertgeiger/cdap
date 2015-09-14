@@ -27,6 +27,7 @@ import co.cask.cdap.common.guice.LocationRuntimeModule;
 import co.cask.cdap.common.guice.ZKClientModule;
 import co.cask.cdap.common.logging.LoggingContextAccessor;
 import co.cask.cdap.common.logging.ServiceLoggingContext;
+import co.cask.cdap.common.namespace.guice.NamespaceClientRuntimeModule;
 import co.cask.cdap.common.twill.AbstractMasterTwillRunnable;
 import co.cask.cdap.data.runtime.DataFabricModules;
 import co.cask.cdap.data.runtime.DataSetServiceModules;
@@ -35,6 +36,8 @@ import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutorS
 import co.cask.cdap.explore.guice.ExploreClientModule;
 import co.cask.cdap.logging.appender.LogAppenderInitializer;
 import co.cask.cdap.logging.guice.LoggingModules;
+import co.cask.cdap.metadata.MetadataService;
+import co.cask.cdap.metadata.MetadataServiceModule;
 import co.cask.cdap.metrics.guice.MetricsClientRuntimeModule;
 import co.cask.cdap.proto.Id;
 import com.google.common.util.concurrent.Service;
@@ -84,7 +87,9 @@ public class DatasetOpExecutorServerTwillRunnable extends AbstractMasterTwillRun
       new DataSetsModules().getDistributedModules(),
       new DataSetServiceModules().getDistributedModules(),
       new LoggingModules().getDistributedModules(),
-      new ExploreClientModule());
+      new ExploreClientModule(),
+      new NamespaceClientRuntimeModule().getDistributedModules(),
+      new MetadataServiceModule().getDistributedModules());
 
     injector.getInstance(LogAppenderInitializer.class).initialize();
     LoggingContextAccessor.setLoggingContext(new ServiceLoggingContext(Id.Namespace.SYSTEM.getId(),
@@ -98,5 +103,6 @@ public class DatasetOpExecutorServerTwillRunnable extends AbstractMasterTwillRun
     services.add(injector.getInstance(KafkaClientService.class));
     services.add(injector.getInstance(MetricsCollectionService.class));
     services.add(injector.getInstance(DatasetOpExecutorService.class));
+    services.add(injector.getInstance(MetadataService.class));
   }
 }

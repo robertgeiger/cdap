@@ -1,5 +1,21 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 angular.module(PKG.name + '.feature.adapters')
-  .controller('LeftPanelController', function($q, myAdapterApi, MyAppDAGService, MyDAGFactory, myAdapterTemplatesApi, CanvasFactory, $alert, mySettings, $state) {
+  .controller('LeftPanelController', function($q, myAdapterApi, MyAppDAGService, MyDAGFactory, myAdapterTemplatesApi, CanvasFactory, $alert, mySettings, $state, MySidebarService, $scope, rVersion, $stateParams, GLOBALS) {
     this.pluginTypes = [
       {
         name: 'source',
@@ -23,18 +39,35 @@ angular.module(PKG.name + '.feature.adapters')
       items: []
     };
 
+    this.panelstatus = {};
+    this.panelstatus.isExpanded = true;
+
+    $scope.$watch(function() {
+      return this.panelstatus.isExpanded;
+    }.bind(this), function() {
+      MySidebarService.setIsExpanded(this.panelstatus.isExpanded);
+    }.bind(this));
+
     this.onLeftSideGroupItemClicked = function(group) {
       var prom;
       var templatedefer = $q.defer();
-      var params = { adapterType: MyAppDAGService.metadata.template.type };
+      var templateType = MyAppDAGService.metadata.template.type;
+      var params = {
+        namespace: $stateParams.namespace,
+        adapterType: templateType,
+        version: rVersion.version
+      };
       switch(group.name) {
         case 'source':
+          params.extensionType = GLOBALS.pluginTypes[templateType].source;
           prom = myAdapterApi.fetchSources(params).$promise;
           break;
         case 'transform':
+          params.extensionType = GLOBALS.pluginTypes[templateType].transform;
           prom = myAdapterApi.fetchTransforms(params).$promise;
           break;
         case 'sink':
+          params.extensionType = GLOBALS.pluginTypes[templateType].sink;
           prom = myAdapterApi.fetchSinks(params).$promise;
           break;
         case 'templates':

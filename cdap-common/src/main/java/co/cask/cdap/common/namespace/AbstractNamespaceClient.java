@@ -26,7 +26,6 @@ import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.common.http.HttpRequest;
 import co.cask.common.http.HttpResponse;
 import co.cask.common.http.ObjectResponse;
-import com.google.common.base.Charsets;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
@@ -136,7 +135,9 @@ public abstract class AbstractNamespaceClient implements NamespaceAdmin {
     if (response.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) {
       throw new NamespaceNotFoundException(namespaceId);
     } else if (HttpURLConnection.HTTP_FORBIDDEN == response.getResponseCode()) {
-      throw new NamespaceCannotBeDeletedException(namespaceId, response.getResponseBodyAsString());
+      String msg = String.format("Datasets in the namespace '%s' cannot be deleted. Reason: '%s'.", namespaceId,
+                                 response.getResponseBodyAsString());
+      throw new NamespaceCannotBeDeletedException(namespaceId, msg);
     } else if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
       return;
     }

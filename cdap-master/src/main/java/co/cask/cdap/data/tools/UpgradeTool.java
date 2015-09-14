@@ -21,6 +21,7 @@ import co.cask.cdap.api.metrics.MetricsCollectionService;
 import co.cask.cdap.app.guice.AppFabricServiceRuntimeModule;
 import co.cask.cdap.app.guice.ProgramRunnerRuntimeModule;
 import co.cask.cdap.app.guice.ServiceStoreModules;
+import co.cask.cdap.common.ServiceUnavailableException;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.guice.ConfigModule;
 import co.cask.cdap.common.guice.DiscoveryRuntimeModule;
@@ -42,21 +43,28 @@ import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.cdap.data2.dataset2.DefaultDatasetDefinitionRegistry;
 import co.cask.cdap.data2.dataset2.InMemoryDatasetFramework;
+import co.cask.cdap.data2.dataset2.lib.hbase.AbstractHBaseDataSetAdmin;
+import co.cask.cdap.data2.metadata.writer.LineageWriter;
+import co.cask.cdap.data2.metadata.writer.NoOpLineageWriter;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.explore.guice.ExploreClientModule;
+import co.cask.cdap.internal.app.runtime.artifact.ArtifactStore;
+import co.cask.cdap.internal.app.runtime.schedule.LocalSchedulerService;
+import co.cask.cdap.internal.app.runtime.schedule.SchedulerService;
 import co.cask.cdap.internal.app.runtime.schedule.store.ScheduleStoreTableUtil;
+import co.cask.cdap.internal.app.services.AdapterService;
 import co.cask.cdap.internal.app.services.ApplicationLifecycleService;
 import co.cask.cdap.internal.app.store.DefaultStore;
 import co.cask.cdap.logging.save.LogSaverTableUtil;
 import co.cask.cdap.metrics.store.DefaultMetricDatasetFactory;
 import co.cask.cdap.metrics.store.DefaultMetricStore;
 import co.cask.cdap.metrics.store.MetricDatasetFactory;
-import co.cask.cdap.notifications.feeds.client.NotificationFeedClientModule;
+import co.cask.cdap.notifications.feeds.NotificationFeedManager;
+import co.cask.cdap.notifications.feeds.service.NoOpNotificationFeedManager;
 import co.cask.cdap.notifications.guice.NotificationServiceRuntimeModule;
 import co.cask.tephra.TransactionSystemClient;
 import co.cask.tephra.distributed.TransactionService;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -67,6 +75,7 @@ import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
+import com.google.inject.util.Modules;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.twill.zookeeper.ZKClientService;
@@ -89,6 +98,8 @@ public class UpgradeTool {
   private final TransactionService txService;
   private final ZKClientService zkClientService;
   private final MDSDatasetsRegistry mdsDatasetsRegistry;
+  private final AdapterService adapterService;
+  private final SchedulerService schedulerService;
 
   private final DatasetFramework dsFramework;
 
@@ -96,14 +107,19 @@ public class UpgradeTool {
    * Set of Action available in this tool.
    */
   private enum Action {
-    UPGRADE("Upgrades CDAP to 3.2\n" +
+    UPGRADE("Upgrades CDAP to " + ProjectInfo.getVersion() + "\n" +
               "  The upgrade tool upgrades the following: \n" +
               "  1. User and System Datasets (upgrades the coprocessor jars)\n" +
-              "  2. UsageRegistry Dataset Type\n" +
-              "  3. Application Specifications\n" +
+              "  2. Application Specifications\n" +
+              "  3. Removes all Adapters\n" +
+              "  4. Application Specifications\n" +
               "      - Adds artifacts for existing applications\n" +
-              "      - Updates application metadata to include newly added artifact\n" +
+              "      - Updates each application's metadata to include the newly added artifact\n" +
+              "      - Deletes all ApplicationTemplates\n" +
               "  Note: Once you run the upgrade tool you cannot rollback to the previous version."),
+    UPGRADE_HBASE("After an HBase upgrade, updates the coprocessor jars of all user and \n" +
+                    "system HBase tables to a version that is compatible with the new HBase \n" +
+                    "version. All tables must be disabled prior to this step."),
     HELP("Show this help.");
 
     private final String description;
@@ -126,6 +142,8 @@ public class UpgradeTool {
     this.dsFramework = injector.getInstance(DatasetFramework.class);
     this.mdsDatasetsRegistry = injector.getInstance(Key.get(MDSDatasetsRegistry.class,
                                                             Names.named("mdsDatasetsRegistry")));
+    this.adapterService = injector.getInstance(AdapterService.class);
+    this.schedulerService = injector.getInstance(SchedulerService.class);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -146,14 +164,31 @@ public class UpgradeTool {
       new ZKClientModule(),
       new DiscoveryRuntimeModule().getDistributedModules(),
       new StreamAdminModules().getDistributedModules(),
-      new NotificationFeedClientModule(),
       new TwillModule(),
       new ExploreClientModule(),
-      new AppFabricServiceRuntimeModule().getDistributedModules(),
+      // overriding binding of SchedulerService to DistributedSchedulerService because
+      // the distributed implementation uses RetryOnStartFailureService, which is a service that can
+      // be in the running state even if the underlying service is not started. So we could start
+      // our scheduler, and the underlying time scheduler might not be started by the time it is used
+      // scheduler is only used by AdapterService.upgrade() and ApplicationLifecycleService.upgrade()
+      // when deleting adapters and etl applications.  This override can be removed once upgrade for those
+      // don't need to delete schedules
+      Modules
+        .override(new AppFabricServiceRuntimeModule().getDistributedModules())
+        .with(new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(SchedulerService.class).to(LocalSchedulerService.class).in(Scopes.SINGLETON);
+            // don't need real notifications for upgrade. This is required otherwise the
+            // StreamSizeScheduler in the AbstractSchedulerService won't start
+            bind(NotificationFeedManager.class).to(NoOpNotificationFeedManager.class).in(Scopes.SINGLETON);
+          }
+        }),
       new ProgramRunnerRuntimeModule().getDistributedModules(),
       new ServiceStoreModules().getDistributedModules(),
       new SystemDatasetRuntimeModule().getDistributedModules(),
-      new NotificationServiceRuntimeModule().getDistributedModules(),
+      // don't need real notifications for upgrade, so use the in-memory implementations
+      new NotificationServiceRuntimeModule().getInMemoryModules(),
       new KafkaClientModule(),
       new AbstractModule() {
         @Override
@@ -169,6 +204,8 @@ public class UpgradeTool {
           bind(MetricDatasetFactory.class).to(DefaultMetricDatasetFactory.class).in(Scopes.SINGLETON);
           bind(MetricStore.class).to(DefaultMetricStore.class);
           bind(DatasetFramework.class).to(InMemoryDatasetFramework.class).in(Scopes.SINGLETON);
+          // Upgrade tool does not need to record lineage for now.
+          bind(LineageWriter.class).to(NoOpLineageWriter.class);
         }
 
         @Provides
@@ -189,7 +226,7 @@ public class UpgradeTool {
           return new DatasetInstanceManager(mdsDatasetsRegistry);
         }
 
-        // This is needed because the LocalAdapterManager, LocalApplicationManager, LocalApplicationTemplateManager
+        // This is needed because the LocalApplicationManager
         // expects a dsframework injection named datasetMDS
         @Provides
         @Singleton
@@ -205,12 +242,15 @@ public class UpgradeTool {
   /**
    * Do the start up work
    */
-  private void startUp() throws Exception {
+  private void startUp(boolean startScheduler, boolean includeNewDatasets) throws Exception {
     // Start all the services.
     zkClientService.startAndWait();
     txService.startAndWait();
-    initializeDSFramework(cConf, dsFramework);
+    initializeDSFramework(cConf, dsFramework, includeNewDatasets);
     mdsDatasetsRegistry.startUp();
+    if (startScheduler) {
+      schedulerService.startAndWait();
+    }
   }
 
   /**
@@ -218,6 +258,9 @@ public class UpgradeTool {
    */
   private void stop() {
     try {
+      if (schedulerService.isRunning()) {
+        schedulerService.stopAndWait();
+      }
       txService.stopAndWait();
       zkClientService.stopAndWait();
       mdsDatasetsRegistry.shutDown();
@@ -252,14 +295,15 @@ public class UpgradeTool {
 
     try {
       switch (action) {
-        case UPGRADE:
+        case UPGRADE: {
           System.out.println(String.format("%s - %s", action.name().toLowerCase(), action.getDescription()));
           String response = getResponse(interactive);
           if (response.equalsIgnoreCase("y") || response.equalsIgnoreCase("yes")) {
             System.out.println("Starting upgrade ...");
             try {
-              startUp();
+              startUp(true, false);
               performUpgrade();
+              System.out.println("\nUpgrade completed successfully.\n");
             } finally {
               stop();
             }
@@ -267,6 +311,24 @@ public class UpgradeTool {
             System.out.println("Upgrade cancelled.");
           }
           break;
+        }
+        case UPGRADE_HBASE: {
+          System.out.println(String.format("%s - %s", action.name().toLowerCase(), action.getDescription()));
+          String response = getResponse(interactive);
+          if (response.equalsIgnoreCase("y") || response.equalsIgnoreCase("yes")) {
+            System.out.println("Starting upgrade ...");
+            try {
+              startUp(false, true);
+              performHBaseUpgrade();
+              System.out.println("\nUpgrade completed successfully.\n");
+            } finally {
+              stop();
+            }
+          } else {
+            System.out.println("Upgrade cancelled.");
+          }
+          break;
+        }
         case HELP:
           printHelp();
           break;
@@ -311,21 +373,32 @@ public class UpgradeTool {
   }
 
   private void performUpgrade() throws Exception {
-    LOG.info("Upgrading System and User Datasets ...");
+
+    performCoprocessorUpgrade();
+
+    LOG.info("Removing Adapters ...");
+    adapterService.upgrade();
+
+    LOG.info("Upgrading Apps ...");
+    ApplicationLifecycleService applicationLifecycleService = injector.getInstance(ApplicationLifecycleService.class);
+    applicationLifecycleService.upgrade(true);
+  }
+
+  private void performHBaseUpgrade() throws Exception {
+
+    System.setProperty(AbstractHBaseDataSetAdmin.SYSTEM_PROPERTY_FORCE_HBASE_UPGRADE, Boolean.TRUE.toString());
+    performCoprocessorUpgrade();
+  }
+
+  private void performCoprocessorUpgrade() throws Exception {
+
+    LOG.info("Upgrading User and System HBase Tables ...");
     DatasetUpgrader dsUpgrade = injector.getInstance(DatasetUpgrader.class);
     dsUpgrade.upgrade();
 
     LOG.info("Upgrading QueueAdmin ...");
     QueueAdmin queueAdmin = injector.getInstance(QueueAdmin.class);
     queueAdmin.upgrade();
-
-    UsageRegistry usageRegistry = injector.getInstance(UsageRegistry.class);
-    usageRegistry.upgrade(injector.getInstance(Key.get(DatasetInstanceManager.class,
-                                                       Names.named("datasetInstanceManager"))));
-
-    LOG.info("Upgrading Apps ...");
-    ApplicationLifecycleService applicationLifecycleService = injector.getInstance(ApplicationLifecycleService.class);
-    applicationLifecycleService.upgrade(true);
   }
 
   public static void main(String[] args) {
@@ -340,10 +413,16 @@ public class UpgradeTool {
   /**
    * Sets up a {@link DatasetFramework} instance for standalone usage.  NOTE: should NOT be used by applications!!!
    */
-  private void initializeDSFramework(CConfiguration cConf, DatasetFramework datasetFramework) throws IOException,
-    DatasetManagementException {
+  private void initializeDSFramework(CConfiguration cConf,
+                                     DatasetFramework datasetFramework,
+                                     boolean includeNewDatasets) throws IOException,
+    DatasetManagementException, ServiceUnavailableException {
     // dataset service
     DatasetMetaTableUtil.setupDatasets(datasetFramework);
+    if (includeNewDatasets) {
+      // artifacts meta data was added in 3.2
+      ArtifactStore.setupDatasets(datasetFramework);
+    }
     // app metadata
     DefaultStore.setupDatasets(datasetFramework);
     // config store

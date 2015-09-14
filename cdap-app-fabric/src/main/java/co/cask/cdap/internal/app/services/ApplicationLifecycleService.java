@@ -20,6 +20,7 @@ import co.cask.cdap.api.ProgramSpecification;
 import co.cask.cdap.api.app.ApplicationSpecification;
 import co.cask.cdap.api.artifact.ApplicationClass;
 import co.cask.cdap.api.artifact.ArtifactId;
+import co.cask.cdap.api.artifact.ArtifactScope;
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.flow.FlowSpecification;
 import co.cask.cdap.api.flow.FlowletConnection;
@@ -47,23 +48,25 @@ import co.cask.cdap.config.PreferencesStore;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConsumerFactory;
-import co.cask.cdap.gateway.handlers.AppLifecycleHttpHandler;
 import co.cask.cdap.internal.app.deploy.ProgramTerminator;
 import co.cask.cdap.internal.app.deploy.pipeline.AppDeploymentInfo;
 import co.cask.cdap.internal.app.deploy.pipeline.ApplicationWithPrograms;
+import co.cask.cdap.internal.app.deploy.pipeline.ProgramGenerationStage;
 import co.cask.cdap.internal.app.runtime.artifact.ArtifactDetail;
 import co.cask.cdap.internal.app.runtime.artifact.ArtifactRepository;
 import co.cask.cdap.internal.app.runtime.artifact.WriteConflictException;
 import co.cask.cdap.internal.app.runtime.flow.FlowUtils;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
+import co.cask.cdap.proto.ApplicationDetail;
+import co.cask.cdap.proto.ApplicationRecord;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.ProgramTypes;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -91,9 +94,7 @@ import java.util.jar.Manifest;
 import javax.annotation.Nullable;
 
 /**
- * Service that manage lifecycle of Applications
- * TODO: Currently this only handles the deployment and deletion of the application.
- * The code from {@link AppLifecycleHttpHandler} should be moved here and the calls should be delegated to this class.
+ * Service that manage lifecycle of Applications.
  */
 public class ApplicationLifecycleService extends AbstractIdleService {
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationLifecycleService.class);
@@ -159,6 +160,60 @@ public class ApplicationLifecycleService extends AbstractIdleService {
   }
 
   /**
+   * Get all applications in the specified namespace, filtered to only include applications with an artifact name
+   * in the set of specified names and an artifact version equal to the specified version. If the specified set
+   * is empty, no filtering is performed on artifact name. If the specified version is null, no filtering is done
+   * on artifact version.
+   *
+   * @param namespace the namespace to get apps from
+   * @param artifactNames the set of valid artifact names. If empty, all artifact names are valid
+   * @param artifactVersion the artifact version to match. If null, all artifact versions are valid
+   * @return list of all applications in the namespace that match the specified artifact names and version
+   */
+  public List<ApplicationRecord> getApps(Id.Namespace namespace,
+                                         Set<String> artifactNames,
+                                         @Nullable String artifactVersion) {
+    return getApps(namespace, getAppPredicate(artifactNames, artifactVersion));
+  }
+
+  /**
+   * Get all applications in the specified namespace that satisfy the specified predicate.
+   *
+   * @param namespace the namespace to get apps from
+   * @param predicate the predicate that must be satisfied in order to be returned
+   * @return list of all applications in the namespace that satisfy the specified predicate
+   */
+  public List<ApplicationRecord> getApps(Id.Namespace namespace, Predicate<ApplicationRecord> predicate) {
+    List<ApplicationRecord> appRecords = new ArrayList<>();
+    for (ApplicationSpecification appSpec : store.getAllApplications(namespace)) {
+      // possible if this particular app was deploy prior to v3.2 and upgrade failed for some reason.
+      ArtifactId artifactId = appSpec.getArtifactId();
+      ArtifactSummary artifactSummary = artifactId == null ?
+        new ArtifactSummary(appSpec.getName(), null) : ArtifactSummary.from(artifactId);
+      ApplicationRecord record = new ApplicationRecord(artifactSummary, appSpec.getName(), appSpec.getDescription());
+      if (predicate.apply(record)) {
+        appRecords.add(record);
+      }
+    }
+    return appRecords;
+  }
+
+  /**
+   * Get detail about the specified application
+   *
+   * @param appId the id of the application to get
+   * @return detail about the specified application
+   * @throws ApplicationNotFoundException if the specified application does not exist
+   */
+  public ApplicationDetail getAppDetail(Id.Application appId) throws ApplicationNotFoundException {
+    ApplicationSpecification appSpec = store.getApplication(appId);
+    if (appSpec == null) {
+      throw new ApplicationNotFoundException(appId);
+    }
+    return ApplicationDetail.fromSpec(appSpec);
+  }
+
+  /**
    * Update an existing application. An application's configuration and artifact version can be updated.
    *
    * @param appId the id of the application to update
@@ -195,7 +250,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
           currentArtifact.getName(), requestedArtifact.getName()));
       }
 
-      if (currentArtifact.isSystem() != requestedArtifact.isSystem()) {
+      if (!currentArtifact.getScope().equals(requestedArtifact.getScope())) {
         throw new InvalidArtifactException("Only artifact version updates are allowed. " +
           "Cannot change from a non-system artifact to a system artifact or vice versa.");
       }
@@ -206,7 +261,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
         throw new InvalidArtifactException(String.format(
           "Requested artifact version '%s' is invalid", requestedArtifact.getVersion()));
       }
-      newArtifactId = new ArtifactId(currentArtifact.getName(), requestedVersion, currentArtifact.isSystem());
+      newArtifactId = new ArtifactId(currentArtifact.getName(), requestedVersion, currentArtifact.getScope());
     }
 
     Object requestedConfigObj = appRequest.getConfig();
@@ -214,8 +269,9 @@ public class ApplicationLifecycleService extends AbstractIdleService {
     String requestedConfigStr = requestedConfigObj == null ?
       currentSpec.getConfiguration() : GSON.toJson(requestedConfigObj);
 
-    Id.Artifact artifactId = Id.Artifact.from(newArtifactId.isSystem() ? Id.Namespace.SYSTEM : appId.getNamespace(),
-                                              newArtifactId.getName(), newArtifactId.getVersion());
+    Id.Artifact artifactId = Id.Artifact.from(
+      newArtifactId.getScope() == ArtifactScope.SYSTEM ? Id.Namespace.SYSTEM : appId.getNamespace(),
+      newArtifactId.getName(), newArtifactId.getVersion());
     return deployApp(appId.getNamespace(), appId.getId(), artifactId, requestedConfigStr, programTerminator);
   }
 
@@ -328,48 +384,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
       throw new NotFoundException(appId);
     }
 
-    //Delete the schedules
-    for (WorkflowSpecification workflowSpec : spec.getWorkflows().values()) {
-      Id.Program workflowProgramId = Id.Program.from(appId, ProgramType.WORKFLOW, workflowSpec.getName());
-      scheduler.deleteSchedules(workflowProgramId, SchedulableProgramType.WORKFLOW);
-    }
-
-    deleteMetrics(appId.getNamespaceId(), appId.getId());
-
-    //Delete all preferences of the application and of all its programs
-    deletePreferences(appId);
-
-    // Delete all streams and queues state of each flow
-    // TODO: This should be unified with the DeletedProgramHandlerStage
-    for (FlowSpecification flowSpecification : spec.getFlows().values()) {
-      Id.Program flowProgramId = Id.Program.from(appId, ProgramType.FLOW, flowSpecification.getName());
-
-      // Collects stream name to all group ids consuming that stream
-      Multimap<String, Long> streamGroups = HashMultimap.create();
-      for (FlowletConnection connection : flowSpecification.getConnections()) {
-        if (connection.getSourceType() == FlowletConnection.Type.STREAM) {
-          long groupId = FlowUtils.generateConsumerGroupId(flowProgramId, connection.getTargetName());
-          streamGroups.put(connection.getSourceName(), groupId);
-        }
-      }
-      // Remove all process states and group states for each stream
-      String namespace = String.format("%s.%s", flowProgramId.getApplicationId(), flowProgramId.getId());
-      for (Map.Entry<String, Collection<Long>> entry : streamGroups.asMap().entrySet()) {
-        streamConsumerFactory.dropAll(Id.Stream.from(appId.getNamespaceId(), entry.getKey()),
-                                      namespace, entry.getValue());
-      }
-
-      queueAdmin.dropAllForFlow(Id.Flow.from(appId, flowSpecification.getName()));
-    }
-    deleteProgramLocations(appId);
-
-    store.removeApplication(appId);
-
-    try {
-      usageRegistry.unregister(appId);
-    } catch (Exception e) {
-      LOG.warn("Failed to unregister usage of app: {}", appId, e);
-    }
+    deleteApp(appId, spec);
   }
 
   /**
@@ -395,11 +410,13 @@ public class ApplicationLifecycleService extends AbstractIdleService {
           continue;
         }
 
-        Location appJarLocation = store.getApplicationArchiveLocation(appId);
-        if (appJarLocation == null) {
-          LOG.error(String.format("Unable to get location of jar for app '%s' in namespace '%s'. " +
-              "You will need to re-deploy the app after upgrade.",
-            appId.getNamespaceId(), appId.getId()));
+        Location appJarLocation;
+        try {
+          appJarLocation = findAppJarLocation(appId);
+        } catch (FileNotFoundException e) {
+          // nothing we can do... skip and log a message
+          LOG.error("Unable to find the application jar for app '{}' in namespace '{}'. " +
+            "Please re-deploy the app manually after upgrade.", appId.getId(), appId.getNamespaceId(), e);
           continue;
         }
 
@@ -471,6 +488,46 @@ public class ApplicationLifecycleService extends AbstractIdleService {
         }
       }
     }
+  }
+
+  /**
+   * Look up the app archive location from the store.  Most of this logic is in case that jar isn't actually
+   * there. In that case we try to find it in the expected place.
+   *
+   * @param appId the id of the application to find
+   * @return the location of the jar for the application
+   * @throws FileNotFoundException if the jar file could not be found
+   * @throws IOException if there was some error reading from the meta store or filesystem
+   */
+  private Location findAppJarLocation(Id.Application appId) throws IOException {
+    Location recordedLocation = store.getApplicationArchiveLocation(appId);
+    if (recordedLocation == null) {
+      throw new FileNotFoundException(String.format(
+        "Could not find the location of jar for app '%s' in namespace '%s' in the metastore.",
+        appId.getId(), appId.getNamespaceId()));
+    }
+
+    if (recordedLocation.exists()) {
+      return recordedLocation;
+    }
+
+    // bad metadata... not sure how it gets into this state but we have seen it
+    // make an educated guess for where it could be
+    Location expectedDirectory =
+      ProgramGenerationStage.getAppArchiveDirLocation(configuration, appId, namespacedLocationFactory);
+    if (expectedDirectory.exists() && expectedDirectory.isDirectory()) {
+      // should be only one file there... expect it to start with the app name and end in .jar
+      for (Location file : expectedDirectory.list()) {
+        if (file.getName().startsWith(appId.getId()) && file.getName().endsWith(".jar")) {
+          return file;
+        }
+      }
+    }
+
+    // if we couldn't find it there either, error out
+    throw new FileNotFoundException(String.format(
+      "Could not find jar for app '%s' in namespace '%s'. Expected it to be at %s.",
+      appId.getId(), appId.getNamespaceId(), recordedLocation.toURI()));
   }
 
   /**
@@ -565,7 +622,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
                                             ProgramTerminator programTerminator,
                                             ArtifactDetail artifactDetail) throws Exception {
 
-    Id.Artifact artifactId = Id.Artifact.from(namespace, artifactDetail.getDescriptor());
+    Id.Artifact artifactId = Id.Artifact.from(namespace, artifactDetail.getDescriptor().getArtifactId());
     Set<ApplicationClass> appClasses = artifactDetail.getMeta().getClasses().getApps();
     if (appClasses.isEmpty()) {
       throw new InvalidArtifactException(String.format("No application classes found in artifact '%s'.", artifactId));
@@ -579,5 +636,108 @@ public class ApplicationLifecycleService extends AbstractIdleService {
     Manager<AppDeploymentInfo, ApplicationWithPrograms> manager = managerFactory.create(programTerminator);
     // TODO: (CDAP-3258) Manager needs MUCH better error handling.
     return manager.deploy(namespace, appName, deploymentInfo).get();
+  }
+
+  // deletes without performs checks that no programs are running
+
+  /**
+   * Delete the specified application without performing checks that its programs are stopped. This is package
+   * private purely for v3.2 upgrade purposes. After AdapterService is removed, this should be made private.
+   * The reason AdapterService is the one that calls this is because AdapterService is the only one that knows
+   * which applications are application templates.
+   *
+   * @param appId the id of the application to delete
+   * @param spec the spec of the application to delete
+   * @throws Exception
+   */
+  void deleteApp(Id.Application appId, ApplicationSpecification spec) throws Exception {
+    //Delete the schedules
+    for (WorkflowSpecification workflowSpec : spec.getWorkflows().values()) {
+      Id.Program workflowProgramId = Id.Program.from(appId, ProgramType.WORKFLOW, workflowSpec.getName());
+      scheduler.deleteSchedules(workflowProgramId, SchedulableProgramType.WORKFLOW);
+    }
+
+    deleteMetrics(appId.getNamespaceId(), appId.getId());
+
+    //Delete all preferences of the application and of all its programs
+    deletePreferences(appId);
+
+    // Delete all streams and queues state of each flow
+    // TODO: This should be unified with the DeletedProgramHandlerStage
+    for (FlowSpecification flowSpecification : spec.getFlows().values()) {
+      Id.Program flowProgramId = Id.Program.from(appId, ProgramType.FLOW, flowSpecification.getName());
+
+      // Collects stream name to all group ids consuming that stream
+      Multimap<String, Long> streamGroups = HashMultimap.create();
+      for (FlowletConnection connection : flowSpecification.getConnections()) {
+        if (connection.getSourceType() == FlowletConnection.Type.STREAM) {
+          long groupId = FlowUtils.generateConsumerGroupId(flowProgramId, connection.getTargetName());
+          streamGroups.put(connection.getSourceName(), groupId);
+        }
+      }
+      // Remove all process states and group states for each stream
+      String namespace = String.format("%s.%s", flowProgramId.getApplicationId(), flowProgramId.getId());
+      for (Map.Entry<String, Collection<Long>> entry : streamGroups.asMap().entrySet()) {
+        streamConsumerFactory.dropAll(Id.Stream.from(appId.getNamespaceId(), entry.getKey()),
+          namespace, entry.getValue());
+      }
+
+      queueAdmin.dropAllForFlow(Id.Flow.from(appId, flowSpecification.getName()));
+    }
+    deleteProgramLocations(appId);
+
+    store.removeApplication(appId);
+
+    try {
+      usageRegistry.unregister(appId);
+    } catch (Exception e) {
+      LOG.warn("Failed to unregister usage of app: {}", appId, e);
+    }
+  }
+
+  // get filter for app specs by artifact name and version. if they are null, it means don't filter.
+  private Predicate<ApplicationRecord> getAppPredicate(Set<String> artifactNames,
+                                                       @Nullable String artifactVersion) {
+    if (artifactNames.isEmpty() && artifactVersion == null) {
+      return Predicates.alwaysTrue();
+    } else if (artifactNames.isEmpty()) {
+      return new ArtifactVersionPredicate(artifactVersion);
+    } else if (artifactVersion == null) {
+      return new ArtifactNamesPredicate(artifactNames);
+    } else {
+      return Predicates.and(new ArtifactNamesPredicate(artifactNames), new ArtifactVersionPredicate(artifactVersion));
+    }
+  }
+
+  /**
+   * Returns true if the application artifact is in a whitelist of names
+   */
+  private static class ArtifactNamesPredicate implements Predicate<ApplicationRecord> {
+    private final Set<String> names;
+
+    public ArtifactNamesPredicate(Set<String> names) {
+      this.names = names;
+    }
+
+    @Override
+    public boolean apply(ApplicationRecord input) {
+      return names.contains(input.getArtifact().getName());
+    }
+  }
+
+  /**
+   * Returns true if the application artifact is a specific version
+   */
+  private static class ArtifactVersionPredicate implements Predicate<ApplicationRecord> {
+    private final String version;
+
+    public ArtifactVersionPredicate(String version) {
+      this.version = version;
+    }
+
+    @Override
+    public boolean apply(ApplicationRecord input) {
+      return version.equals(input.getArtifact().getVersion());
+    }
   }
 }

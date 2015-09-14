@@ -205,7 +205,7 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "AppWithPlugin");
     AppRequest createRequest = new AppRequest(
-      new ArtifactSummary(artifactId.getName(), artifactId.getVersion().getVersion(), false));
+      new ArtifactSummary(artifactId.getName(), artifactId.getVersion().getVersion()));
 
     ApplicationManager appManager = deployApplication(appId, createRequest);
     WorkerManager workerManager = appManager.getWorkerManager(AppWithPlugin.WORKER);
@@ -238,7 +238,7 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "AppFromArtifact");
     AppRequest<ConfigTestApp.ConfigClass> createRequest = new AppRequest<>(
-      new ArtifactSummary(artifactId.getName(), artifactId.getVersion().getVersion(), false),
+      new ArtifactSummary(artifactId.getName(), artifactId.getVersion().getVersion()),
       new ConfigTestApp.ConfigClass("testStream", "testDataset")
     );
     ApplicationManager appManager = deployApplication(appId, createRequest);
@@ -532,7 +532,13 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
 
     serviceManager.stop();
 
-    pingingWorker.stop();
+    // Program manager is not notified when worker stops on its own, hence suppressing the exception.
+    // JIRA - CDAP-3656
+    try {
+      pingingWorker.stop();
+    } catch (Throwable e) {
+      LOG.error("Got exception while stopping pinging worker", e);
+    }
     pingingWorker.waitForStatus(false);
 
     centralServiceManager.stop();

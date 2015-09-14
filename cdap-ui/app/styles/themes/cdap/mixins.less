@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 //
 // Mixins
 // --------------------------------------------------
@@ -12,7 +28,7 @@
   background-clip:         padding-box;
 }
 
-.cask-btn(@background: white, @border: 1px solid #CCC, @border-radius: 4px, @color: @btn-default-color,  @font-size: 14px, @padding: 6px 24px) {
+.cask-btn(@background: white, @border: 1px solid #CCC, @border-radius: 4px, @color: @btn-default-color, @font-size: 14px, @padding: 6px 24px) {
   background: @background;
   border: @border;
   .border-radius(@border-radius);
@@ -23,7 +39,7 @@
   &:hover, &:focus { text-decoration: none; }
 }
 
-.dropdown-defaults() {
+.dropdown-defaults(@text-align: right) {
   + .dropdown-menu {
     background-color: transparent;
     border: 0;
@@ -39,12 +55,11 @@
       span.fa {
         margin-top: 3px;
         margin-right: 0;
-        text-align: right;
+        text-align: @text-align;
       }
     }
   }
 }
-
 
 .dropdown-left() {
   .btn.dropdown-toggle {
@@ -168,3 +183,21 @@
   }
 }
 
+.placeholder-color(@color: white, @font-weight: 500) {
+  &::-webkit-input-placeholder {
+    color: @color;
+    font-weight: @font-weight;
+  }
+  &:-moz-placeholder { // Firefox 18-
+    color: @color;
+    font-weight: @font-weight;
+  }
+  &::-moz-placeholder { // Firefox 19+
+    color: @color;
+    font-weight: @font-weight;
+  }
+  &:-ms-input-placeholder {
+    color: @color;
+    font-weight: @font-weight;
+  }
+}

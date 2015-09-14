@@ -22,6 +22,8 @@ import co.cask.cdap.BloatedWordCountApp;
 import co.cask.cdap.ConfigTestApp;
 import co.cask.cdap.WordCountApp;
 import co.cask.cdap.api.Config;
+import co.cask.cdap.common.NamespaceNotFoundException;
+import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.gateway.handlers.AppLifecycleHttpHandler;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
@@ -36,7 +38,6 @@ import org.apache.http.HttpResponse;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -53,7 +54,8 @@ public class AppLifecycleHttpHandlerTest extends AppFabricTestBase {
   public void testDeployNonExistingNamespace() throws Exception {
     HttpResponse response = deploy(WordCountApp.class, Constants.Gateway.API_VERSION_3_TOKEN, "random");
     Assert.assertEquals(404, response.getStatusLine().getStatusCode());
-    Assert.assertEquals("Deploy failed - namespace 'random' not found.", readResponse(response));
+    NotFoundException nfe = new NamespaceNotFoundException(Id.Namespace.from("random"));
+    Assert.assertEquals(nfe.getMessage(), readResponse(response));
   }
 
   /**
@@ -80,7 +82,7 @@ public class AppLifecycleHttpHandlerTest extends AppFabricTestBase {
   public void testDeployUsingNonexistantArtifact404() throws Exception {
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "badapp");
     AppRequest<Config> appRequest =
-      new AppRequest<>(new ArtifactSummary("something", "1.0.0", false), null);
+      new AppRequest<>(new ArtifactSummary("something", "1.0.0"), null);
     HttpResponse response = deploy(appId, appRequest);
     Assert.assertEquals(404, response.getStatusLine().getStatusCode());
   }
@@ -93,7 +95,7 @@ public class AppLifecycleHttpHandlerTest extends AppFabricTestBase {
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "cfgApp");
     ConfigTestApp.ConfigClass config = new ConfigTestApp.ConfigClass("abc", "def");
     AppRequest<ConfigTestApp.ConfigClass> request = new AppRequest<>(
-      new ArtifactSummary(artifactId.getName(), artifactId.getVersion().getVersion(), false), config);
+      new ArtifactSummary(artifactId.getName(), artifactId.getVersion().getVersion()), config);
     Assert.assertEquals(200, deploy(appId, request).getStatusLine().getStatusCode());
 
     JsonObject appDetails = getAppDetails(Id.Namespace.DEFAULT.getId(), appId.getId());

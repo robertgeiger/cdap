@@ -18,10 +18,10 @@ package co.cask.cdap.internal.app.runtime.artifact;
 
 import co.cask.cdap.api.artifact.ApplicationClass;
 import co.cask.cdap.api.artifact.ArtifactClasses;
-import co.cask.cdap.api.artifact.ArtifactDescriptor;
+import co.cask.cdap.api.artifact.ArtifactId;
 import co.cask.cdap.api.artifact.ArtifactVersion;
-import co.cask.cdap.api.artifact.PluginSelector;
-import co.cask.cdap.api.templates.plugins.PluginClass;
+import co.cask.cdap.api.plugin.PluginClass;
+import co.cask.cdap.api.plugin.PluginSelector;
 import co.cask.cdap.common.ArtifactAlreadyExistsException;
 import co.cask.cdap.common.ArtifactNotFoundException;
 import co.cask.cdap.common.ArtifactRangeNotFoundException;
@@ -31,6 +31,7 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.common.utils.ImmutablePair;
+import co.cask.cdap.internal.app.runtime.adapter.ArtifactDescriptor;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ApplicationClassInfo;
 import co.cask.cdap.proto.artifact.ApplicationClassSummary;
@@ -40,6 +41,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
 import org.apache.twill.filesystem.Location;
@@ -169,7 +171,7 @@ public class ArtifactRepository {
     List<ApplicationClassInfo> infos = Lists.newArrayList();
     for (Map.Entry<ArtifactDescriptor, ApplicationClass> entry :
       artifactStore.getApplicationClasses(namespace, className).entrySet()) {
-      ArtifactSummary artifactSummary = ArtifactSummary.from(entry.getKey());
+      ArtifactSummary artifactSummary = ArtifactSummary.from(entry.getKey().getArtifactId());
       ApplicationClass appClass = entry.getValue();
       infos.add(new ApplicationClassInfo(artifactSummary, appClass.getClassName(), appClass.getConfigSchema()));
     }
@@ -235,7 +237,23 @@ public class ArtifactRepository {
   public Map.Entry<ArtifactDescriptor, PluginClass> findPlugin(Id.Artifact artifactId, String pluginType,
                                                                String pluginName, PluginSelector selector)
     throws IOException, PluginNotExistsException {
-    return selector.select(artifactStore.getPluginClasses(artifactId, pluginType, pluginName));
+    SortedMap<ArtifactDescriptor, PluginClass> pluginClasses = artifactStore.getPluginClasses(
+      artifactId, pluginType, pluginName);
+    SortedMap<ArtifactId, PluginClass> artifactIds = Maps.newTreeMap();
+    for (Map.Entry<ArtifactDescriptor, PluginClass> pluginClassEntry : pluginClasses.entrySet()) {
+      artifactIds.put(pluginClassEntry.getKey().getArtifactId(), pluginClassEntry.getValue());
+    }
+    Map.Entry<ArtifactId, PluginClass> chosenArtifact = selector.select(artifactIds);
+    if (chosenArtifact == null) {
+      throw new PluginNotExistsException(artifactId, pluginType, pluginName);
+    }
+
+    for (Map.Entry<ArtifactDescriptor, PluginClass> pluginClassEntry : pluginClasses.entrySet()) {
+      if (pluginClassEntry.getKey().getArtifactId().compareTo(chosenArtifact.getKey()) == 0) {
+        return pluginClassEntry;
+      }
+    }
+    throw new PluginNotExistsException(artifactId, pluginType, pluginName);
   }
 
   /**
@@ -465,7 +483,7 @@ public class ArtifactRepository {
   // convert details to summaries (to hide location and other unnecessary information)
   private List<ArtifactSummary> convertAndAdd(List<ArtifactSummary> summaries, Iterable<ArtifactDetail> details) {
     for (ArtifactDetail detail : details) {
-      summaries.add(ArtifactSummary.from(detail.getDescriptor()));
+      summaries.add(ArtifactSummary.from(detail.getDescriptor().getArtifactId()));
     }
     return summaries;
   }
@@ -507,9 +525,9 @@ public class ArtifactRepository {
         isInvalid = true;
         errMsg
           .append(" Parent '")
-          .append(parent.getDescriptor().getName())
+          .append(parent.getDescriptor().getArtifactId().getName())
           .append("-")
-          .append(parent.getDescriptor().getVersion().getVersion())
+          .append(parent.getDescriptor().getArtifactId().getVersion().getVersion())
           .append("' has parents.");
       }
     }
@@ -526,7 +544,7 @@ public class ArtifactRepository {
   private void addAppSummaries(List<ApplicationClassSummary> summaries, Id.Namespace namespace) {
     for (Map.Entry<ArtifactDescriptor, List<ApplicationClass>> classInfo :
       artifactStore.getApplicationClasses(namespace).entrySet()) {
-      ArtifactSummary artifactSummary = ArtifactSummary.from(classInfo.getKey());
+      ArtifactSummary artifactSummary = ArtifactSummary.from(classInfo.getKey().getArtifactId());
 
       for (ApplicationClass appClass : classInfo.getValue()) {
         summaries.add(new ApplicationClassSummary(artifactSummary, appClass.getClassName()));

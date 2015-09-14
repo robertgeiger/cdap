@@ -18,10 +18,11 @@ package co.cask.cdap.client;
 
 import co.cask.cdap.api.artifact.ApplicationClass;
 import co.cask.cdap.api.artifact.ArtifactClasses;
+import co.cask.cdap.api.artifact.ArtifactScope;
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.templates.plugins.PluginClass;
-import co.cask.cdap.api.templates.plugins.PluginPropertyField;
+import co.cask.cdap.api.plugin.PluginClass;
+import co.cask.cdap.api.plugin.PluginPropertyField;
 import co.cask.cdap.app.program.ManifestFields;
 import co.cask.cdap.client.artifact.MyApp;
 import co.cask.cdap.client.artifact.plugin.Plugin1;
@@ -42,7 +43,6 @@ import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.artifact.PluginInfo;
 import co.cask.cdap.proto.artifact.PluginSummary;
 import co.cask.cdap.test.XSlowTests;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -61,7 +61,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.Manifest;
@@ -87,7 +86,7 @@ public class ArtifactClientTestRun extends ClientTestBase {
   public void setUp() throws Throwable {
     super.setUp();
     artifactClient = new ArtifactClient(clientConfig, new RESTClient(clientConfig));
-    for (ArtifactSummary artifactSummary : artifactClient.list(Id.Namespace.DEFAULT, false)) {
+    for (ArtifactSummary artifactSummary : artifactClient.list(Id.Namespace.DEFAULT)) {
       artifactClient.delete(
         Id.Artifact.from(Id.Namespace.DEFAULT, artifactSummary.getName(), artifactSummary.getVersion()));
     }
@@ -185,10 +184,9 @@ public class ArtifactClientTestRun extends ClientTestBase {
     artifactClient.add(pluginId.getNamespace(), pluginId.getName(), inputSupplier,
                        pluginId.getVersion().getVersion(), parents, additionalPlugins);
 
-    ArtifactSummary myapp1Summary = new ArtifactSummary(myapp1Id.getName(), myapp1Id.getVersion().getVersion(), false);
-    ArtifactSummary myapp2Summary = new ArtifactSummary(myapp2Id.getName(), myapp2Id.getVersion().getVersion(), false);
-    ArtifactSummary pluginArtifactSummary =
-      new ArtifactSummary(pluginId.getName(), pluginId.getVersion().getVersion(), false);
+    ArtifactSummary myapp1Summary = new ArtifactSummary(myapp1Id.getName(), myapp1Id.getVersion().getVersion());
+    ArtifactSummary myapp2Summary = new ArtifactSummary(myapp2Id.getName(), myapp2Id.getVersion().getVersion());
+    ArtifactSummary pluginArtifactSummary = new ArtifactSummary(pluginId.getName(), pluginId.getVersion().getVersion());
 
     Set<ArtifactSummary> artifacts = Sets.newHashSet(artifactClient.list(Id.Namespace.DEFAULT));
     Assert.assertEquals(Sets.newHashSet(myapp1Summary, myapp2Summary, pluginArtifactSummary), artifacts);
@@ -199,6 +197,13 @@ public class ArtifactClientTestRun extends ClientTestBase {
     // list all artifacts named 'myapp-plugins'
     Assert.assertEquals(Sets.newHashSet(pluginArtifactSummary),
                         Sets.newHashSet(artifactClient.listVersions(Id.Namespace.DEFAULT, pluginId.getName())));
+    // artifacts should be in user scope
+    try {
+      artifactClient.listVersions(Id.Namespace.DEFAULT, pluginId.getName(), ArtifactScope.SYSTEM);
+      Assert.fail();
+    } catch (ArtifactNotFoundException e) {
+      // expected
+    }
 
     // get info about specific artifacts
     Schema myAppConfigSchema = new ReflectionSchemaGenerator().generate(MyApp.Conf.class);
@@ -208,12 +213,12 @@ public class ArtifactClientTestRun extends ClientTestBase {
 
     // test get myapp-1.0.0
     ArtifactInfo myapp1Info =
-      new ArtifactInfo(myapp1Id.getName(), myapp1Id.getVersion().getVersion(), false, myAppClasses);
+      new ArtifactInfo(myapp1Id.getName(), myapp1Id.getVersion().getVersion(), ArtifactScope.USER, myAppClasses);
     Assert.assertEquals(myapp1Info, artifactClient.getArtifactInfo(myapp1Id));
 
     // test get myapp-2.0.0
     ArtifactInfo myapp2Info =
-      new ArtifactInfo(myapp2Id.getName(), myapp2Id.getVersion().getVersion(), false, myAppClasses);
+      new ArtifactInfo(myapp2Id.getName(), myapp2Id.getVersion().getVersion(), ArtifactScope.USER, myAppClasses);
     Assert.assertEquals(myapp2Info, artifactClient.getArtifactInfo(myapp2Id));
 
     // test get myapp-plugins-2.0.0
@@ -224,7 +229,7 @@ public class ArtifactClientTestRun extends ClientTestBase {
       .addPlugins(additionalPlugins)
       .build();
     ArtifactInfo pluginArtifactInfo =
-      new ArtifactInfo(pluginId.getName(), pluginId.getVersion().getVersion(), false, pluginClasses);
+      new ArtifactInfo(pluginId.getName(), pluginId.getVersion().getVersion(), ArtifactScope.USER, pluginClasses);
     Assert.assertEquals(pluginArtifactInfo, artifactClient.getArtifactInfo(pluginId));
 
     // test get all app classes in namespace

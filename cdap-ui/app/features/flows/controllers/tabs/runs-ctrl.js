@@ -1,7 +1,25 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 angular.module(PKG.name + '.feature.flows')
-  .controller('FlowsRunsController', function($scope, $filter, $state, rRuns) {
+  .controller('FlowsRunsController', function($scope, $filter, $state, rRuns, $bootstrapModal, rFlowsDetail) {
   var fFilter = $filter('filter');
   this.runs = rRuns;
+  this.$bootstrapModal = $bootstrapModal;
+  this.description = rFlowsDetail.description;
 
    if ($state.params.runid) {
      var match = fFilter(rRuns, {runid: $state.params.runid});
@@ -44,7 +62,12 @@ angular.module(PKG.name + '.feature.flows')
    {
      title: 'Logs',
      template: '/assets/features/flows/templates/tabs/runs/tabs/log.html'
-   }];
+   },
+   {
+     title: 'Datasets',
+     template: '/assets/features/flows/templates/tabs/data.html'
+   }
+   ];
 
    this.activeTab = this.tabs[0];
 
@@ -55,4 +78,21 @@ angular.module(PKG.name + '.feature.flows')
     this.activeTab = tab;
 
    };
+
+   this.openHistory = function() {
+     this.$bootstrapModal.open({
+       size: 'lg',
+       windowClass: 'center cdap-modal',
+       templateUrl: '/assets/features/flows/templates/tabs/history.html',
+       controller: ['runs', '$scope', function(runs, $scope) {
+         $scope.runs = runs;
+       }],
+       resolve: {
+         runs: function() {
+           return this.runs;
+         }.bind(this)
+       }
+     });
+   };
+
  });

@@ -1,8 +1,25 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 angular.module(PKG.name + '.feature.admin')
-  .controller('NamespaceTemplatesController', function ($scope, myAdapterApi, PluginConfigFactory, myHelpers, mySettings, $stateParams, $alert, $state) {
+  .controller('NamespaceTemplatesController', function ($scope, myAdapterApi, PluginConfigFactory, myHelpers, mySettings, $stateParams, $alert, $state, GLOBALS, $rootScope) {
 
     var vm = this;
 
+    vm.GLOBALS = GLOBALS;
     vm.pluginList = [];
     vm.isEdit = false;
     vm.isDisabled = false;
@@ -57,15 +74,23 @@ angular.module(PKG.name + '.feature.admin')
         vm.configFetched = false;
 
         var prom;
+        var params = {
+          adapterType: vm.templateType,
+          namespace: $stateParams.namespace,
+          version: $rootScope.cdapVersion
+        };
         switch (vm.pluginType) {
           case 'source':
-            prom = myAdapterApi.fetchSources({ adapterType: vm.templateType }).$promise;
+            params.extensionType = GLOBALS.pluginTypes[vm.templateType].source;
+            prom = myAdapterApi.fetchSources(params).$promise;
             break;
           case 'transform':
-            prom = myAdapterApi.fetchTransforms({ adapterType: vm.templateType }).$promise;
+            params.extensionType = GLOBALS.pluginTypes[vm.templateType].transform;
+            prom = myAdapterApi.fetchTransforms(params).$promise;
             break;
           case 'sink':
-            prom = myAdapterApi.fetchSinks({ adapterType: vm.templateType }).$promise;
+            params.extensionType = GLOBALS.pluginTypes[vm.templateType].sink;
+            prom = myAdapterApi.fetchSinks(params).$promise;
             break;
         }
         prom.then(function (res) {

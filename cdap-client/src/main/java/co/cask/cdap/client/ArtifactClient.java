@@ -17,8 +17,9 @@
 package co.cask.cdap.client;
 
 import co.cask.cdap.api.annotation.Beta;
+import co.cask.cdap.api.artifact.ArtifactScope;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.templates.plugins.PluginClass;
+import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.client.config.ClientConfig;
 import co.cask.cdap.client.util.RESTClient;
 import co.cask.cdap.common.ArtifactAlreadyExistsException;
@@ -96,23 +97,24 @@ public class ArtifactClient {
    */
   public List<ArtifactSummary> list(Id.Namespace namespace)
     throws IOException, UnauthorizedException, NotFoundException {
-    return list(namespace, true);
+    return list(namespace, null);
   }
 
   /**
    * Lists all artifacts in the given namespace, optionally including system artifacts.
    *
    * @param namespace the namespace to list artifacts in
-   * @param includeSystem whether or not to include system artifacts
+   * @param scope the scope of the artifacts to get. If null, both user and system artifacts are listed
    * @return list of {@link ArtifactSummary}
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    * @throws NotFoundException if the namespace could not be found
    */
-  public List<ArtifactSummary> list(Id.Namespace namespace,
-                                    boolean includeSystem)
+  public List<ArtifactSummary> list(Id.Namespace namespace, @Nullable ArtifactScope scope)
     throws IOException, UnauthorizedException, NotFoundException {
-    URL url = config.resolveNamespacedURLV3(namespace, String.format("artifacts?includeSystem=%s", includeSystem));
+
+    URL url = scope == null ? config.resolveNamespacedURLV3(namespace, "artifacts") :
+      config.resolveNamespacedURLV3(namespace, String.format("artifacts?scope=%s", scope.name()));
     HttpResponse response =
       restClient.execute(HttpMethod.GET, url, config.getAccessToken(), HttpURLConnection.HTTP_NOT_FOUND);
 
@@ -134,7 +136,7 @@ public class ArtifactClient {
    */
   public List<ArtifactSummary> listVersions(Id.Namespace namespace, String artifactName)
     throws UnauthorizedException, IOException, ArtifactNotFoundException {
-    return listVersions(namespace, artifactName, false);
+    return listVersions(namespace, artifactName, null);
   }
 
   /**
@@ -142,17 +144,17 @@ public class ArtifactClient {
    *
    * @param namespace the namespace to list artifact versions in
    * @param artifactName the name of the artifact
-   * @param isSystem whether or not the artifact versions are for system artifacts
+   * @param scope the scope of artifacts to get. If none is given, the scope defaults to the user scope
    * @return list of {@link ArtifactSummary}
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    * @throws ArtifactNotFoundException if the given artifact does not exist
    */
-  public List<ArtifactSummary> listVersions(Id.Namespace namespace, String artifactName, boolean isSystem)
+  public List<ArtifactSummary> listVersions(Id.Namespace namespace, String artifactName, @Nullable ArtifactScope scope)
     throws UnauthorizedException, IOException, ArtifactNotFoundException {
 
-    URL url = config.resolveNamespacedURLV3(namespace,
-      String.format("artifacts/%s?isSystem=%s", artifactName, isSystem));
+    URL url = scope == null ? config.resolveNamespacedURLV3(namespace, String.format("artifacts/%s", artifactName)) :
+      config.resolveNamespacedURLV3(namespace, String.format("artifacts/%s?scope=%s", artifactName, scope.name()));
 
     HttpResponse response = restClient.execute(
       HttpMethod.GET, url, config.getAccessToken(), HttpURLConnection.HTTP_NOT_FOUND);
@@ -173,24 +175,24 @@ public class ArtifactClient {
    */
   public ArtifactInfo getArtifactInfo(Id.Artifact artifactId)
     throws IOException, UnauthorizedException, ArtifactNotFoundException {
-    return getArtifactInfo(artifactId, false);
+    return getArtifactInfo(artifactId, ArtifactScope.USER);
   }
 
   /**
    * Gets information about a specific artifact version.
    *
    * @param artifactId the id of the artifact to get
-   * @param isSystem if the artifact is a system artifact
+   * @param scope the scope of the artifact
    * @return information about the given artifact
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    * @throws ArtifactNotFoundException if the given artifact does not exist
    */
-  public ArtifactInfo getArtifactInfo(Id.Artifact artifactId, boolean isSystem)
+  public ArtifactInfo getArtifactInfo(Id.Artifact artifactId, ArtifactScope scope)
     throws IOException, UnauthorizedException, ArtifactNotFoundException {
 
-    String path = String.format("artifacts/%s/versions/%s?isSystem=%s",
-      artifactId.getName(), artifactId.getVersion().getVersion(), isSystem);
+    String path = String.format("artifacts/%s/versions/%s?scope=%s",
+      artifactId.getName(), artifactId.getVersion().getVersion(), scope.name());
     URL url = config.resolveNamespacedURLV3(artifactId.getNamespace(), path);
 
     HttpResponse response =
@@ -211,7 +213,7 @@ public class ArtifactClient {
    */
   public List<ApplicationClassSummary> getApplicationClasses(Id.Namespace namespace)
     throws IOException, UnauthorizedException {
-    return getApplicationClasses(namespace, true);
+    return getApplicationClasses(namespace, (ArtifactScope) null);
   }
 
   /**
@@ -219,15 +221,16 @@ public class ArtifactClient {
    * optionally including classes from system artifacts.
    *
    * @param namespace the namespace to list application classes from
-   * @param includeSystem whether to include application classes from system artifacts
+   * @param scope the scope to list application classes in. If null, classes from all scopes are returned
    * @return summaries of all application classes in the given namespace, including classes from system artifacts
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    */
-  public List<ApplicationClassSummary> getApplicationClasses(Id.Namespace namespace, boolean includeSystem)
+  public List<ApplicationClassSummary> getApplicationClasses(Id.Namespace namespace,
+                                                             @Nullable ArtifactScope scope)
     throws IOException, UnauthorizedException {
 
-    String path = String.format("classes/apps?includeSystem=%s", includeSystem);
+    String path = scope == null ? "classes/apps" : String.format("classes/apps?scope=%s", scope.name());
     URL url = config.resolveNamespacedURLV3(namespace, path);
 
     HttpResponse response = restClient.execute(HttpMethod.GET, url, config.getAccessToken());
@@ -245,22 +248,22 @@ public class ArtifactClient {
    */
   public List<ApplicationClassInfo> getApplicationClasses(Id.Namespace namespace, String className)
     throws IOException, UnauthorizedException {
-    return getApplicationClasses(namespace, className, false);
+    return getApplicationClasses(namespace, className, ArtifactScope.USER);
   }
 
   /**
    * Get information about all application classes in the specified namespace, of the specified class name.
    *
    * @param namespace the namespace to list application classes from
-   * @param isSystem whether the specified class name is for a class from a system artifact
+   * @param scope the scope to list application classes in
    * @return summaries of all application classes in the given namespace, including classes from system artifacts
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    */
-  public List<ApplicationClassInfo> getApplicationClasses(Id.Namespace namespace, String className, boolean isSystem)
+  public List<ApplicationClassInfo> getApplicationClasses(Id.Namespace namespace, String className, ArtifactScope scope)
     throws IOException, UnauthorizedException {
 
-    String path = String.format("classes/apps/%s?isSystem=%s", className, isSystem);
+    String path = String.format("classes/apps/%s?scope=%s", className, scope.name());
     URL url = config.resolveNamespacedURLV3(namespace, path);
 
     HttpResponse response = restClient.execute(HttpMethod.GET, url, config.getAccessToken());
@@ -277,23 +280,23 @@ public class ArtifactClient {
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    */
   public List<String> getPluginTypes(Id.Artifact artifactId) throws IOException, UnauthorizedException {
-    return getPluginTypes(artifactId, false);
+    return getPluginTypes(artifactId, ArtifactScope.USER);
   }
 
   /**
    * Gets all the plugin types available to a specific artifact.
    *
    * @param artifactId the id of the artifact to get
-   * @param isSystem if the artifact is a system artifact
+   * @param scope the scope of the artifact
    * @return list of plugin types available to the given artifact.
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    */
   public List<String> getPluginTypes(Id.Artifact artifactId,
-                                     boolean isSystem) throws IOException, UnauthorizedException {
+                                     ArtifactScope scope) throws IOException, UnauthorizedException {
 
-    String path = String.format("artifacts/%s/versions/%s/extensions?isSystem=%s",
-      artifactId.getName(), artifactId.getVersion().getVersion(), isSystem);
+    String path = String.format("artifacts/%s/versions/%s/extensions?scope=%s",
+      artifactId.getName(), artifactId.getVersion().getVersion(), scope.name());
     URL url = config.resolveNamespacedURLV3(artifactId.getNamespace(), path);
 
     HttpResponse response = restClient.execute(HttpMethod.GET, url, config.getAccessToken());
@@ -311,7 +314,7 @@ public class ArtifactClient {
    */
   public List<PluginSummary> getPluginSummaries(Id.Artifact artifactId,
                                                 String pluginType) throws IOException, UnauthorizedException {
-    return getPluginSummaries(artifactId, pluginType, false);
+    return getPluginSummaries(artifactId, pluginType, ArtifactScope.USER);
   }
 
   /**
@@ -319,16 +322,16 @@ public class ArtifactClient {
    *
    * @param artifactId the id of the artifact to get
    * @param pluginType the type of plugins to get
-   * @param isSystem if the artifact is a system artifact
+   * @param scope the scope of the artifact
    * @return list of {@link PluginSummary}
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    */
   public List<PluginSummary> getPluginSummaries(Id.Artifact artifactId, String pluginType,
-                                                boolean isSystem) throws IOException, UnauthorizedException {
+                                                ArtifactScope scope) throws IOException, UnauthorizedException {
 
-    String path = String.format("artifacts/%s/versions/%s/extensions/%s?isSystem=%s",
-      artifactId.getName(), artifactId.getVersion().getVersion(), pluginType, isSystem);
+    String path = String.format("artifacts/%s/versions/%s/extensions/%s?scope=%s",
+      artifactId.getName(), artifactId.getVersion().getVersion(), pluginType, scope.name());
     URL url = config.resolveNamespacedURLV3(artifactId.getNamespace(), path);
 
     HttpResponse response = restClient.execute(HttpMethod.GET, url, config.getAccessToken());
@@ -347,7 +350,7 @@ public class ArtifactClient {
    */
   public List<PluginInfo> getPluginInfo(Id.Artifact artifactId, String pluginType,
                                         String pluginName) throws IOException, UnauthorizedException {
-    return getPluginInfo(artifactId, pluginType, pluginName, false);
+    return getPluginInfo(artifactId, pluginType, pluginName, ArtifactScope.USER);
   }
 
   /**
@@ -356,16 +359,16 @@ public class ArtifactClient {
    * @param artifactId the id of the artifact to get
    * @param pluginType the type of plugins to get
    * @param pluginName the name of the plugins to get
-   * @param isSystem if the artifact is a system artifact
+   * @param scope the scope of the artifact
    * @return list of {@link PluginInfo}
    * @throws IOException if a network error occurred
    * @throws UnauthorizedException if the request is not authorized successfully in the gateway server
    */
   public List<PluginInfo> getPluginInfo(Id.Artifact artifactId, String pluginType, String pluginName,
-                                        boolean isSystem) throws IOException, UnauthorizedException {
+                                        ArtifactScope scope) throws IOException, UnauthorizedException {
 
-    String path = String.format("artifacts/%s/versions/%s/extensions/%s/plugins/%s?isSystem=%s",
-      artifactId.getName(), artifactId.getVersion().getVersion(), pluginType, pluginName, isSystem);
+    String path = String.format("artifacts/%s/versions/%s/extensions/%s/plugins/%s?scope=%s",
+      artifactId.getName(), artifactId.getVersion().getVersion(), pluginType, pluginName, scope.name());
     URL url = config.resolveNamespacedURLV3(artifactId.getNamespace(), path);
 
     HttpResponse response = restClient.execute(HttpMethod.GET, url, config.getAccessToken());

@@ -26,11 +26,13 @@ import co.cask.cdap.app.runtime.ProgramRunner;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
+import co.cask.cdap.data2.metadata.writer.ProgramContextAware;
 import co.cask.cdap.internal.app.runtime.DataFabricFacadeFactory;
 import co.cask.cdap.internal.app.runtime.ProgramControllerServiceAdapter;
 import co.cask.cdap.internal.app.runtime.ProgramOptionConstants;
 import co.cask.cdap.internal.app.runtime.adapter.PluginInstantiator;
 import co.cask.cdap.internal.app.services.ServiceHttpServer;
+import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.tephra.TransactionSystemClient;
 import com.google.common.base.Preconditions;
@@ -73,10 +75,6 @@ public class ServiceProgramRunner implements ProgramRunner {
 
   @Override
   public ProgramController run(Program program, ProgramOptions options) {
-    // Extract and verify parameters
-    String componentName = options.getName();
-    Preconditions.checkNotNull(componentName, "Missing service component name.");
-
     int instanceId = Integer.parseInt(options.getArguments().getOption(ProgramOptionConstants.INSTANCE_ID, "-1"));
     Preconditions.checkArgument(instanceId >= 0, "Missing instance Id");
 
@@ -99,13 +97,20 @@ public class ServiceProgramRunner implements ProgramRunner {
     String host = options.getArguments().getOption(ProgramOptionConstants.HOST);
     Preconditions.checkArgument(host != null, "No hostname is provided");
 
+    // Setup dataset framework context, if required
+    if (datasetFramework instanceof ProgramContextAware) {
+      Id.Program programId = program.getId();
+      ((ProgramContextAware) datasetFramework).initContext(new Id.Run(programId, runId.getId()));
+    }
+
     ServiceHttpServer component = new ServiceHttpServer(host, program, spec, runId, options.getUserArguments(),
                                       instanceId, instanceCount, serviceAnnouncer,
                                       metricsCollectionService, datasetFramework, dataFabricFacadeFactory,
                                       txClient, discoveryServiceClient, locationFactory,
                                       createArtifactPluginInstantiator(program.getClassLoader()));
 
-    ProgramControllerServiceAdapter controller = new ServiceProgramControllerAdapter(component, componentName, runId);
+    ProgramController controller = new ServiceProgramControllerAdapter(component, program.getId(), runId,
+                                                                       spec.getName() + "-" + instanceId);
     component.start();
     return controller;
   }
@@ -118,8 +123,9 @@ public class ServiceProgramRunner implements ProgramRunner {
   private static final class ServiceProgramControllerAdapter extends ProgramControllerServiceAdapter {
     private final ServiceHttpServer service;
 
-    public ServiceProgramControllerAdapter(ServiceHttpServer service, String programName, RunId runId) {
-      super(service, programName, runId);
+    public ServiceProgramControllerAdapter(ServiceHttpServer service, Id.Program programId,
+                                           RunId runId, String componentName) {
+      super(service, programId, runId, componentName);
       this.service = service;
     }
 

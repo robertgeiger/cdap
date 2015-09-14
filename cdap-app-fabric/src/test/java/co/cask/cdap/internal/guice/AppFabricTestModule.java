@@ -27,6 +27,7 @@ import co.cask.cdap.common.guice.ConfigModule;
 import co.cask.cdap.common.guice.DiscoveryRuntimeModule;
 import co.cask.cdap.common.guice.IOModule;
 import co.cask.cdap.common.guice.LocationRuntimeModule;
+import co.cask.cdap.common.namespace.guice.NamespaceClientRuntimeModule;
 import co.cask.cdap.config.guice.ConfigStoreModule;
 import co.cask.cdap.data.runtime.DataFabricModules;
 import co.cask.cdap.data.runtime.DataSetServiceModules;
@@ -37,6 +38,7 @@ import co.cask.cdap.explore.guice.ExploreClientModule;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
 import co.cask.cdap.internal.app.runtime.schedule.SchedulerException;
 import co.cask.cdap.logging.guice.LoggingModules;
+import co.cask.cdap.metadata.MetadataServiceModule;
 import co.cask.cdap.metrics.guice.MetricsClientRuntimeModule;
 import co.cask.cdap.metrics.guice.MetricsHandlerModule;
 import co.cask.cdap.notifications.feeds.guice.NotificationFeedServiceRuntimeModule;
@@ -101,6 +103,8 @@ public final class AppFabricTestModule extends AbstractModule {
     install(new ConfigStoreModule().getInMemoryModule());
     install(new StreamAdminModules().getInMemoryModules());
     install(new StreamServiceRuntimeModule().getInMemoryModules());
+    install(new NamespaceClientRuntimeModule().getStandaloneModules());
+    install(new MetadataServiceModule().getInMemoryModules());
   }
 
   private Scheduler createNoopScheduler() {

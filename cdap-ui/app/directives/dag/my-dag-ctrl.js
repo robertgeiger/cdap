@@ -1,5 +1,21 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 angular.module(PKG.name + '.commons')
-  .controller('MyDAGController', function MyDAGController(jsPlumb, $scope, $timeout, MyAppDAGService, myHelpers, MyDAGFactory, $window, $popover, $rootScope, EventPipe) {
+  .controller('MyDAGController', function MyDAGController(jsPlumb, $scope, $timeout, MyAppDAGService, myHelpers, MyDAGFactory, $window, $popover, $rootScope, EventPipe, GLOBALS) {
     this.plugins = $scope.config || [];
     this.isDisabled = $scope.isDisabled;
     MyAppDAGService.setIsDisabled(this.isDisabled);
@@ -90,15 +106,15 @@ angular.module(PKG.name + '.commons')
     function drawNode(id, type) {
       var sourceSettings = MyDAGFactory.getSettings().source,
           sinkSettings = MyDAGFactory.getSettings().sink;
-
+      var artifactType = GLOBALS.pluginTypes[MyAppDAGService.metadata.template.type];
       switch(type) {
-        case 'source':
+        case artifactType.source:
           this.instance.addEndpoint(id, sourceSettings, {uuid: id});
           break;
-        case 'sink':
+        case artifactType.sink:
           this.instance.addEndpoint(id, sinkSettings, {uuid: id});
           break;
-        case 'transform':
+        case artifactType.transform:
           // Need to id each end point so that it can be used later to make connections.
           this.instance.addEndpoint(id, sourceSettings, {uuid: 'Left' + id});
           this.instance.addEndpoint(id, sinkSettings, {uuid: 'Right' + id});
@@ -245,7 +261,9 @@ angular.module(PKG.name + '.commons')
 
       // Need to move this to the controller that is using this directive.
       this.instance.bind('connection', function (con) {
-        createPopover(con.connection);
+        if (!this.isDisabled) {
+          createPopover(con.connection);
+        }
 
         // Whenever there is a change in the connection just copy the entire array
         // We never know if a connection was altered or removed. We don't want to 'Sync'
@@ -265,8 +283,9 @@ angular.module(PKG.name + '.commons')
         this.instance = jsPlumb.getInstance();
         this.instance.importDefaults(MyDAGFactory.getSettings().default);
         this.instance.bind('connection', function (con) {
-
-          createPopover(con.connection);
+          if (!this.isDisabled) {
+            createPopover(con.connection);
+          }
 
           MyAppDAGService.setConnections(this.instance.getConnections());
         }.bind(this));

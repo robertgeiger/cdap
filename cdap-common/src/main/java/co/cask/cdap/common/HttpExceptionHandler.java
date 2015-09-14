@@ -19,6 +19,8 @@ package co.cask.cdap.common;
 import co.cask.cdap.common.http.SecurityRequestContext;
 import co.cask.http.ExceptionHandler;
 import co.cask.http.HttpResponder;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Iterables;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
@@ -33,13 +35,22 @@ public class HttpExceptionHandler extends ExceptionHandler {
 
   @Override
   public void handle(Throwable t, HttpRequest request, HttpResponder responder) {
-    if (t instanceof BadRequestException) {
+    if (Iterables.size(Iterables.filter(Throwables.getCausalChain(t), ServiceUnavailableException.class)) > 0) {
+      responder.sendString(HttpResponseStatus.SERVICE_UNAVAILABLE, t.getMessage());
+    } else if (t instanceof BadRequestException) {
+      logWithTrace(request, t);
       responder.sendString(HttpResponseStatus.BAD_REQUEST, t.getMessage());
     } else if (t instanceof ConflictException) {
+      logWithTrace(request, t);
       responder.sendString(HttpResponseStatus.CONFLICT, t.getMessage());
     } else if (t instanceof NotFoundException) {
+      logWithTrace(request, t);
       responder.sendString(HttpResponseStatus.NOT_FOUND, t.getMessage());
+    } else if (t instanceof NotImplementedException) {
+      logWithTrace(request, t);
+      responder.sendString(HttpResponseStatus.NOT_IMPLEMENTED, t.getMessage());
     } else if (t instanceof UnauthorizedException) {
+      logWithTrace(request, t);
       responder.sendStatus(HttpResponseStatus.UNAUTHORIZED);
     } else {
       LOG.error("Unexpected error: request={} {} user={}:",
@@ -49,4 +60,8 @@ public class HttpExceptionHandler extends ExceptionHandler {
     }
   }
 
+  private void logWithTrace(HttpRequest request, Throwable t) {
+    LOG.trace("Error in handling request={} {} for user={}:", request.getMethod().getName(), request.getUri(),
+              SecurityRequestContext.getUserId().or("<null>"), t);
+  }
 }
