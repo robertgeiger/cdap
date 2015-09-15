@@ -63,28 +63,13 @@ public abstract class Id {
     return getType(this.getClass());
   }
 
-  protected String getIdForRep() {
-    return getId();
-  }
-
-  public String getIdRep() {
-    Id parent = getParent();
-    if (parent == null) {
-      return getIdType() + ":" + getIdForRep();
-    } else {
-      return parent.getIdRep() + "/" + getIdType() + ":" + getIdForRep();
-    }
-  }
-
   @Override
-  public String toString() {
-    return getIdRep();
-  }
+  public abstract String toString();
 
   @Nullable
   protected abstract Id getParent();
 
-  public abstract String getId();
+  public abstract String getIdParts();
 
   /**
    * Indicates that the ID belongs to a namespace.
@@ -106,6 +91,11 @@ public abstract class Id {
 
     public static QueryHandle from(String id) {
       return new QueryHandle(id);
+    }
+
+    @Override
+    public String toString() {
+      return id;
     }
 
     @Nullable
