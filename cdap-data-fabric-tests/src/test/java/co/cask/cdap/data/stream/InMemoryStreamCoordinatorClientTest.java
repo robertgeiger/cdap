@@ -15,6 +15,7 @@
  */
 package co.cask.cdap.data.stream;
 
+import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.guice.ConfigModule;
 import co.cask.cdap.common.guice.DiscoveryRuntimeModule;
 import co.cask.cdap.common.guice.LocationRuntimeModule;
@@ -46,6 +47,7 @@ public class InMemoryStreamCoordinatorClientTest extends StreamCoordinatorTestBa
 
   @BeforeClass
   public static void init() throws IOException {
+    cConf.set(Constants.CFG_LOCAL_DATA_DIR, tmpFolder.newFolder().getAbsolutePath());
 
     Injector injector = Guice.createInjector(
       new ConfigModule(cConf),
