@@ -71,6 +71,9 @@ public final class TokenSecureStoreUpdater implements SecureStoreUpdater {
 
   private void refreshCredentials() {
     try {
+      LOG.info("REMOVE: UserGroupInformation.getCurrentUser().checkTGTAndReloginFromKeytab()");
+      UserGroupInformation.getCurrentUser().checkTGTAndReloginFromKeytab();
+
       Credentials refreshedCredentials = new Credentials();
 
       if (User.isHBaseSecurityEnabled(hConf)) {
@@ -112,6 +115,9 @@ public final class TokenSecureStoreUpdater implements SecureStoreUpdater {
 
   private long calculateUpdateInterval() {
     List<Long> renewalTimes = Lists.newArrayList();
+
+    // TODO: automatically determine renewal time for Kerberos ticket
+    renewalTimes.add(TimeUnit.MINUTES.toMillis(1));
 
     renewalTimes.add(hConf.getLong(DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_RENEW_INTERVAL_KEY,
                                    DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_RENEW_INTERVAL_DEFAULT));
