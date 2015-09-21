@@ -16,6 +16,7 @@
 
 package co.cask.cdap.etl.common;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -27,11 +28,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Objects;
 
 /**
  * Class that extends {@link DBOutputFormat} to load the database driver class correctly.
@@ -59,10 +62,24 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
 
     try {
       Connection connection = getConnection(conf);
+      Preconditions.checkArgument(connection.getMetaData().supportsBatchUpdates(),
+                                  "JDBC connection doesn't support batch updates");
       PreparedStatement statement = connection.prepareStatement(constructQuery(tableName, fieldNames));
       return new DBRecordWriter(connection, statement) {
         @Override
         public void close(TaskAttemptContext context) throws IOException {
+          PreparedStatement st = getStatement();
+          if (Objects.equals(st.getClass().getName(), "org.hsqldb.jdbc.JDBCPreparedStatement")) {
+            // hack to support hsqldb, in case no batches were added
+            try {
+              Field field = st.getClass().getDeclaredField("isBatch");
+              field.setAccessible(true);
+              field.set(st, true);
+              field.setAccessible(false);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+              throw new RuntimeException("Failed to set org.hsqldb.jdbc.JDBCPreparedStatement.isBatch to true", e);
+            }
+          }
           super.close(context);
           try {
             DriverManager.deregisterDriver(driverShim);

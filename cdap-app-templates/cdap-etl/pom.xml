@@ -42,7 +42,7 @@
   <properties>
     <twitter4j.version>4.0.1</twitter4j.version>
     <etl.avro.version>1.7.7</etl.avro.version>
-    <hsqldb.version>2.3.1</hsqldb.version>
+    <hsqldb.version>2.3.0</hsqldb.version>
     <es.version>1.6.0</es.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
@@ -68,6 +68,10 @@
           <exclusion>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
           </exclusion>
           <exclusion>
             <groupId>org.apache.avro</groupId>

@@ -502,7 +502,7 @@ public class BatchETLDBTest extends BaseETLBatchTest {
     private final String database;
     private final String connectionUrl;
     private final Server server;
-    private final String hsqlDBDriver = "org.hsqldb.jdbcDriver";
+    private final String hsqlDBDriver = "org.hsqldb.jdbc.JDBCDriver";
 
     HSQLDBServer(String location, String database) {
       this.locationUrl = String.format("%s/%s", location, database);
