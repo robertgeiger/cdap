@@ -21,15 +21,17 @@ angular.module(PKG.name+'.commons')
     link: function (scope, elem, attrs) {
       // wrapping in timeout to have content loaded first and setting the scroll to the top
       $timeout(function() {
-        elem.prop('scrollTop', 10);
-        elem.bind('scroll', function () {
-          if (elem.prop('scrollTop') + elem.prop('offsetHeight') >= elem.prop('scrollHeight')) {
-            scope.$apply(attrs.infiniteScrollNext);
-          } else if (elem.prop('scrollTop') === 0) {
-            scope.$apply(attrs.infiniteScrollPrev);
-          }
-        });
+        elem.prop('scrollTop', 0);
+        elem.bind('scroll', _.debounce(scrollListener, 1000));
       }, 100);
+
+      function scrollListener() {
+        if (elem.prop('scrollTop') + elem.prop('offsetHeight') >= elem.prop('scrollHeight')) {
+          scope.$apply(attrs.infiniteScrollNext);
+        } else if (elem.prop('scrollTop') === 0) {
+          scope.$apply(attrs.infiniteScrollPrev);
+        }
+      }
 
       scope.$on('$destroy', function () {
         elem.unbind('scroll');

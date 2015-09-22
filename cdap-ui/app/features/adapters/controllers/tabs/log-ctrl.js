@@ -29,10 +29,15 @@ angular.module(PKG.name + '.feature.adapters')
 
         logsParams.runId = runs[0].runid;
 
-        AdapterDetail.logsApi.prevLogs(logsParams)
+        console.info('Polling for prev logs');
+        AdapterDetail.logsApi.pollNextLogs(logsParams)
           .$promise
           .then(function (logs) {
             $scope.logs = logs;
+            if ($scope.logs.length >= 50) {
+              console.info('Stopped polling for prev logs');
+              AdapterDetail.logsApi.stopPollNextLogs(logsParams);
+            }
             $scope.loadingNext = false;
           });
       });
@@ -42,7 +47,7 @@ angular.module(PKG.name + '.feature.adapters')
       if ($scope.loadingNext) {
         return;
       }
-
+      console.info('Loading next set of logs');
       $scope.loadingNext = true;
       logsParams.fromOffset = $scope.logs[$scope.logs.length-1].offset;
 
@@ -58,7 +63,7 @@ angular.module(PKG.name + '.feature.adapters')
       if ($scope.loadingPrev) {
         return;
       }
-
+      console.info('Loading next set of logs');
       $scope.loadingPrev = true;
       logsParams.fromOffset = $scope.logs[0].offset;
 

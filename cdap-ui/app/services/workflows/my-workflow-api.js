@@ -51,6 +51,9 @@ angular.module(PKG.name + '.services')
       nextLogs: myHelpers.getConfig('GET', 'REQUEST', basepath + '/runs/:runId/logs/next', true),
       prevLogs: myHelpers.getConfig('GET', 'REQUEST', basepath + '/runs/:runId/logs/prev', true),
 
+      pollNextLogs: myHelpers.getConfig('GET', 'POLL', basepath + '/runs/:runId/logs/next', true),
+      stopPollNextLogs: myHelpers.getConfig('GET', 'POLL-STOP', basepath + '/runs/:runId/logs/next', true),
+
       schedules: myHelpers.getConfig('GET', 'REQUEST', basepath + '/schedules', true),
       schedulesPreviousRunTime: myHelpers.getConfig('GET', 'REQUEST', basepath + '/previousruntime', true),
       pollScheduleStatus: myHelpers.getConfig('GET', 'POLL', schedulepath + '/status', false, { interval: 2000 }),
