@@ -61,7 +61,7 @@ import co.cask.cdap.data2.queue.ConsumerGroupConfig;
 import co.cask.cdap.data2.queue.DequeueStrategy;
 import co.cask.cdap.data2.queue.QueueClientFactory;
 import co.cask.cdap.data2.queue.QueueConsumer;
-import co.cask.cdap.data2.registry.UsageRegistry;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.transaction.queue.QueueMetrics;
 import co.cask.cdap.data2.transaction.stream.StreamConsumer;
 import co.cask.cdap.internal.app.queue.QueueReaderFactory;
@@ -132,7 +132,7 @@ public final class FlowletProgramRunner implements ProgramRunner {
   private final MetricsCollectionService metricsCollectionService;
   private final DiscoveryServiceClient discoveryServiceClient;
   private final DatasetFramework dsFramework;
-  private final UsageRegistry usageRegistry;
+  private final DefaultUsageRegistry usageRegistry;
 
   @Inject
   public FlowletProgramRunner(SchemaGenerator schemaGenerator,
@@ -143,7 +143,7 @@ public final class FlowletProgramRunner implements ProgramRunner {
                               MetricsCollectionService metricsCollectionService,
                               DiscoveryServiceClient discoveryServiceClient,
                               DatasetFramework dsFramework,
-                              UsageRegistry usageRegistry) {
+                              DefaultUsageRegistry usageRegistry) {
     this.schemaGenerator = schemaGenerator;
     this.datumWriterFactory = datumWriterFactory;
     this.dataFabricFacadeFactory = dataFabricFacadeFactory;

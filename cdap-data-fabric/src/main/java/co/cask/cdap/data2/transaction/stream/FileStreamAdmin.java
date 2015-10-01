@@ -31,6 +31,7 @@ import co.cask.cdap.data.view.ViewAdmin;
 import co.cask.cdap.data2.metadata.lineage.AccessType;
 import co.cask.cdap.data2.metadata.service.BusinessMetadataStore;
 import co.cask.cdap.data2.metadata.writer.LineageWriter;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.explore.utils.ExploreTableNaming;
@@ -97,7 +98,7 @@ public class FileStreamAdmin implements StreamAdmin {
                          StreamCoordinatorClient streamCoordinatorClient,
                          StreamConsumerStateStoreFactory stateStoreFactory,
                          NotificationFeedManager notificationFeedManager,
-                         UsageRegistry usageRegistry,
+                         DefaultUsageRegistry usageRegistry,
                          LineageWriter lineageWriter,
                          StreamMetaStore streamMetaStore,
                          ExploreTableNaming tableNaming,

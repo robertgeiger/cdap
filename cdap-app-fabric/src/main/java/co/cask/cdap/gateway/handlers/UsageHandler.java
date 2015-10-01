@@ -17,6 +17,7 @@
 package co.cask.cdap.gateway.handlers;
 
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
@@ -40,7 +41,7 @@ public class UsageHandler extends AbstractHttpHandler {
   private final UsageRegistry registry;
 
   @Inject
-  public UsageHandler(UsageRegistry registry) {
+  public UsageHandler(DefaultUsageRegistry registry) {
     this.registry = registry;
   }
 

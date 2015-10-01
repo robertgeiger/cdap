@@ -26,6 +26,7 @@ import co.cask.cdap.api.service.ServiceSpecification;
 import co.cask.cdap.api.service.http.HttpServiceHandlerSpecification;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.pipeline.AbstractStage;
 import co.cask.cdap.proto.Id;
@@ -42,7 +43,7 @@ public class ApplicationRegistrationStage extends AbstractStage<ApplicationWithP
   private final Store store;
   private final UsageRegistry usageRegistry;
 
-  public ApplicationRegistrationStage(Store store, UsageRegistry usageRegistry) {
+  public ApplicationRegistrationStage(Store store, DefaultUsageRegistry usageRegistry) {
     super(TypeToken.of(ApplicationWithPrograms.class));
     this.store = store;
     this.usageRegistry = usageRegistry;

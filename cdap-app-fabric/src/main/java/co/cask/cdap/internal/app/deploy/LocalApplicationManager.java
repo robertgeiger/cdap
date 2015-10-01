@@ -23,7 +23,7 @@ import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.metadata.service.BusinessMetadataStore;
-import co.cask.cdap.data2.registry.UsageRegistry;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConsumerFactory;
@@ -38,7 +38,6 @@ import co.cask.cdap.internal.app.deploy.pipeline.LocalArtifactLoaderStage;
 import co.cask.cdap.internal.app.deploy.pipeline.ProgramGenerationStage;
 import co.cask.cdap.internal.app.runtime.artifact.ArtifactRepository;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
-import co.cask.cdap.internal.app.services.AdapterService;
 import co.cask.cdap.pipeline.Pipeline;
 import co.cask.cdap.pipeline.PipelineFactory;
 import co.cask.cdap.proto.Id;
@@ -68,7 +67,7 @@ public class LocalApplicationManager<I, O> implements Manager<I, O> {
   private final DatasetFramework datasetFramework;
   private final DatasetFramework inMemoryDatasetFramework;
   private final MetricStore metricStore;
-  private final UsageRegistry usageRegistry;
+  private final DefaultUsageRegistry usageRegistry;
   private final ArtifactRepository artifactRepository;
   private final BusinessMetadataStore businessMetadataStore;
 
@@ -80,7 +79,7 @@ public class LocalApplicationManager<I, O> implements Manager<I, O> {
                                  @Named("datasetMDS") DatasetFramework inMemoryDatasetFramework,
                                  StreamAdmin streamAdmin, Scheduler scheduler,
                                  @Assisted ProgramTerminator programTerminator, MetricStore metricStore,
-                                 UsageRegistry usageRegistry, ArtifactRepository artifactRepository,
+                                 DefaultUsageRegistry usageRegistry, ArtifactRepository artifactRepository,
                                  BusinessMetadataStore businessMetadataStore) {
     this.configuration = configuration;
     this.namespacedLocationFactory = namespacedLocationFactory;

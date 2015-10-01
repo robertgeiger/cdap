@@ -24,6 +24,7 @@ import co.cask.cdap.common.discovery.EndpointStrategy;
 import co.cask.cdap.common.discovery.RandomEndpointStrategy;
 import co.cask.cdap.data2.metadata.lineage.AccessType;
 import co.cask.cdap.data2.metadata.writer.LineageWriter;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.proto.Id;
 import co.cask.common.http.HttpMethod;
@@ -74,7 +75,7 @@ public class DefaultStreamWriter implements StreamWriter {
   @Inject
   public DefaultStreamWriter(@Assisted("run") Id.Run run,
                              @Assisted("owners") List<Id> owners,
-                             UsageRegistry usageRegistry,
+                             DefaultUsageRegistry usageRegistry,
                              LineageWriter lineageWriter,
                              DiscoveryServiceClient discoveryServiceClient) {
     this.run = run;

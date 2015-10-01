@@ -18,7 +18,6 @@ package co.cask.cdap.data2.registry;
 
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.data2.datafabric.dataset.DatasetsUtil;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.cdap.data2.dataset2.tx.Transactional;
@@ -28,7 +27,6 @@ import co.cask.tephra.TransactionExecutorFactory;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
-import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,29 +40,21 @@ import java.util.Set;
  *
  * TODO: Reduce duplication between this and {@link UsageDataset}.
  */
-public class UsageRegistry {
+public abstract class UsageRegistry {
 
   private static final Logger LOG = LoggerFactory.getLogger(UsageRegistry.class);
 
-  private static final Id.DatasetInstance USAGE_INSTANCE_ID =
+  protected static final Id.DatasetInstance USAGE_INSTANCE_ID =
     Id.DatasetInstance.from(Id.Namespace.SYSTEM, "usage.registry");
 
   private final Transactional<UsageDatasetIterable, UsageDataset> txnl;
 
-  @Inject
-  public UsageRegistry(TransactionExecutorFactory txExecutorFactory, final DatasetFramework datasetFramework) {
+  protected UsageRegistry(TransactionExecutorFactory txExecutorFactory) {
     txnl = Transactional.of(txExecutorFactory, new Supplier<UsageDatasetIterable>() {
       @Override
       public UsageDatasetIterable get() {
         try {
-          Object usageDataset = DatasetsUtil.getOrCreateDataset(datasetFramework, USAGE_INSTANCE_ID,
-                                                                UsageDataset.class.getSimpleName(),
-                                                                DatasetProperties.EMPTY, null, null);
-          // Backward compatible check for version <= 3.0.0
-          if (usageDataset instanceof UsageDataset) {
-            return new UsageDatasetIterable((UsageDataset) usageDataset);
-          }
-          return new UsageDatasetIterable(new UsageDataset((Table) usageDataset));
+          return new UsageDatasetIterable(getUsageDataset());
         } catch (Exception e) {
           LOG.error("Failed to access usage table", e);
           throw Throwables.propagate(e);
@@ -72,6 +62,8 @@ public class UsageRegistry {
       }
     });
   }
+
+  protected abstract UsageDataset getUsageDataset() throws IOException, DatasetManagementException;
 
   /**
    * Registers usage of a stream by multiple ids.

@@ -18,6 +18,7 @@ package co.cask.cdap.internal.app.runtime.flow;
 import co.cask.cdap.common.queue.QueueName;
 import co.cask.cdap.data2.queue.ConsumerConfig;
 import co.cask.cdap.data2.queue.QueueConsumer;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.transaction.stream.StreamConsumer;
 import co.cask.cdap.internal.app.runtime.DataFabricFacade;
@@ -51,20 +52,20 @@ final class ConsumerSupplier<T> implements Supplier<T>, Closeable {
   private ConsumerConfig consumerConfig;
   private Closeable consumer;
 
-  static <T> ConsumerSupplier<T> create(Id.Namespace namespace, List<Id> owners, UsageRegistry usageRegistry,
+  static <T> ConsumerSupplier<T> create(Id.Namespace namespace, List<Id> owners, DefaultUsageRegistry usageRegistry,
                                         DataFabricFacade dataFabricFacade,
                                         QueueName queueName, ConsumerConfig consumerConfig) {
     return create(namespace, owners, usageRegistry, dataFabricFacade, queueName, consumerConfig, -1);
   }
 
-  static <T> ConsumerSupplier<T> create(Id.Namespace namespace, List<Id> owners, UsageRegistry usageRegistry,
+  static <T> ConsumerSupplier<T> create(Id.Namespace namespace, List<Id> owners, DefaultUsageRegistry usageRegistry,
                                         DataFabricFacade dataFabricFacade, QueueName queueName,
                                         ConsumerConfig consumerConfig, int numGroups) {
     return new ConsumerSupplier<>(namespace, owners, usageRegistry, dataFabricFacade,
                                    queueName, consumerConfig, numGroups);
   }
 
-  private ConsumerSupplier(Id.Namespace namespace, List<Id> owners, UsageRegistry usageRegistry,
+  private ConsumerSupplier(Id.Namespace namespace, List<Id> owners, DefaultUsageRegistry usageRegistry,
                            DataFabricFacade dataFabricFacade, QueueName queueName,
                            ConsumerConfig consumerConfig, int numGroups) {
     this.namespace = namespace;

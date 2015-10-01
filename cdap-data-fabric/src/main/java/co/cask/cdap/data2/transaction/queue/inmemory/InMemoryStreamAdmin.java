@@ -23,6 +23,7 @@ import co.cask.cdap.data.view.ViewAdmin;
 import co.cask.cdap.data2.metadata.lineage.AccessType;
 import co.cask.cdap.data2.metadata.service.BusinessMetadataStore;
 import co.cask.cdap.data2.metadata.writer.LineageWriter;
+import co.cask.cdap.data2.registry.DefaultUsageRegistry;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
@@ -52,7 +53,7 @@ public class InMemoryStreamAdmin extends InMemoryQueueAdmin implements StreamAdm
 
   @Inject
   public InMemoryStreamAdmin(InMemoryQueueService queueService,
-                             UsageRegistry usageRegistry,
+                             DefaultUsageRegistry usageRegistry,
                              LineageWriter lineageWriter,
                              StreamMetaStore streamMetaStore,
                              BusinessMetadataStore businessMds,
