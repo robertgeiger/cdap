@@ -89,7 +89,7 @@ public final class Tables {
   /**
    * Creates properties for {@link Table} or {@link Table} data set instance.
    * @param level level on which to detect conflicts in changes made by different transactions
-   * @param ttl time to live for data written into a table, in ms. {@link #NO_TTL} means unlimited
+   * @param ttl time to live for data written into a table, in seconds. {@link #NO_TTL} means unlimited
    * @return {@link DatasetProperties} for the data set
    */
   public static DatasetProperties tableProperties(ConflictDetection level, int ttl, DatasetProperties props) {

@@ -37,6 +37,7 @@ import org.apache.twill.filesystem.Location;
 import org.apache.twill.filesystem.LocationFactory;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -83,6 +84,8 @@ public class HBaseTableAdmin extends AbstractHBaseDataSetAdmin {
     String ttlProp = spec.getProperties().get(Table.PROPERTY_TTL);
     if (ttlProp != null) {
       long ttl = Long.parseLong(ttlProp);
+      // convert ttl from seconds to milli-seconds
+      ttl = TimeUnit.SECONDS.toMillis(ttl);
       if (ttl > 0) {
         columnDescriptor.setValue(TxConstants.PROPERTY_TTL, String.valueOf(ttl));
       }
@@ -132,14 +135,19 @@ public class HBaseTableAdmin extends AbstractHBaseDataSetAdmin {
       tableUtil.setBloomFilter(columnDescriptor, HBaseTableUtil.BloomType.ROW);
       needUpgrade = true;
     }
+    // ttl not null, convert to millis
+    String ttlInMillis = null;
+    if (spec.getProperty(Table.PROPERTY_TTL) != null) {
+      ttlInMillis = String.valueOf(TimeUnit.SECONDS.toMillis(Long.valueOf(spec.getProperty(Table.PROPERTY_TTL))));
+    }
+
     if (spec.getProperty(Table.PROPERTY_TTL) == null &&
         columnDescriptor.getValue(TxConstants.PROPERTY_TTL) != null) {
       columnDescriptor.remove(TxConstants.PROPERTY_TTL.getBytes());
       needUpgrade = true;
     } else if (spec.getProperty(Table.PROPERTY_TTL) != null &&
-               !spec.getProperty(Table.PROPERTY_TTL).equals
-                  (columnDescriptor.getValue(TxConstants.PROPERTY_TTL))) {
-      columnDescriptor.setValue(TxConstants.PROPERTY_TTL, spec.getProperty(TxConstants.PROPERTY_TTL));
+               !ttlInMillis.equals(columnDescriptor.getValue(TxConstants.PROPERTY_TTL))) {
+      columnDescriptor.setValue(TxConstants.PROPERTY_TTL, ttlInMillis);
       needUpgrade = true;
     }
 
