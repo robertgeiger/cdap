@@ -23,6 +23,7 @@ import co.cask.cdap.api.dataset.DatasetSpecification;
 import co.cask.cdap.api.dataset.module.DatasetModule;
 import co.cask.cdap.common.ServiceUnavailableException;
 import co.cask.cdap.data2.datafabric.dataset.type.DatasetClassLoaderProvider;
+import co.cask.cdap.proto.DatasetMeta;
 import co.cask.cdap.proto.DatasetSpecificationSummary;
 import co.cask.cdap.proto.Id;
 import com.google.common.annotations.VisibleForTesting;
@@ -279,6 +280,21 @@ public interface DatasetFramework {
                                    DatasetClassLoaderProvider classLoaderProvider,
                                    @Nullable Iterable<? extends Id> owners)
     throws DatasetManagementException, IOException;
+
+  /**
+   * Creates a dataset from {@link DatasetMeta}. Useful for avoiding remote calls.
+   *
+   * @param datasetInstanceId dataset instance id
+   * @param meta the {@link DatasetMeta}
+   * @param arguments runtime arguments for the dataset instance
+   * @param classLoader parent classLoader to be used to load classes or {@code null} to use system classLoader
+   * @param classLoaderProvider provider to get classloaders for different dataset modules
+   * @return instance of dataset
+   */
+  <T extends Dataset> T createDataset(Id.DatasetInstance datasetInstanceId,
+                                      DatasetMeta meta, @Nullable Map<String, String> arguments,
+                                      ClassLoader classLoader,
+                                      DatasetClassLoaderProvider classLoaderProvider) throws IOException;
 
   /**
    * Creates a namespace in the Storage Providers - HBase/LevelDB, Hive and HDFS/Local File System.

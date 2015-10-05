@@ -232,6 +232,17 @@ public class RemoteDatasetFramework implements DatasetFramework {
   }
 
   @Override
+  public <T extends Dataset> T createDataset(Id.DatasetInstance datasetInstanceId,
+                                             DatasetMeta instanceInfo,
+                                             @Nullable Map<String, String> arguments,
+                                             ClassLoader classLoader,
+                                             DatasetClassLoaderProvider classLoaderProvider) throws IOException {
+    DatasetType type = getDatasetType(instanceInfo.getType(), classLoader, classLoaderProvider);
+    return (T) type.getDataset(DatasetContext.from(datasetInstanceId.getNamespaceId()),
+                               instanceInfo.getSpec(), arguments);
+  }
+
+  @Override
   public void createNamespace(Id.Namespace namespaceId) throws DatasetManagementException {
     clientCache.getUnchecked(namespaceId).createNamespace();
   }

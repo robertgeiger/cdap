@@ -22,6 +22,8 @@ import co.cask.cdap.data2.datafabric.dataset.DatasetsUtil;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.tephra.TransactionExecutorFactory;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.inject.Inject;
 
 import java.io.IOException;
@@ -32,12 +34,19 @@ import java.io.IOException;
 public class SystemUsageRegistry extends UsageRegistry {
 
   private final DatasetFramework datasetFramework;
+  private final Supplier<UsageDataset> usageDataset;
 
   @Inject
   public SystemUsageRegistry(TransactionExecutorFactory txExecutorFactory,
                              DatasetFramework datasetFramework) {
     super(txExecutorFactory);
     this.datasetFramework = datasetFramework;
+    this.usageDataset = Suppliers.memoize(new Supplier<UsageDataset>() {
+      @Override
+      public UsageDataset get() {
+        return null;
+      }
+    });
   }
 
   @Override
