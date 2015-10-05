@@ -15,6 +15,8 @@
  */
 package co.cask.cdap.data.runtime;
 
+import co.cask.cdap.data2.datafabric.store.DefaultNamespaceStore;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.queue.QueueClientFactory;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.data2.transaction.queue.inmemory.InMemoryQueueAdmin;
@@ -30,7 +32,6 @@ public class DataFabricLocalModule extends AbstractModule {
 
   @Override
   public void configure() {
-
     install(Modules.override(new DataFabricLevelDBModule()).with(new AbstractModule() {
       @Override
       protected void configure() {
@@ -38,6 +39,8 @@ public class DataFabricLocalModule extends AbstractModule {
         bind(QueueAdmin.class).to(InMemoryQueueAdmin.class).in(Singleton.class);
       }
     }));
+
+    bind(NamespaceStore.class).to(DefaultNamespaceStore.class);
   }
 
 }

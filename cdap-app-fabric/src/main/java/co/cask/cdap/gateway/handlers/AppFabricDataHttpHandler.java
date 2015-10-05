@@ -19,6 +19,7 @@ package co.cask.cdap.gateway.handlers;
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.gateway.handlers.util.AbstractAppFabricHttpHandler;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.StreamDetail;
@@ -44,13 +45,15 @@ public class AppFabricDataHttpHandler extends AbstractAppFabricHttpHandler {
    * Store manages non-runtime lifecycle.
    */
   private final Store store;
+  private final NamespaceStore nsStore;
 
   /**
    * Constructs an new instance. Parameters are binded by Guice.
    */
   @Inject
-  public AppFabricDataHttpHandler(Store store) {
+  public AppFabricDataHttpHandler(Store store, NamespaceStore nsStore) {
     this.store = store;
+    this.nsStore = nsStore;
   }
 
   /**
@@ -67,7 +70,7 @@ public class AppFabricDataHttpHandler extends AbstractAppFabricHttpHandler {
     for (StreamSpecification spec : specs) {
       result.add(new StreamDetail(spec.getName()));
     }
-    if (result.isEmpty() && store.getNamespace(namespaceId) == null) {
+    if (result.isEmpty() && nsStore.getNamespace(namespaceId) == null) {
       responder.sendString(HttpResponseStatus.NOT_FOUND, String.format("Namespace '%s' not found.", namespace));
       return;
     }

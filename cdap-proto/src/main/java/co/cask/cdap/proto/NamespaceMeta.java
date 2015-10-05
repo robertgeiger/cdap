@@ -49,6 +49,9 @@ public final class NamespaceMeta {
     return config;
   }
 
+  public static NamespaceMeta.Builder builder() {
+    return new Builder();
+  }
 
   /**
    * Builder used to build {@link NamespaceMeta}

@@ -20,11 +20,11 @@ import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.http.AbstractBodyConsumer;
 import co.cask.cdap.common.io.Locations;
-import co.cask.cdap.common.namespace.AbstractNamespaceClient;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.data2.datafabric.dataset.type.DatasetModuleConflictException;
-import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
+import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeService;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.proto.DatasetModuleMeta;
 import co.cask.cdap.proto.DatasetTypeMeta;
 import co.cask.cdap.proto.Id;
@@ -63,19 +63,19 @@ public class DatasetTypeHandler extends AbstractHttpHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(DatasetTypeHandler.class);
 
-  private final DatasetTypeManager manager;
+  private final DatasetTypeService manager;
   private final CConfiguration cConf;
   private final NamespacedLocationFactory namespacedLocationFactory;
-  private final AbstractNamespaceClient namespaceClient;
+  private final NamespaceStore namespaces;
 
   @Inject
-  public DatasetTypeHandler(DatasetTypeManager manager, CConfiguration conf,
+  public DatasetTypeHandler(DatasetTypeService manager, CConfiguration conf,
                             NamespacedLocationFactory namespacedLocationFactory,
-                            AbstractNamespaceClient namespaceClient) {
+                            NamespaceStore namespaces) {
     this.manager = manager;
     this.cConf = conf;
     this.namespacedLocationFactory = namespacedLocationFactory;
-    this.namespaceClient = namespaceClient;
+    this.namespaces = namespaces;
   }
 
   @Override
@@ -326,7 +326,7 @@ public class DatasetTypeHandler extends AbstractHttpHandler {
    */
   private void ensureNamespaceExists(Id.Namespace namespace) throws Exception {
     if (!Id.Namespace.SYSTEM.equals(namespace)) {
-      namespaceClient.get(namespace);
+      namespaces.getNamespace(namespace);
     }
   }
 }

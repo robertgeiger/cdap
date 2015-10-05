@@ -20,6 +20,7 @@ import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.explore.service.ExploreException;
@@ -71,11 +72,11 @@ public class Hive12ExploreService extends BaseHiveExploreService {
   public Hive12ExploreService(TransactionSystemClient txClient, DatasetFramework datasetFramework,
                               CConfiguration cConf, Configuration hConf,
                               @Named(Constants.Explore.PREVIEWS_DIR_NAME) File previewsDir,
-                              StreamAdmin streamAdmin, Store store,
+                              StreamAdmin streamAdmin, NamespaceStore nsStore,
                               SystemDatasetInstantiatorFactory datasetInstantiatorFactory,
                               ExploreTableNaming tableNaming) {
     super(txClient, datasetFramework, cConf, hConf, previewsDir,
-          streamAdmin, store, datasetInstantiatorFactory, tableNaming);
+          streamAdmin, nsStore, datasetInstantiatorFactory, tableNaming);
   }
 
   @Override

@@ -16,9 +16,9 @@
 
 package co.cask.cdap.app.runtime.scheduler;
 
-import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceConfig;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -31,14 +31,14 @@ import javax.annotation.Nullable;
  */
 public class SchedulerQueueResolver {
   private final String defaultQueue;
-  private final Store store;
+  private final NamespaceStore nsStore;
 
   /**
    * Construct SchedulerQueueResolver with CConfiguration and Store.
    */
-  public SchedulerQueueResolver(CConfiguration cConf, Store store) {
+  public SchedulerQueueResolver(CConfiguration cConf, NamespaceStore nsStore) {
     this.defaultQueue = cConf.get(Constants.AppFabric.APP_SCHEDULER_QUEUE);
-    this.store = store;
+    this.nsStore = nsStore;
   }
 
   /**
@@ -56,7 +56,7 @@ public class SchedulerQueueResolver {
    */
   @Nullable
   public String getQueue(Id.Namespace namespaceId) {
-    NamespaceMeta meta = store.getNamespace(namespaceId);
+    NamespaceMeta meta = nsStore.getNamespace(namespaceId);
     if (meta != null) {
       NamespaceConfig config = meta.getConfig();
       return config.getSchedulerQueueName() != null ? config.getSchedulerQueueName() : getDefaultQueue();

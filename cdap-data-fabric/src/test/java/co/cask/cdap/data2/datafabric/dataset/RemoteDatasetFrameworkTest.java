@@ -28,12 +28,14 @@ import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
 import co.cask.cdap.data2.datafabric.dataset.instance.DatasetInstanceManager;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetInstanceService;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
+import co.cask.cdap.data2.datafabric.dataset.service.DefaultDatasetInstanceService;
 import co.cask.cdap.data2.datafabric.dataset.service.LocalStorageProviderNamespaceAdmin;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetAdminOpHTTPHandler;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutorService;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.InMemoryDatasetOpExecutor;
 import co.cask.cdap.data2.datafabric.dataset.service.mds.MDSDatasetsRegistry;
-import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
+import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeService;
+import co.cask.cdap.data2.datafabric.dataset.type.DefaultDatasetTypeService;
 import co.cask.cdap.data2.dataset2.AbstractDatasetFrameworkTest;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
@@ -43,12 +45,10 @@ import co.cask.cdap.data2.dataset2.SingleTypeModule;
 import co.cask.cdap.data2.dataset2.lib.table.CoreDatasetsModule;
 import co.cask.cdap.data2.dataset2.module.lib.inmemory.InMemoryTableModule;
 import co.cask.cdap.data2.metrics.DatasetMetricsReporter;
-import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.explore.client.DiscoveryExploreClient;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.proto.Id;
 import co.cask.http.HttpHandler;
-import co.cask.tephra.TransactionManager;
 import co.cask.tephra.inmemory.InMemoryTxSystemClient;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -77,7 +77,7 @@ import java.util.concurrent.TimeUnit;
  * Tests for {@link RemoteDatasetFramework}
  */
 public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
-  private TransactionManager txManager;
+
   private DatasetOpExecutorService opExecutorService;
   private DatasetService service;
   private RemoteDatasetFramework framework;
@@ -99,8 +99,6 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
     // Tx Manager to support working with datasets
     Configuration txConf = HBaseConfiguration.create();
     CConfigurationUtil.copyTxProperties(cConf, txConf);
-    txManager = new TransactionManager(txConf);
-    txManager.startAndWait();
     InMemoryTxSystemClient txSystemClient = new InMemoryTxSystemClient(txManager);
 
     LocalLocationFactory locationFactory = new LocalLocationFactory(new File(cConf.get(Constants.CFG_LOCAL_DATA_DIR)));
@@ -125,19 +123,22 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
     MDSDatasetsRegistry mdsDatasetsRegistry = new MDSDatasetsRegistry(txSystemClient, mdsFramework);
 
     ExploreFacade exploreFacade = new ExploreFacade(new DiscoveryExploreClient(discoveryService), cConf);
-    DatasetInstanceService instanceService = new DatasetInstanceService(
-      new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory, DEFAULT_MODULES),
+    DatasetTypeService typeService = new DefaultDatasetTypeService(
+      cConf, mdsDatasetsRegistry, locationFactory, DEFAULT_MODULES);
+    DatasetInstanceService instanceService = new DefaultDatasetInstanceService(
+      new DefaultDatasetTypeService(cConf, mdsDatasetsRegistry, locationFactory, DEFAULT_MODULES),
       new DatasetInstanceManager(mdsDatasetsRegistry),
       new InMemoryDatasetOpExecutor(framework),
       exploreFacade,
       cConf,
-      new UsageRegistry(txExecutorFactory, framework), NAMESPACE_CLIENT);
+      txExecutorFactory,
+      framework, null);
 
     service = new DatasetService(cConf,
                                  namespacedLocationFactory,
                                  discoveryService,
                                  discoveryService,
-                                 new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory, DEFAULT_MODULES),
+                                 typeService,
                                  metricsCollectionService,
                                  new InMemoryDatasetOpExecutor(framework),
                                  mdsDatasetsRegistry,
@@ -145,7 +146,7 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
                                  instanceService,
                                  new LocalStorageProviderNamespaceAdmin(cConf, namespacedLocationFactory,
                                                                         exploreFacade),
-                                 NAMESPACE_CLIENT
+                                 getNamespaceStore()
     );
     // Start dataset service, wait for it to be discoverable
     service.start();
@@ -160,9 +161,6 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
     }, Threads.SAME_THREAD_EXECUTOR);
 
     startLatch.await(5, TimeUnit.SECONDS);
-
-    framework.createNamespace(Id.Namespace.SYSTEM);
-    framework.createNamespace(NAMESPACE_ID);
   }
 
   // Note: Cannot have these system namespace restrictions in system namespace since we use it internally in
@@ -197,9 +195,7 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
 
   @After
   public void after() throws DatasetManagementException {
-    framework.deleteNamespace(NAMESPACE_ID);
-    framework.deleteNamespace(Id.Namespace.SYSTEM);
-    Futures.getUnchecked(Services.chainStop(service, opExecutorService, txManager));
+    Futures.getUnchecked(Services.chainStop(service, opExecutorService));
   }
 
   @Override

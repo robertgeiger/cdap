@@ -15,6 +15,8 @@
  */
 package co.cask.cdap.data.runtime;
 
+import co.cask.cdap.data2.datafabric.store.DefaultNamespaceStore;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.dataset2.lib.table.leveldb.LevelDBTableService;
 import co.cask.cdap.data2.queue.QueueClientFactory;
 import co.cask.cdap.data2.transaction.metrics.TransactionManagerMetricsCollector;
@@ -42,5 +44,7 @@ public class DataFabricLevelDBModule extends AbstractModule {
     // bind transactions
     bind(TxMetricsCollector.class).to(TransactionManagerMetricsCollector.class).in(Scopes.SINGLETON);
     install(new TransactionModules().getInMemoryModules());
+
+    bind(NamespaceStore.class).to(DefaultNamespaceStore.class);
   }
 }

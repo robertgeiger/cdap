@@ -34,6 +34,7 @@ import co.cask.http.HttpResponder;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
@@ -169,11 +170,11 @@ public class DatasetInstanceHandler extends AbstractHttpHandler {
    */
   @DELETE
   @Path("/data/datasets/{name}")
-  public void drop(HttpRequest request, HttpResponder responder, @PathParam("namespace-id") String namespaceId,
-                   @PathParam("name") String name) throws Exception {
+  public void delete(HttpRequest request, HttpResponder responder, @PathParam("namespace-id") String namespaceId,
+                     @PathParam("name") String name) throws Exception {
     LOG.info("Deleting dataset {}.{}", namespaceId, name);
     Id.DatasetInstance instance = Id.DatasetInstance.from(namespaceId, name);
-    instanceService.drop(instance);
+    instanceService.delete(instance);
     responder.sendStatus(HttpResponseStatus.OK);
   }
 
@@ -214,7 +215,11 @@ public class DatasetInstanceHandler extends AbstractHttpHandler {
     responder.sendStatus(HttpResponseStatus.NOT_IMPLEMENTED);
   }
 
-  private List<? extends Id> strings2Ids(List<String> strings) {
+  private List<? extends Id> strings2Ids(@Nullable List<String> strings) {
+    if (strings == null) {
+      return ImmutableList.of();
+    }
+
     return Lists.transform(strings, new Function<String, Id>() {
       @Nullable
       @Override
@@ -236,7 +241,7 @@ public class DatasetInstanceHandler extends AbstractHttpHandler {
     });
   }
 
-  private Collection<DatasetSpecificationSummary> spec2Summary(Collection<DatasetSpecification> specs) {
+  public static Collection<DatasetSpecificationSummary> spec2Summary(Collection<DatasetSpecification> specs) {
     List<DatasetSpecificationSummary> datasetSummaries = Lists.newArrayList();
     for (DatasetSpecification spec : specs) {
       // TODO: (CDAP-3097) handle system datasets specially within a namespace instead of filtering them out

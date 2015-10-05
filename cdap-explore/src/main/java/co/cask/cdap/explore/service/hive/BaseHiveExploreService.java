@@ -21,11 +21,11 @@ import co.cask.cdap.api.dataset.DatasetSpecification;
 import co.cask.cdap.api.dataset.lib.PartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.app.runtime.scheduler.SchedulerQueueResolver;
-import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
@@ -167,12 +167,12 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
 
   protected BaseHiveExploreService(TransactionSystemClient txClient, DatasetFramework datasetFramework,
                                    CConfiguration cConf, Configuration hConf,
-                                   File previewsDir, StreamAdmin streamAdmin, Store store,
+                                   File previewsDir, StreamAdmin streamAdmin, NamespaceStore nsStore,
                                    SystemDatasetInstantiatorFactory datasetInstantiatorFactory,
                                    ExploreTableNaming tableNaming) {
     this.cConf = cConf;
     this.hConf = hConf;
-    this.schedulerQueueResolver = new SchedulerQueueResolver(cConf, store);
+    this.schedulerQueueResolver = new SchedulerQueueResolver(cConf, nsStore);
     this.previewsDir = previewsDir;
     this.metastoreClientLocal = new ThreadLocal<>();
     this.metastoreClientReferences = Maps.newConcurrentMap();

@@ -32,6 +32,7 @@ import co.cask.cdap.data.runtime.DataSetsModules;
 import co.cask.cdap.data.stream.service.MDSStreamMetaStore;
 import co.cask.cdap.data.stream.service.StreamMetaStore;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.explore.guice.ExploreClientModule;
 import co.cask.cdap.internal.app.store.DefaultStore;
 import co.cask.cdap.proto.Id;
@@ -53,7 +54,7 @@ public class MDSStreamMetaStoreTest extends StreamMetaStoreTestBase {
   private static StreamMetaStore streamMetaStore;
   private static DatasetService datasetService;
   private static TransactionManager transactionManager;
-  private static Store store;
+  private static NamespaceStore store;
 
   @BeforeClass
   public static void init() throws Exception {
@@ -81,7 +82,7 @@ public class MDSStreamMetaStoreTest extends StreamMetaStoreTestBase {
     transactionManager.startAndWait();
     datasetService = injector.getInstance(DatasetService.class);
     datasetService.startAndWait();
-    store = injector.getInstance(Store.class);
+    store = injector.getInstance(NamespaceStore.class);
   }
 
   @AfterClass

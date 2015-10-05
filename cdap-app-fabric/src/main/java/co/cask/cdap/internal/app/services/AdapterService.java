@@ -20,6 +20,7 @@ import co.cask.cdap.api.app.ApplicationSpecification;
 import co.cask.cdap.api.schedule.SchedulableProgramType;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.NotFoundException;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -36,13 +37,15 @@ public class AdapterService {
   private static final Logger LOG = LoggerFactory.getLogger(AdapterService.class);
 
   private final Scheduler scheduler;
-  private final Store store;
   private final ApplicationLifecycleService applicationLifecycleService;
+  private final Store store;
+  private final NamespaceStore nsStore;
 
   @Inject
-  public AdapterService(Scheduler scheduler, Store store,
+  public AdapterService(Scheduler scheduler, NamespaceStore nsStore, Store store,
                         ApplicationLifecycleService applicationLifecycleService) {
     this.scheduler = scheduler;
+    this.nsStore = nsStore;
     this.store = store;
     this.applicationLifecycleService = applicationLifecycleService;
   }
@@ -52,7 +55,7 @@ public class AdapterService {
    * adapter related schedules, and application templates.
    */
   public void upgrade() throws Exception {
-    for (NamespaceMeta namespaceMeta : store.listNamespaces()) {
+    for (NamespaceMeta namespaceMeta : nsStore.listNamespaces()) {
       Id.Namespace namespace = Id.Namespace.from(namespaceMeta.getName());
       for (AdapterDefinition adapterDefinition : store.getAllAdapters(namespace)) {
 

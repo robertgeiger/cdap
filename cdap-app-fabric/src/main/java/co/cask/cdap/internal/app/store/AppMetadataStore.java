@@ -25,6 +25,7 @@ import co.cask.cdap.app.runtime.ProgramController;
 import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.CConfiguration;
+import co.cask.cdap.data2.datafabric.store.NamespaceMetadataStore;
 import co.cask.cdap.data2.dataset2.lib.table.MDSKey;
 import co.cask.cdap.data2.dataset2.lib.table.MetadataStoreDataset;
 import co.cask.cdap.internal.app.ApplicationSpecificationAdapter;
@@ -32,7 +33,6 @@ import co.cask.cdap.internal.app.DefaultApplicationSpecification;
 import co.cask.cdap.internal.app.runtime.workflow.BasicWorkflowToken;
 import co.cask.cdap.proto.AdapterStatus;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.templates.AdapterDefinition;
@@ -66,7 +66,8 @@ import javax.annotation.Nullable;
 import static com.google.common.base.Predicates.and;
 
 /**
- * Store for application metadata
+ * Store for application metadata. Separate from {@link NamespaceMetadataStore} because {@link NamespaceMetadataStore}
+ * also needs to be used by {@link co.cask.cdap.data2.datafabric.dataset.service.DatasetInstanceService}.
  */
 public class AppMetadataStore extends MetadataStoreDataset {
   private static final Logger LOG = LoggerFactory.getLogger(AppMetadataStore.class);
@@ -77,7 +78,6 @@ public class AppMetadataStore extends MetadataStoreDataset {
   private static final String TYPE_RUN_RECORD_STARTED = "runRecordStarted";
   private static final String TYPE_RUN_RECORD_SUSPENDED = "runRecordSuspended";
   private static final String TYPE_RUN_RECORD_COMPLETED = "runRecordCompleted";
-  private static final String TYPE_NAMESPACE = "namespace";
   private static final String TYPE_ADAPTER = "adapter";
   private static final String WORKFLOW_TOKEN_PROPERTY_KEY = "workflowToken";
 
@@ -164,8 +164,8 @@ public class AppMetadataStore extends MetadataStoreDataset {
 
 
     write(key, new RunRecordMeta(pid, startTs, null, ProgramRunStatus.RUNNING,
-      ImmutableMap.of("runtimeArgs",
-        GSON.toJson(runtimeArgs, MAP_STRING_STRING_TYPE)), twillRunId));
+                                 ImmutableMap.of("runtimeArgs",
+                                                 GSON.toJson(runtimeArgs, MAP_STRING_STRING_TYPE)), twillRunId));
   }
 
   public void recordProgramSuspend(Id.Program program, String pid) {
@@ -472,22 +472,6 @@ public class AppMetadataStore extends MetadataStoreDataset {
     deleteAll(new MDSKey.Builder().add(TYPE_RUN_RECORD_SUSPENDED, namespaceId).build());
   }
 
-  public void createNamespace(NamespaceMeta metadata) {
-    write(getNamespaceKey(metadata.getName()), metadata);
-  }
-
-  public NamespaceMeta getNamespace(Id.Namespace id) {
-    return getFirst(getNamespaceKey(id.getId()), NamespaceMeta.class);
-  }
-
-  public void deleteNamespace(Id.Namespace id) {
-    deleteAll(getNamespaceKey(id.getId()));
-  }
-
-  public List<NamespaceMeta> listNamespaces() {
-    return list(getNamespaceKey(null), NamespaceMeta.class);
-  }
-
   @Deprecated
   public void writeAdapter(Id.Namespace id, AdapterDefinition adapterSpec,
                            AdapterStatus adapterStatus) {
@@ -527,14 +511,6 @@ public class AppMetadataStore extends MetadataStoreDataset {
   @Deprecated
   public void deleteAllAdapters(Id.Namespace id) {
     deleteAll(new MDSKey.Builder().add(TYPE_ADAPTER, id.getId()).build());
-  }
-
-  private MDSKey getNamespaceKey(@Nullable String name) {
-    MDSKey.Builder builder = new MDSKey.Builder().add(TYPE_NAMESPACE);
-    if (null != name) {
-      builder.add(name);
-    }
-    return builder.build();
   }
 
   public void recordWorkflowProgramStart(Id.Program program, String programRunId, String workflow,

@@ -26,8 +26,6 @@ import co.cask.cdap.common.guice.ConfigModule;
 import co.cask.cdap.common.guice.LocationRuntimeModule;
 import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.common.metrics.NoOpMetricsCollectionService;
-import co.cask.cdap.common.namespace.AbstractNamespaceClient;
-import co.cask.cdap.common.namespace.InMemoryNamespaceClient;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
@@ -39,12 +37,15 @@ import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetAdminOpHTTP
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutorService;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.InMemoryDatasetOpExecutor;
 import co.cask.cdap.data2.datafabric.dataset.service.mds.MDSDatasetsRegistry;
-import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
+import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeService;
+import co.cask.cdap.data2.datafabric.dataset.type.DefaultDatasetTypeService;
+import co.cask.cdap.data2.datafabric.store.DefaultNamespaceStore;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.dataset2.DatasetDefinitionRegistryFactory;
 import co.cask.cdap.data2.dataset2.DefaultDatasetDefinitionRegistry;
 import co.cask.cdap.data2.dataset2.InMemoryDatasetFramework;
+import co.cask.cdap.data2.dataset2.module.lib.inmemory.InMemoryTableModule;
 import co.cask.cdap.data2.metrics.DatasetMetricsReporter;
-import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.explore.client.DiscoveryExploreClient;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.internal.test.AppJarHelper;
@@ -56,8 +57,12 @@ import co.cask.common.http.HttpRequests;
 import co.cask.common.http.HttpResponse;
 import co.cask.common.http.ObjectResponse;
 import co.cask.http.HttpHandler;
+import co.cask.tephra.DefaultTransactionExecutor;
+import co.cask.tephra.TransactionAware;
+import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionManager;
+import co.cask.tephra.TransactionSystemClient;
 import co.cask.tephra.inmemory.InMemoryTxSystemClient;
 import co.cask.tephra.runtime.TransactionInMemoryModule;
 import com.google.common.collect.ImmutableMap;
@@ -91,7 +96,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +110,7 @@ public abstract class DatasetServiceTestBase {
   private DatasetOpExecutorService opExecutorService;
   private DatasetService service;
   private LocationFactory locationFactory;
-  private AbstractNamespaceClient namespaceClient;
+  private NamespaceStore namespaceStore;
   protected TransactionManager txManager;
   protected RemoteDatasetFramework dsFramework;
 
@@ -171,31 +175,37 @@ public abstract class DatasetServiceTestBase {
       .putAll(DatasetMetaTableUtil.getModules())
       .build();
 
-    TransactionExecutorFactory txExecutorFactory = injector.getInstance(TransactionExecutorFactory.class);
+    final TransactionSystemClient txClient = new InMemoryTxSystemClient(txManager);
+    TransactionExecutorFactory txExecutorFactory = new TransactionExecutorFactory() {
+      @Override
+      public TransactionExecutor createExecutor(Iterable<TransactionAware> txAwares) {
+        return new DefaultTransactionExecutor(txClient, txAwares);
+      }
+    };
 
     MDSDatasetsRegistry mdsDatasetsRegistry =
       new MDSDatasetsRegistry(txSystemClient, new InMemoryDatasetFramework(registryFactory, modules, cConf));
 
     ExploreFacade exploreFacade = new ExploreFacade(new DiscoveryExploreClient(discoveryService), cConf);
-    namespaceClient = new InMemoryNamespaceClient();
-    namespaceClient.create(NamespaceMeta.DEFAULT);
-    DatasetInstanceService instanceService = new DatasetInstanceService(
-      new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory,
-                             // we don't need any default modules in this test
-                             Collections.<String, DatasetModule>emptyMap()),
+    DatasetTypeService typeService = new DefaultDatasetTypeService(
+      cConf, mdsDatasetsRegistry, locationFactory,
+      // only need table module in this test
+      ImmutableMap.<String, DatasetModule>of("table", new InMemoryTableModule()));
+    DatasetInstanceService instanceService = new DefaultDatasetInstanceService(
+      typeService,
       new DatasetInstanceManager(mdsDatasetsRegistry),
       new InMemoryDatasetOpExecutor(dsFramework),
       exploreFacade,
       cConf,
-      new UsageRegistry(txExecutorFactory, dsFramework), namespaceClient);
+      txExecutorFactory,
+      dsFramework, null);
 
+    namespaceStore = new DefaultNamespaceStore(txExecutorFactory, dsFramework);
     service = new DatasetService(cConf,
                                  namespacedLocationFactory,
                                  discoveryService,
                                  discoveryService,
-                                 new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory,
-                                                        // we don't need any default modules in this test
-                                                        Collections.<String, DatasetModule>emptyMap()),
+                                 typeService,
                                  metricsCollectionService,
                                  new InMemoryDatasetOpExecutor(dsFramework),
                                  mdsDatasetsRegistry,
@@ -203,7 +213,7 @@ public abstract class DatasetServiceTestBase {
                                  instanceService,
                                  new LocalStorageProviderNamespaceAdmin(cConf, namespacedLocationFactory,
                                                                         exploreFacade),
-                                 namespaceClient
+                                 namespaceStore
     );
 
     // Start dataset service, wait for it to be discoverable
@@ -219,14 +229,15 @@ public abstract class DatasetServiceTestBase {
     }, Threads.SAME_THREAD_EXECUTOR);
 
     startLatch.await(5, TimeUnit.SECONDS);
-    // this usually happens while creating a namespace, however not doing that in data fabric tests
+
+    namespaceStore.createNamespace(NamespaceMeta.DEFAULT);
     Locations.mkdirsIfNotExists(namespacedLocationFactory.get(Id.Namespace.DEFAULT));
   }
 
   @After
   public void after() throws Exception {
     Services.chainStop(service, opExecutorService, txManager);
-    namespaceClient.delete(Id.Namespace.DEFAULT);
+    namespaceStore.deleteNamespace(Id.Namespace.DEFAULT);
     Locations.deleteQuietly(locationFactory.create(Id.Namespace.DEFAULT.getId()));
   }
 

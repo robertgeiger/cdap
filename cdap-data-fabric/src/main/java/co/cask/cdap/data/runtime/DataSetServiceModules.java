@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2015 Cask Data, Inc.
+ * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -22,7 +22,11 @@ import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.runtime.RuntimeModule;
 import co.cask.cdap.data2.datafabric.dataset.DatasetMetaTableUtil;
+import co.cask.cdap.data2.datafabric.dataset.LocalDatasetFramework;
+import co.cask.cdap.data2.datafabric.dataset.SystemDatasetFramework;
+import co.cask.cdap.data2.datafabric.dataset.service.DatasetInstanceService;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
+import co.cask.cdap.data2.datafabric.dataset.service.DefaultDatasetInstanceService;
 import co.cask.cdap.data2.datafabric.dataset.service.DistributedStorageProviderNamespaceAdmin;
 import co.cask.cdap.data2.datafabric.dataset.service.LocalStorageProviderNamespaceAdmin;
 import co.cask.cdap.data2.datafabric.dataset.service.StorageProviderNamespaceAdmin;
@@ -32,6 +36,8 @@ import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutorS
 import co.cask.cdap.data2.datafabric.dataset.service.executor.LocalDatasetOpExecutor;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.YarnDatasetOpExecutor;
 import co.cask.cdap.data2.datafabric.dataset.service.mds.MDSDatasetsRegistry;
+import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeService;
+import co.cask.cdap.data2.datafabric.dataset.type.DefaultDatasetTypeService;
 import co.cask.cdap.data2.dataset2.DatasetDefinitionRegistryFactory;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DefaultDatasetDefinitionRegistry;
@@ -69,6 +75,13 @@ public class DataSetServiceModules extends RuntimeModule {
         install(new FactoryModuleBuilder()
                   .implement(DatasetDefinitionRegistry.class, DefaultDatasetDefinitionRegistry.class)
                   .build(DatasetDefinitionRegistryFactory.class));
+
+        bind(DatasetInstanceService.class).to(DefaultDatasetInstanceService.class);
+        expose(DatasetInstanceService.class);
+        bind(DatasetTypeService.class).to(DefaultDatasetTypeService.class);
+        expose(DatasetTypeService.class);
+
+        bind(SystemDatasetFramework.class).to(LocalDatasetFramework.class);
         bind(DatasetFramework.class).annotatedWith(Names.named("datasetMDS")).toProvider(DatasetMdsProvider.class);
         expose(DatasetFramework.class).annotatedWith(Names.named("datasetMDS"));
         bind(MDSDatasetsRegistry.class).in(Singleton.class);
@@ -104,6 +117,13 @@ public class DataSetServiceModules extends RuntimeModule {
         install(new FactoryModuleBuilder()
                   .implement(DatasetDefinitionRegistry.class, DefaultDatasetDefinitionRegistry.class)
                   .build(DatasetDefinitionRegistryFactory.class));
+
+        bind(DatasetInstanceService.class).to(DefaultDatasetInstanceService.class);
+        expose(DatasetInstanceService.class);
+        bind(DatasetTypeService.class).to(DefaultDatasetTypeService.class);
+        expose(DatasetTypeService.class);
+
+        bind(SystemDatasetFramework.class).to(LocalDatasetFramework.class);
         bind(DatasetFramework.class).annotatedWith(Names.named("datasetMDS")).toProvider(DatasetMdsProvider.class);
         expose(DatasetFramework.class).annotatedWith(Names.named("datasetMDS"));
         bind(MDSDatasetsRegistry.class).in(Singleton.class);
@@ -141,6 +161,13 @@ public class DataSetServiceModules extends RuntimeModule {
         install(new FactoryModuleBuilder()
                   .implement(DatasetDefinitionRegistry.class, DefaultDatasetDefinitionRegistry.class)
                   .build(DatasetDefinitionRegistryFactory.class));
+
+        bind(DatasetInstanceService.class).to(DefaultDatasetInstanceService.class);
+        expose(DatasetInstanceService.class);
+        bind(DatasetTypeService.class).to(DefaultDatasetTypeService.class);
+        expose(DatasetTypeService.class);
+
+        bind(SystemDatasetFramework.class).to(LocalDatasetFramework.class);
         bind(DatasetFramework.class).annotatedWith(Names.named("datasetMDS")).toProvider(DatasetMdsProvider.class);
         expose(DatasetFramework.class).annotatedWith(Names.named("datasetMDS"));
         bind(MDSDatasetsRegistry.class).in(Singleton.class);

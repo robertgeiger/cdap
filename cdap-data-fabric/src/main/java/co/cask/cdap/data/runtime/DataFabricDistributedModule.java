@@ -17,6 +17,8 @@
 package co.cask.cdap.data.runtime;
 
 import co.cask.cdap.common.conf.CConfiguration;
+import co.cask.cdap.data2.datafabric.store.DefaultNamespaceStore;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.queue.QueueClientFactory;
 import co.cask.cdap.data2.transaction.metrics.TransactionManagerMetricsCollector;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
@@ -62,6 +64,7 @@ public class DataFabricDistributedModule extends AbstractModule {
     bind(TxMetricsCollector.class).to(TransactionManagerMetricsCollector.class).in(Scopes.SINGLETON);
     install(new TransactionModules().getDistributedModules());
 
+    bind(NamespaceStore.class).to(DefaultNamespaceStore.class);
   }
 
   /**

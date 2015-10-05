@@ -45,6 +45,7 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
 import co.cask.cdap.config.PreferencesStore;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.metadata.service.BusinessMetadataStore;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
@@ -118,6 +119,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
    * Store manages non-runtime lifecycle.
    */
   private final Store store;
+  private final NamespaceStore nsStore;
   private final CConfiguration configuration;
   private final Scheduler scheduler;
   private final QueueAdmin queueAdmin;
@@ -131,7 +133,8 @@ public class ApplicationLifecycleService extends AbstractIdleService {
   private final BusinessMetadataStore businessMds;
 
   @Inject
-  public ApplicationLifecycleService(ProgramRuntimeService runtimeService, Store store, CConfiguration configuration,
+  public ApplicationLifecycleService(ProgramRuntimeService runtimeService, Store store, NamespaceStore nsStore,
+                                     CConfiguration configuration,
                                      Scheduler scheduler, QueueAdmin queueAdmin,
                                      NamespacedLocationFactory namespacedLocationFactory,
                                      StreamConsumerFactory streamConsumerFactory, UsageRegistry usageRegistry,
@@ -141,6 +144,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
                                      BusinessMetadataStore businessMds) {
     this.runtimeService = runtimeService;
     this.store = store;
+    this.nsStore = nsStore;
     this.configuration = configuration;
     this.scheduler = scheduler;
     this.queueAdmin = queueAdmin;
@@ -405,7 +409,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
       }
     }
 
-    for (NamespaceMeta namespaceMeta : store.listNamespaces()) {
+    for (NamespaceMeta namespaceMeta : nsStore.listNamespaces()) {
       Id.Namespace namespaceId = Id.Namespace.from(namespaceMeta.getName());
       for (ApplicationSpecification appSpec : store.getAllApplications(namespaceId)) {
         Id.Application appId = Id.Application.from(namespaceId, appSpec.getName());

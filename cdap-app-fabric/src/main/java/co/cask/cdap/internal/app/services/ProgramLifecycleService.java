@@ -27,6 +27,7 @@ import co.cask.cdap.common.ProgramNotFoundException;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.internal.app.runtime.AbstractListener;
 import co.cask.cdap.internal.app.runtime.BasicArguments;
 import co.cask.cdap.internal.app.runtime.SimpleProgramOptions;
@@ -67,12 +68,15 @@ public class ProgramLifecycleService extends AbstractIdleService {
 
   private final ScheduledExecutorService scheduledExecutorService;
   private final Store store;
+  private final NamespaceStore nsStore;
   private final ProgramRuntimeService runtimeService;
   private final CConfiguration configuration;
 
   @Inject
-  public ProgramLifecycleService(Store store, ProgramRuntimeService runtimeService, CConfiguration configuration) {
+  public ProgramLifecycleService(Store store, NamespaceStore nsStore,
+                                 ProgramRuntimeService runtimeService, CConfiguration configuration) {
     this.store = store;
+    this.nsStore = nsStore;
     this.runtimeService = runtimeService;
     this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
     this.configuration = configuration;
@@ -366,7 +370,7 @@ public class ProgramLifecycleService extends AbstractIdleService {
   private Id.Program retrieveProgramIdForRunRecord(ProgramType programType, String runId) {
 
     // Get list of namespaces (borrow logic from AbstractAppFabricHttpHandler#listPrograms)
-    List<NamespaceMeta> namespaceMetas = store.listNamespaces();
+    List<NamespaceMeta> namespaceMetas = nsStore.listNamespaces();
 
     // For each, get all programs under it
     Id.Program targetProgramId = null;

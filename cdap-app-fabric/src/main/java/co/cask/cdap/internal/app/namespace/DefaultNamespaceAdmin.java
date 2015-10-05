@@ -29,6 +29,7 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.namespace.NamespaceAdmin;
 import co.cask.cdap.config.DashboardStore;
 import co.cask.cdap.config.PreferencesStore;
+import co.cask.cdap.data2.datafabric.store.NamespaceStore;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
@@ -59,6 +60,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultNamespaceAdmin.class);
 
   private final Store store;
+  private final NamespaceStore nsStore;
   private final PreferencesStore preferencesStore;
   private final DashboardStore dashboardStore;
   private final DatasetFramework dsFramework;
@@ -71,7 +73,8 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
   private final ArtifactRepository artifactRepository;
 
   @Inject
-  public DefaultNamespaceAdmin(Store store, PreferencesStore preferencesStore,
+  public DefaultNamespaceAdmin(Store store,
+                               NamespaceStore nsStore, PreferencesStore preferencesStore,
                                DashboardStore dashboardStore, DatasetFramework dsFramework,
                                ProgramRuntimeService runtimeService, QueueAdmin queueAdmin, StreamAdmin streamAdmin,
                                MetricStore metricStore, Scheduler scheduler,
@@ -80,6 +83,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
     this.queueAdmin = queueAdmin;
     this.streamAdmin = streamAdmin;
     this.store = store;
+    this.nsStore = nsStore;
     this.preferencesStore = preferencesStore;
     this.dashboardStore = dashboardStore;
     this.dsFramework = dsFramework;
@@ -96,7 +100,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
    * @return a list of {@link NamespaceMeta} for all namespaces
    */
   public List<NamespaceMeta> list() {
-    return store.listNamespaces();
+    return nsStore.listNamespaces();
   }
 
   /**
@@ -107,7 +111,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
    * @throws NamespaceNotFoundException if the requested namespace is not found
    */
   public NamespaceMeta get(Id.Namespace namespaceId) throws NamespaceNotFoundException {
-    NamespaceMeta ns = store.getNamespace(namespaceId);
+    NamespaceMeta ns = nsStore.getNamespace(namespaceId);
     if (ns == null) {
       throw new NamespaceNotFoundException(namespaceId);
     }
@@ -150,7 +154,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
       throw new NamespaceCannotBeCreatedException(namespace, e);
     }
 
-    store.createNamespace(metadata);
+    nsStore.createNamespace(metadata);
   }
 
   /**
@@ -203,7 +207,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
       // namespace in the storage provider (Hive, HBase, etc), since we re-use their default namespace.
       if (!Id.Namespace.DEFAULT.equals(namespaceId)) {
         // Finally delete namespace from MDS
-        store.deleteNamespace(namespaceId);
+        nsStore.deleteNamespace(namespaceId);
         // Delete namespace in storage providers
         dsFramework.deleteNamespace(namespaceId);
       }
@@ -250,10 +254,10 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
   public synchronized void updateProperties(Id.Namespace namespaceId, NamespaceMeta namespaceMeta)
     throws NamespaceNotFoundException {
 
-    if (store.getNamespace(namespaceId) == null) {
+    if (nsStore.getNamespace(namespaceId) == null) {
       throw new NamespaceNotFoundException(namespaceId);
     }
-    NamespaceMeta metadata = store.getNamespace(namespaceId);
+    NamespaceMeta metadata = nsStore.getNamespace(namespaceId);
     NamespaceMeta.Builder builder = new NamespaceMeta.Builder(metadata);
 
     if (namespaceMeta.getDescription() != null) {
@@ -265,7 +269,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
       builder.setSchedulerQueueName(config.getSchedulerQueueName());
     }
 
-    store.updateNamespace(builder.build());
+    nsStore.updateNamespace(builder.build());
   }
 
   private boolean checkProgramsRunning(final Id.Namespace namespaceId) {

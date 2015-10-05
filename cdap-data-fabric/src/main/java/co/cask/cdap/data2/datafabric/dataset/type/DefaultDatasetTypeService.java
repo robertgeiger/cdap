@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2015 Cask Data, Inc.
+ * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -64,8 +64,8 @@ import javax.annotation.Nullable;
 /**
  * Manages dataset types and modules metadata
  */
-public class DatasetTypeManager extends AbstractIdleService {
-  private static final Logger LOG = LoggerFactory.getLogger(DatasetTypeManager.class);
+public class DefaultDatasetTypeService extends AbstractIdleService implements DatasetTypeService {
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultDatasetTypeService.class);
 
   private final MDSDatasetsRegistry mdsDatasets;
   private final LocationFactory locationFactory;
@@ -74,9 +74,9 @@ public class DatasetTypeManager extends AbstractIdleService {
   private final boolean allowDatasetUncheckedUpgrade;
 
   @Inject
-  public DatasetTypeManager(CConfiguration configuration, MDSDatasetsRegistry mdsDatasets,
-                            LocationFactory locationFactory,
-                            @Named("defaultDatasetModules") Map<String, DatasetModule> defaultModules) {
+  public DefaultDatasetTypeService(CConfiguration configuration, MDSDatasetsRegistry mdsDatasets,
+                                   LocationFactory locationFactory,
+                                   @Named("defaultDatasetModules") Map<String, DatasetModule> defaultModules) {
     this.mdsDatasets = mdsDatasets;
     this.locationFactory = locationFactory;
     this.defaultModules = Maps.newLinkedHashMap(defaultModules);
@@ -94,13 +94,7 @@ public class DatasetTypeManager extends AbstractIdleService {
     // do nothing
   }
 
-  /**
-   * Add datasets module in a namespace
-   *
-   * @param datasetModuleId the {@link Id.DatasetModule} to add
-   * @param className module class
-   * @param jarLocation location of the module jar
-   */
+  @Override
   public void addModule(final Id.DatasetModule datasetModuleId, final String className, final Location jarLocation)
     throws DatasetModuleConflictException {
 
@@ -190,11 +184,7 @@ public class DatasetTypeManager extends AbstractIdleService {
     }
   }
 
-  /**
-   *
-   * @param namespaceId the {@link Id.Namespace} to retrieve types from
-   * @return collection of types available in the specified namespace
-   */
+  @Override
   public Collection<DatasetTypeMeta> getTypes(final Id.Namespace namespaceId) {
     return mdsDatasets.executeUnchecked(new TxCallable<MDSDatasets, Collection<DatasetTypeMeta>>() {
       @Override
@@ -204,12 +194,7 @@ public class DatasetTypeManager extends AbstractIdleService {
     });
   }
 
-  /**
-   * Get dataset type information
-   * @param datasetTypeId name of the type to get info for
-   * @return instance of {@link DatasetTypeMeta} or {@code null} if type
-   *         does NOT exist
-   */
+  @Override
   @Nullable
   public DatasetTypeMeta getTypeInfo(final Id.DatasetType datasetTypeId) {
     return mdsDatasets.executeUnchecked(new TxCallable<MDSDatasets, DatasetTypeMeta>() {
@@ -220,10 +205,7 @@ public class DatasetTypeManager extends AbstractIdleService {
     });
   }
 
-  /**
-   * @param namespaceId {@link Id.Namespace} to retrieve the module list from
-   * @return list of dataset modules information from the specified namespace
-   */
+  @Override
   public Collection<DatasetModuleMeta> getModules(final Id.Namespace namespaceId) {
     return mdsDatasets.executeUnchecked(new TxCallable<MDSDatasets, Collection<DatasetModuleMeta>>() {
       @Override
@@ -233,10 +215,7 @@ public class DatasetTypeManager extends AbstractIdleService {
     });
   }
 
-  /**
-   * @param datasetModuleId {@link Id.DatasetModule} of the module to return info for
-   * @return dataset module info or {@code null} if module with given name does NOT exist
-   */
+  @Override
   @Nullable
   public DatasetModuleMeta getModule(final Id.DatasetModule datasetModuleId) {
     return mdsDatasets.executeUnchecked(new TxCallable<MDSDatasets, DatasetModuleMeta>() {
@@ -247,13 +226,7 @@ public class DatasetTypeManager extends AbstractIdleService {
     });
   }
 
-  /**
-   * Deletes specified dataset module
-   * @param datasetModuleId {@link Id.DatasetModule} of the dataset module to delete
-   * @return true if deleted successfully, false if module didn't exist: nothing to delete
-   * @throws DatasetModuleConflictException when there are other modules depend on the specified one, in which case
-   *         deletion does NOT happen
-   */
+  @Override
   public boolean deleteModule(final Id.DatasetModule datasetModuleId) throws DatasetModuleConflictException {
     LOG.info("Deleting module {}", datasetModuleId);
     try {
@@ -321,12 +294,7 @@ public class DatasetTypeManager extends AbstractIdleService {
     }
   }
 
-  /**
-   * Deletes all modules in a namespace, other than system.
-   * Presumes that the namespace has already been checked to be non-system.
-   *
-   * @param namespaceId the {@link Id.Namespace} to delete modules from.
-   */
+  @Override
   public void deleteModules(final Id.Namespace namespaceId) throws DatasetModuleConflictException {
     Preconditions.checkArgument(namespaceId != null && !Id.Namespace.SYSTEM.equals(namespaceId),
                                 "Cannot delete modules from system namespace");
