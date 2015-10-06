@@ -31,6 +31,7 @@ import co.cask.cdap.internal.app.runtime.AbstractListener;
 import co.cask.cdap.internal.app.runtime.BasicArguments;
 import co.cask.cdap.internal.app.runtime.SimpleProgramOptions;
 import co.cask.cdap.internal.app.store.RunRecordMeta;
+import co.cask.cdap.namespace.NamespaceStore;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramRunStatus;
@@ -69,9 +70,12 @@ public class ProgramLifecycleService extends AbstractIdleService {
   private final Store store;
   private final ProgramRuntimeService runtimeService;
   private final CConfiguration configuration;
+  private final NamespaceStore nsStore;
 
   @Inject
-  public ProgramLifecycleService(Store store, ProgramRuntimeService runtimeService, CConfiguration configuration) {
+  public ProgramLifecycleService(NamespaceStore nsStore, Store store,
+                                 ProgramRuntimeService runtimeService, CConfiguration configuration) {
+    this.nsStore = nsStore;
     this.store = store;
     this.runtimeService = runtimeService;
     this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
@@ -366,7 +370,7 @@ public class ProgramLifecycleService extends AbstractIdleService {
   private Id.Program retrieveProgramIdForRunRecord(ProgramType programType, String runId) {
 
     // Get list of namespaces (borrow logic from AbstractAppFabricHttpHandler#listPrograms)
-    List<NamespaceMeta> namespaceMetas = store.listNamespaces();
+    List<NamespaceMeta> namespaceMetas = nsStore.list();
 
     // For each, get all programs under it
     Id.Program targetProgramId = null;

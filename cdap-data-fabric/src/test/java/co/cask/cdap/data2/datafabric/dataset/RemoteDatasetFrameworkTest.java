@@ -19,7 +19,6 @@ package co.cask.cdap.data2.datafabric.dataset;
 import co.cask.cdap.api.dataset.module.DatasetModule;
 import co.cask.cdap.api.dataset.table.OrderedTable;
 import co.cask.cdap.api.metrics.MetricsCollectionService;
-import co.cask.cdap.common.conf.CConfigurationUtil;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.metrics.NoOpMetricsCollectionService;
 import co.cask.cdap.common.namespace.DefaultNamespacedLocationFactory;
@@ -48,14 +47,11 @@ import co.cask.cdap.explore.client.DiscoveryExploreClient;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.proto.Id;
 import co.cask.http.HttpHandler;
-import co.cask.tephra.TransactionManager;
 import co.cask.tephra.inmemory.InMemoryTxSystemClient;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Futures;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.twill.common.Threads;
 import org.apache.twill.discovery.InMemoryDiscoveryService;
 import org.apache.twill.discovery.ServiceDiscovered;
@@ -77,7 +73,6 @@ import java.util.concurrent.TimeUnit;
  * Tests for {@link RemoteDatasetFramework}
  */
 public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
-  private TransactionManager txManager;
   private DatasetOpExecutorService opExecutorService;
   private DatasetService service;
   private RemoteDatasetFramework framework;
@@ -95,12 +90,6 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
     // Starting DatasetService service
     InMemoryDiscoveryService discoveryService = new InMemoryDiscoveryService();
     MetricsCollectionService metricsCollectionService = new NoOpMetricsCollectionService();
-
-    // Tx Manager to support working with datasets
-    Configuration txConf = HBaseConfiguration.create();
-    CConfigurationUtil.copyTxProperties(cConf, txConf);
-    txManager = new TransactionManager(txConf);
-    txManager.startAndWait();
     InMemoryTxSystemClient txSystemClient = new InMemoryTxSystemClient(txManager);
 
     LocalLocationFactory locationFactory = new LocalLocationFactory(new File(cConf.get(Constants.CFG_LOCAL_DATA_DIR)));
@@ -131,7 +120,8 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
       new InMemoryDatasetOpExecutor(framework),
       exploreFacade,
       cConf,
-      new UsageRegistry(txExecutorFactory, framework), NAMESPACE_CLIENT);
+      new UsageRegistry(txExecutorFactory, framework),
+      NAMESPACE_STORE);
 
     service = new DatasetService(cConf,
                                  namespacedLocationFactory,
@@ -145,7 +135,7 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
                                  instanceService,
                                  new LocalStorageProviderNamespaceAdmin(cConf, namespacedLocationFactory,
                                                                         exploreFacade),
-                                 NAMESPACE_CLIENT
+                                 NAMESPACE_STORE
     );
     // Start dataset service, wait for it to be discoverable
     service.start();
@@ -199,7 +189,7 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
   public void after() throws DatasetManagementException {
     framework.deleteNamespace(NAMESPACE_ID);
     framework.deleteNamespace(Id.Namespace.SYSTEM);
-    Futures.getUnchecked(Services.chainStop(service, opExecutorService, txManager));
+    Futures.getUnchecked(Services.chainStop(service, opExecutorService));
   }
 
   @Override

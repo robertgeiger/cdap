@@ -36,6 +36,7 @@ import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.internal.app.runtime.artifact.ArtifactRepository;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
 import co.cask.cdap.internal.app.services.ApplicationLifecycleService;
+import co.cask.cdap.namespace.NamespaceStore;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceConfig;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -58,6 +59,7 @@ import java.util.Map;
 public final class DefaultNamespaceAdmin implements NamespaceAdmin {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultNamespaceAdmin.class);
 
+  private final NamespaceStore nsStore;
   private final Store store;
   private final PreferencesStore preferencesStore;
   private final DashboardStore dashboardStore;
@@ -71,7 +73,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
   private final ArtifactRepository artifactRepository;
 
   @Inject
-  public DefaultNamespaceAdmin(Store store, PreferencesStore preferencesStore,
+  public DefaultNamespaceAdmin(NamespaceStore nsStore, Store store, PreferencesStore preferencesStore,
                                DashboardStore dashboardStore, DatasetFramework dsFramework,
                                ProgramRuntimeService runtimeService, QueueAdmin queueAdmin, StreamAdmin streamAdmin,
                                MetricStore metricStore, Scheduler scheduler,
@@ -79,6 +81,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
                                ArtifactRepository artifactRepository) {
     this.queueAdmin = queueAdmin;
     this.streamAdmin = streamAdmin;
+    this.nsStore = nsStore;
     this.store = store;
     this.preferencesStore = preferencesStore;
     this.dashboardStore = dashboardStore;
@@ -96,7 +99,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
    * @return a list of {@link NamespaceMeta} for all namespaces
    */
   public List<NamespaceMeta> list() {
-    return store.listNamespaces();
+    return nsStore.list();
   }
 
   /**
@@ -107,7 +110,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
    * @throws NamespaceNotFoundException if the requested namespace is not found
    */
   public NamespaceMeta get(Id.Namespace namespaceId) throws NamespaceNotFoundException {
-    NamespaceMeta ns = store.getNamespace(namespaceId);
+    NamespaceMeta ns = nsStore.get(namespaceId);
     if (ns == null) {
       throw new NamespaceNotFoundException(namespaceId);
     }
@@ -150,7 +153,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
       throw new NamespaceCannotBeCreatedException(namespace, e);
     }
 
-    store.createNamespace(metadata);
+    nsStore.create(metadata);
   }
 
   /**
@@ -203,7 +206,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
       // namespace in the storage provider (Hive, HBase, etc), since we re-use their default namespace.
       if (!Id.Namespace.DEFAULT.equals(namespaceId)) {
         // Finally delete namespace from MDS
-        store.deleteNamespace(namespaceId);
+        nsStore.delete(namespaceId);
         // Delete namespace in storage providers
         dsFramework.deleteNamespace(namespaceId);
       }
@@ -250,10 +253,10 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
   public synchronized void updateProperties(Id.Namespace namespaceId, NamespaceMeta namespaceMeta)
     throws NamespaceNotFoundException {
 
-    if (store.getNamespace(namespaceId) == null) {
+    if (nsStore.get(namespaceId) == null) {
       throw new NamespaceNotFoundException(namespaceId);
     }
-    NamespaceMeta metadata = store.getNamespace(namespaceId);
+    NamespaceMeta metadata = nsStore.get(namespaceId);
     NamespaceMeta.Builder builder = new NamespaceMeta.Builder(metadata);
 
     if (namespaceMeta.getDescription() != null) {
@@ -265,7 +268,7 @@ public final class DefaultNamespaceAdmin implements NamespaceAdmin {
       builder.setSchedulerQueueName(config.getSchedulerQueueName());
     }
 
-    store.updateNamespace(builder.build());
+    nsStore.update(builder.build());
   }
 
   private boolean checkProgramsRunning(final Id.Namespace namespaceId) {

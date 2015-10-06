@@ -29,12 +29,12 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.guice.ConfigModule;
 import co.cask.cdap.common.guice.LocationRuntimeModule;
-import co.cask.cdap.common.namespace.AbstractNamespaceClient;
-import co.cask.cdap.common.namespace.InMemoryNamespaceClient;
 import co.cask.cdap.data2.dataset2.lib.file.FileSetModule;
 import co.cask.cdap.data2.dataset2.lib.partitioned.PartitionedFileSetModule;
 import co.cask.cdap.data2.dataset2.lib.table.CoreDatasetsModule;
 import co.cask.cdap.data2.dataset2.module.lib.inmemory.InMemoryTableModule;
+import co.cask.cdap.namespace.InMemoryNamespaceStore;
+import co.cask.cdap.namespace.NamespaceStore;
 import co.cask.cdap.proto.DatasetSpecificationSummary;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -42,11 +42,14 @@ import co.cask.tephra.DefaultTransactionExecutor;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
+import co.cask.tephra.TransactionManager;
 import co.cask.tephra.inmemory.MinimalTxSystemClient;
 import co.cask.tephra.runtime.TransactionInMemoryModule;
 import com.google.common.collect.Maps;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -85,21 +88,29 @@ public abstract class AbstractDatasetFrameworkTest {
   private static final Id.DatasetType DOUBLE_KV_TYPE = Id.DatasetType.from(NAMESPACE_ID,
                                                                            DoubleWrappedKVTable.class.getName());
 
-  protected static final AbstractNamespaceClient NAMESPACE_CLIENT = new InMemoryNamespaceClient();
+  protected static final NamespaceStore NAMESPACE_STORE = new InMemoryNamespaceStore();
   protected static DatasetDefinitionRegistryFactory registryFactory;
   protected static CConfiguration cConf;
   protected static TransactionExecutorFactory txExecutorFactory;
+  protected static TransactionManager txManager;
 
   @BeforeClass
-  public static void setup() throws Exception {
+  public static void setUpClass() throws Exception {
     cConf = CConfiguration.create();
 
     final Injector injector = Guice.createInjector(
       new ConfigModule(cConf),
       new LocationRuntimeModule().getInMemoryModules(),
-      new TransactionInMemoryModule());
+      new TransactionInMemoryModule(), new AbstractModule() {
+        @Override
+        protected void configure() {
+          bind(NamespaceStore.class).toInstance(NAMESPACE_STORE);
+        }
+      });
 
     txExecutorFactory = injector.getInstance(TransactionExecutorFactory.class);
+    txManager = injector.getInstance(TransactionManager.class);
+    txManager.startAndWait();
     registryFactory = new DatasetDefinitionRegistryFactory() {
       @Override
       public DatasetDefinitionRegistry create() {
@@ -108,7 +119,12 @@ public abstract class AbstractDatasetFrameworkTest {
         return registry;
       }
     };
-    NAMESPACE_CLIENT.create(new NamespaceMeta.Builder().setName(NAMESPACE_ID).build());
+    NAMESPACE_STORE.create(new NamespaceMeta.Builder().setName(NAMESPACE_ID).build());
+  }
+
+  @AfterClass
+  public static void tearDownClass() {
+    txManager.stopAndWait();
   }
 
   @Test
@@ -370,8 +386,8 @@ public abstract class AbstractDatasetFrameworkTest {
     // create 2 namespaces
     Id.Namespace namespace1 = Id.Namespace.from("ns1");
     Id.Namespace namespace2 = Id.Namespace.from("ns2");
-    NAMESPACE_CLIENT.create(new NamespaceMeta.Builder().setName(namespace1).build());
-    NAMESPACE_CLIENT.create(new NamespaceMeta.Builder().setName(namespace2).build());
+    NAMESPACE_STORE.create(new NamespaceMeta.Builder().setName(namespace1).build());
+    NAMESPACE_STORE.create(new NamespaceMeta.Builder().setName(namespace2).build());
     framework.createNamespace(namespace1);
     framework.createNamespace(namespace2);
 
@@ -434,8 +450,8 @@ public abstract class AbstractDatasetFrameworkTest {
     // create 2 namespaces
     Id.Namespace namespace1 = Id.Namespace.from("ns1");
     Id.Namespace namespace2 = Id.Namespace.from("ns2");
-    NAMESPACE_CLIENT.create(new NamespaceMeta.Builder().setName(namespace1).build());
-    NAMESPACE_CLIENT.create(new NamespaceMeta.Builder().setName(namespace2).build());
+    NAMESPACE_STORE.create(new NamespaceMeta.Builder().setName(namespace1).build());
+    NAMESPACE_STORE.create(new NamespaceMeta.Builder().setName(namespace2).build());
     framework.createNamespace(namespace1);
     framework.createNamespace(namespace2);
 

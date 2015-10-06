@@ -22,12 +22,12 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.discovery.ResolvingDiscoverable;
 import co.cask.cdap.common.http.CommonNettyHttpServiceBuilder;
 import co.cask.cdap.common.metrics.MetricsReporterHook;
-import co.cask.cdap.common.namespace.AbstractNamespaceClient;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutor;
 import co.cask.cdap.data2.datafabric.dataset.service.mds.MDSDatasetsRegistry;
 import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
 import co.cask.cdap.data2.metrics.DatasetMetricsReporter;
+import co.cask.cdap.namespace.NamespaceStore;
 import co.cask.http.NettyHttpService;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
@@ -81,11 +81,11 @@ public class DatasetService extends AbstractExecutionThreadService {
                         Set<DatasetMetricsReporter> metricReporters,
                         DatasetInstanceService datasetInstanceService,
                         StorageProviderNamespaceAdmin storageProviderNamespaceAdmin,
-                        AbstractNamespaceClient namespaceClient) throws Exception {
+                        NamespaceStore nsStore) throws Exception {
 
     this.typeManager = typeManager;
-    DatasetTypeHandler datasetTypeHandler = new DatasetTypeHandler(typeManager, cConf, namespacedLocationFactory,
-                                                                   namespaceClient);
+    DatasetTypeHandler datasetTypeHandler = new DatasetTypeHandler(
+      typeManager, cConf, namespacedLocationFactory, nsStore);
     DatasetInstanceHandler datasetInstanceHandler = new DatasetInstanceHandler(datasetInstanceService);
     StorageProviderNamespaceHandler storageProviderNamespaceHandler =
       new StorageProviderNamespaceHandler(storageProviderNamespaceAdmin);

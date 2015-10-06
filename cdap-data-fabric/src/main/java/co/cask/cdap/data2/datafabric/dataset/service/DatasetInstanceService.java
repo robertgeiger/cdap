@@ -26,13 +26,13 @@ import co.cask.cdap.common.NamespaceNotFoundException;
 import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
-import co.cask.cdap.common.namespace.AbstractNamespaceClient;
 import co.cask.cdap.data2.datafabric.dataset.instance.DatasetInstanceManager;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetAdminOpResponse;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutor;
 import co.cask.cdap.data2.datafabric.dataset.type.DatasetTypeManager;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.explore.client.ExploreFacade;
+import co.cask.cdap.namespace.NamespaceStore;
 import co.cask.cdap.proto.DatasetInstanceConfiguration;
 import co.cask.cdap.proto.DatasetMeta;
 import co.cask.cdap.proto.DatasetTypeMeta;
@@ -60,18 +60,18 @@ public class DatasetInstanceService {
   private final ExploreFacade exploreFacade;
   private final boolean allowDatasetUncheckedUpgrade;
   private final UsageRegistry usageRegistry;
-  private final AbstractNamespaceClient namespaceClient;
+  private final NamespaceStore nsStore;
 
   @Inject
   public DatasetInstanceService(DatasetTypeManager implManager, DatasetInstanceManager instanceManager,
                                 DatasetOpExecutor opExecutorClient, ExploreFacade exploreFacade, CConfiguration conf,
-                                UsageRegistry usageRegistry, AbstractNamespaceClient namespaceClient) {
+                                UsageRegistry usageRegistry, NamespaceStore nsStore) {
     this.opExecutorClient = opExecutorClient;
     this.implManager = implManager;
     this.instanceManager = instanceManager;
     this.exploreFacade = exploreFacade;
     this.usageRegistry = usageRegistry;
-    this.namespaceClient = namespaceClient;
+    this.nsStore = nsStore;
     this.allowDatasetUncheckedUpgrade = conf.getBoolean(Constants.Dataset.DATASET_UNCHECKED_UPGRADE);
   }
 
@@ -341,8 +341,8 @@ public class DatasetInstanceService {
    * Throws an exception if the specified namespace is not the system namespace and does not exist
    */
   private void ensureNamespaceExists(Id.Namespace namespace) throws Exception {
-    if (!Id.Namespace.SYSTEM.equals(namespace)) {
-      namespaceClient.get(namespace);
+    if (!Id.Namespace.SYSTEM.equals(namespace) && !nsStore.exists(namespace)) {
+      throw new NamespaceNotFoundException(namespace);
     }
   }
 }

@@ -26,8 +26,6 @@ import co.cask.cdap.common.guice.ConfigModule;
 import co.cask.cdap.common.guice.LocationRuntimeModule;
 import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.common.metrics.NoOpMetricsCollectionService;
-import co.cask.cdap.common.namespace.AbstractNamespaceClient;
-import co.cask.cdap.common.namespace.InMemoryNamespaceClient;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
@@ -48,6 +46,9 @@ import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.explore.client.DiscoveryExploreClient;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.internal.test.AppJarHelper;
+import co.cask.cdap.namespace.DefaultNamespaceStore;
+import co.cask.cdap.namespace.InMemoryNamespaceStore;
+import co.cask.cdap.namespace.NamespaceStore;
 import co.cask.cdap.proto.DatasetModuleMeta;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
@@ -106,7 +107,7 @@ public abstract class DatasetServiceTestBase {
   private DatasetOpExecutorService opExecutorService;
   private DatasetService service;
   private LocationFactory locationFactory;
-  private AbstractNamespaceClient namespaceClient;
+  private NamespaceStore nsStore;
   protected TransactionManager txManager;
   protected RemoteDatasetFramework dsFramework;
 
@@ -177,8 +178,8 @@ public abstract class DatasetServiceTestBase {
       new MDSDatasetsRegistry(txSystemClient, new InMemoryDatasetFramework(registryFactory, modules, cConf));
 
     ExploreFacade exploreFacade = new ExploreFacade(new DiscoveryExploreClient(discoveryService), cConf);
-    namespaceClient = new InMemoryNamespaceClient();
-    namespaceClient.create(NamespaceMeta.DEFAULT);
+    nsStore = new InMemoryNamespaceStore();
+    nsStore.create(NamespaceMeta.DEFAULT);
     DatasetInstanceService instanceService = new DatasetInstanceService(
       new DatasetTypeManager(cConf, mdsDatasetsRegistry, locationFactory,
                              // we don't need any default modules in this test
@@ -187,7 +188,8 @@ public abstract class DatasetServiceTestBase {
       new InMemoryDatasetOpExecutor(dsFramework),
       exploreFacade,
       cConf,
-      new UsageRegistry(txExecutorFactory, dsFramework), namespaceClient);
+      new UsageRegistry(txExecutorFactory, dsFramework),
+      new DefaultNamespaceStore(txExecutorFactory, dsFramework));
 
     service = new DatasetService(cConf,
                                  namespacedLocationFactory,
@@ -203,7 +205,7 @@ public abstract class DatasetServiceTestBase {
                                  instanceService,
                                  new LocalStorageProviderNamespaceAdmin(cConf, namespacedLocationFactory,
                                                                         exploreFacade),
-                                 namespaceClient
+                                 nsStore
     );
 
     // Start dataset service, wait for it to be discoverable
@@ -226,7 +228,7 @@ public abstract class DatasetServiceTestBase {
   @After
   public void after() throws Exception {
     Services.chainStop(service, opExecutorService, txManager);
-    namespaceClient.delete(Id.Namespace.DEFAULT);
+    nsStore.delete(Id.Namespace.DEFAULT);
     Locations.deleteQuietly(locationFactory.create(Id.Namespace.DEFAULT.getId()));
   }
 

@@ -30,6 +30,8 @@ import co.cask.cdap.data.runtime.DataSetsModules;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
 import co.cask.cdap.explore.client.ExploreClient;
 import co.cask.cdap.explore.client.MockExploreClient;
+import co.cask.cdap.namespace.InMemoryNamespaceStore;
+import co.cask.cdap.namespace.NamespaceStore;
 import co.cask.tephra.TransactionManager;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -65,6 +67,7 @@ public class MDSViewStoreTest extends ViewStoreTestBase {
           bind(MetricsCollectionService.class).to(NoOpMetricsCollectionService.class).in(Singleton.class);
           bind(ExploreClient.class).to(MockExploreClient.class);
           bind(ViewStore.class).to(MDSViewStore.class).in(Scopes.SINGLETON);
+          bind(NamespaceStore.class).to(InMemoryNamespaceStore.class).in(Scopes.SINGLETON);
         }
       }
     );
