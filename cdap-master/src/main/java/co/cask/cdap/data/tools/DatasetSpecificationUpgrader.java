@@ -47,7 +47,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Upgrading from CDAP version < 3.3 to CDAP version 3.3.
- * This requires updating the TTL property for DatasetSpecification in DatasetInstanceMDS table
+ * <p>
+ * This requires updating the TTL property for DatasetSpecification in the DatasetInstanceMDS table.
  */
 public class DatasetSpecificationUpgrader {
   private static final Logger LOG = LoggerFactory.getLogger(DatasetSpecificationUpgrader.class);
@@ -63,11 +64,13 @@ public class DatasetSpecificationUpgrader {
   }
 
   /**
-   * update TTL in {@link co.cask.cdap.data2.datafabric.dataset.service.mds.DatasetInstanceMDS}
-   * table for CDAP version prior to 3.3,
-   * TTL for {@link DatasetSpecification} is stored in milli-seconds,
-   * since we updated the spec to be in seconds in 3.3, the instance MDS entries has to be updated.
-   * Upgrade has to be called only if the current CDAP version is < 3.3
+   * Updates the TTL in the {@link co.cask.cdap.data2.datafabric.dataset.service.mds.DatasetInstanceMDS}
+   * table for CDAP versions prior to 3.3.
+   * <p>
+   * The TTL for {@link DatasetSpecification} was stored in milliseconds.
+   * Since the spec (as of CDAP version 3.3) is in seconds, the instance MDS entries must be updated.
+   * This is to be called only if the current CDAP version is < 3.3.
+   * </p>
    * @throws Exception
    */
   public void upgrade() throws Exception {
