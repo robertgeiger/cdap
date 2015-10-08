@@ -16,6 +16,7 @@
 
 package co.cask.cdap.internal.app.runtime.batch;
 
+import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.mapreduce.MapReduceSpecification;
 import co.cask.cdap.api.metrics.MetricsCollectionService;
 import co.cask.cdap.app.metrics.MapReduceMetrics;
@@ -24,6 +25,7 @@ import co.cask.cdap.app.program.Programs;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.internal.app.runtime.workflow.WorkflowMapReduceProgram;
 import co.cask.tephra.TransactionAware;
+import co.cask.tephra.TransactionSystemClient;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
@@ -192,17 +194,23 @@ public class MapReduceTaskContextProvider extends AbstractIdleService {
         MetricsCollectionService metricsCollectionService =
           (taskType == null) ? null : injector.getInstance(MetricsCollectionService.class);
 
+        TransactionSystemClient txClient = injector.getInstance(TransactionSystemClient.class);
+        Set<String> staticDatasets = getDatasets(program, contextConfig);
+
         BasicMapReduceTaskContext context = new BasicMapReduceTaskContext(
           program, taskType, contextConfig.getRunId(), key.getTaskAttemptID().getTaskID().toString(),
-          contextConfig.getArguments(), getDatasets(program, contextConfig), spec, contextConfig.getLogicalStartTime(),
-          contextConfig.getWorkflowToken(), discoveryServiceClient, metricsCollectionService, datasetFramework,
-          classLoader.getPluginInstantiator()
+          contextConfig.getArguments(), staticDatasets, spec, contextConfig.getLogicalStartTime(),
+          contextConfig.getWorkflowToken(), discoveryServiceClient, metricsCollectionService, txClient,
+          datasetFramework, classLoader.getPluginInstantiator()
         );
 
-        // propagating tx to all txAware guys
-        // NOTE: tx will be committed by client code
-        for (TransactionAware txAware : context.getDatasetInstantiator().getTransactionAware()) {
-          txAware.startTx(contextConfig.getTx());
+        // propagate the job's transaction to all txAware. Note that the transaction is already started,
+        // and it will be committed or aborted outside of this task. TODO should this be a method of the task context?
+        for (String datasetName : staticDatasets) {
+          Dataset dataset = context.getDataset(datasetName);
+          if (dataset instanceof TransactionAware) {
+            ((TransactionAware) dataset).startTx(contextConfig.getTx());
+          }
         }
         return context;
       }

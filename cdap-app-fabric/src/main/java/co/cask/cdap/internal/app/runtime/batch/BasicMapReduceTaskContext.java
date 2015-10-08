@@ -36,6 +36,7 @@ import co.cask.cdap.internal.app.runtime.plugin.PluginInstantiator;
 import co.cask.cdap.logging.context.MapReduceLoggingContext;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
+import co.cask.tephra.TransactionSystemClient;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.twill.api.RunId;
@@ -77,11 +78,12 @@ public class BasicMapReduceTaskContext<KEYOUT, VALUEOUT> extends AbstractContext
                                    @Nullable WorkflowToken workflowToken,
                                    DiscoveryServiceClient discoveryServiceClient,
                                    MetricsCollectionService metricsCollectionService,
+                                   TransactionSystemClient txClient,
                                    DatasetFramework dsFramework,
                                    PluginInstantiator pluginInstantiator) {
     super(program, runId, runtimeArguments, datasets,
           getMetricCollector(program, runId.getId(), taskId, metricsCollectionService, type),
-          dsFramework, discoveryServiceClient, pluginInstantiator);
+          dsFramework, txClient, discoveryServiceClient, false, pluginInstantiator);
     this.logicalStartTime = logicalStartTime;
     this.workflowToken = workflowToken;
 
@@ -193,7 +195,7 @@ public class BasicMapReduceTaskContext<KEYOUT, VALUEOUT> extends AbstractContext
   }
 
   public void flushOperations() throws Exception {
-    for (TransactionAware txAware : getDatasetInstantiator().getTransactionAware()) {
+    for (TransactionAware txAware : getInProgressTransactionAwares()) {
       txAware.commitTx();
     }
   }

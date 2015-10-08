@@ -73,7 +73,7 @@ public class BasicHttpServiceContext extends AbstractContext implements Transact
                                  TransactionSystemClient txClient, @Nullable PluginInstantiator pluginInstantiator) {
     super(program, runId, runtimeArgs, spec.getDatasets(),
           getMetricCollector(metricsCollectionService, program, spec.getName(), runId.getId(), instanceId),
-          dsFramework, discoveryServiceClient, pluginInstantiator);
+          dsFramework, txClient, discoveryServiceClient, true, pluginInstantiator);
     this.spec = spec;
     this.instanceId = instanceId;
     this.instanceCount = instanceCount;

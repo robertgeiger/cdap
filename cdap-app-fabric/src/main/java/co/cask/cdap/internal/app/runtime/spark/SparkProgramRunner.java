@@ -41,7 +41,6 @@ import co.cask.cdap.internal.app.runtime.workflow.BasicWorkflowToken;
 import co.cask.cdap.internal.lang.Reflections;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramType;
-import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionSystemClient;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -124,7 +123,7 @@ public class SparkProgramRunner implements ProgramRunner {
 
     ClientSparkContext context = new ClientSparkContext(program, runId, logicalStartTime,
                                                         options.getUserArguments().asMap(),
-                                                        new TransactionContext(txSystemClient), datasetFramework,
+                                                        txSystemClient, datasetFramework,
                                                         discoveryServiceClient, metricsCollectionService,
                                                         workflowToken);
 

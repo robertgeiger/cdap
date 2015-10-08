@@ -16,7 +16,6 @@
 
 package co.cask.cdap.internal.app.runtime.spark;
 
-import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metrics.MetricsCollectionService;
 import co.cask.cdap.api.spark.Spark;
@@ -25,14 +24,13 @@ import co.cask.cdap.api.stream.StreamEventDecoder;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.DynamicDatasetContext;
+import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
 import co.cask.tephra.TransactionContext;
-import com.google.common.io.Closeables;
+import co.cask.tephra.TransactionSystemClient;
 import org.apache.twill.api.RunId;
 import org.apache.twill.discovery.DiscoveryServiceClient;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -42,14 +40,11 @@ import javax.annotation.Nullable;
  */
 public final class ClientSparkContext extends AbstractSparkContext {
 
-  // List of Dataset instances that are created through this context
-  // for closing all datasets when closing this context
-  private final List<Dataset> datasets;
   private final TransactionContext transactionContext;
-  private final DatasetContext datasetContext;
+  private final DynamicDatasetFactory datasetContext;
 
   public ClientSparkContext(Program program, RunId runId, long logicalStartTime, Map<String, String> runtimeArguments,
-                            TransactionContext transactionContext, DatasetFramework datasetFramework,
+                            TransactionSystemClient txClient, DatasetFramework datasetFramework,
                             DiscoveryServiceClient discoveryServiceClient,
                             MetricsCollectionService metricsCollectionService, @Nullable WorkflowToken workflowToken) {
     super(program.getApplicationSpecification(),
@@ -59,12 +54,10 @@ public final class ClientSparkContext extends AbstractSparkContext {
           createMetricsContext(metricsCollectionService, program.getId(), runId),
           createLoggingContext(program.getId(), runId), workflowToken);
 
-    this.datasets = new ArrayList<>();
-    this.transactionContext = transactionContext;
-    this.datasetContext = new DynamicDatasetContext(program.getId().getNamespace(),
-                                                    transactionContext, getMetricsContext(),
-                                                    datasetFramework, program.getClassLoader(),
-                                                    runtimeArguments, null, getOwners());
+    this.datasetContext = new SingleThreadDatasetFactory(txClient, datasetFramework, program.getClassLoader(),
+                                                         program.getId().getNamespace(), getOwners(),
+                                                         runtimeArguments, getMetricsContext(), null);
+    this.transactionContext = datasetContext.newTransactionContext();
   }
 
   @Override
@@ -91,16 +84,12 @@ public final class ClientSparkContext extends AbstractSparkContext {
 
   @Override
   public synchronized <T extends Dataset> T getDataset(String name, Map<String, String> arguments) {
-    T dataset = datasetContext.getDataset(name, arguments);
-    datasets.add(dataset);
-    return dataset;
+    return datasetContext.getDataset(name, arguments);
   }
 
   @Override
   public synchronized void close() {
-    for (Dataset dataset : datasets) {
-      Closeables.closeQuietly(dataset);
-    }
+    datasetContext.close();
   }
 
   /**
