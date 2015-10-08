@@ -52,6 +52,8 @@ import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.explore.guice.ExploreClientModule;
 import co.cask.cdap.internal.app.runtime.artifact.ArtifactStore;
+import co.cask.cdap.internal.app.runtime.schedule.ExecutorThreadPool;
+import co.cask.cdap.internal.app.runtime.schedule.store.DatasetBasedTimeScheduleStore;
 import co.cask.cdap.internal.app.runtime.schedule.store.ScheduleStoreTableUtil;
 import co.cask.cdap.internal.app.store.DefaultStore;
 import co.cask.cdap.logging.save.LogSaverTableUtil;
@@ -60,6 +62,7 @@ import co.cask.cdap.metrics.store.DefaultMetricStore;
 import co.cask.cdap.metrics.store.MetricDatasetFactory;
 import co.cask.cdap.notifications.feeds.client.NotificationFeedClientModule;
 import co.cask.cdap.notifications.guice.NotificationServiceRuntimeModule;
+import co.cask.tephra.TransactionFailureException;
 import co.cask.tephra.TransactionSystemClient;
 import co.cask.tephra.distributed.TransactionService;
 import com.google.inject.AbstractModule;
@@ -75,6 +78,15 @@ import com.google.inject.name.Names;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.twill.zookeeper.ZKClientService;
+import org.quartz.SchedulerException;
+import org.quartz.core.JobRunShellFactory;
+import org.quartz.core.QuartzScheduler;
+import org.quartz.core.QuartzSchedulerResources;
+import org.quartz.impl.DefaultThreadExecutor;
+import org.quartz.impl.DirectSchedulerFactory;
+import org.quartz.impl.StdJobRunShellFactory;
+import org.quartz.simpl.CascadingClassLoadHelper;
+import org.quartz.spi.ClassLoadHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +106,7 @@ public class UpgradeTool {
   private final TransactionService txService;
   private final ZKClientService zkClientService;
   private final MDSDatasetsRegistry mdsDatasetsRegistry;
-
+  private DatasetBasedTimeScheduleStore datasetBasedTimeScheduleStore;
   private final DatasetFramework dsFramework;
 
   /**
@@ -341,6 +353,10 @@ public class UpgradeTool {
 
   private void performUpgrade() throws Exception {
     performCoprocessorUpgrade();
+
+    LOG.info("Upgrading schedules...");
+    datasetBasedTimeScheduleStore = injector.getInstance(DatasetBasedTimeScheduleStore.class);
+    datasetBasedTimeScheduleStore.upgrade();
   }
 
   private void performHBaseUpgrade() throws Exception {
@@ -397,4 +413,36 @@ public class UpgradeTool {
     // Usage registry
     UsageRegistry.setupDatasets(datasetFramework);
   }
+
+//  /**
+//   * gets the {@link DatasetBasedTimeScheduleStore}
+//   */
+//  private DatasetBasedTimeScheduleStore getDatasetBasedTimeScheduleStore() throws SchedulerException,
+//    TransactionFailureException, InterruptedException {
+//    if (datasetBasedTimeScheduleStore == null) {
+//      datasetBasedTimeScheduleStore = injector.getInstance(DatasetBasedTimeScheduleStore.class);
+//      // need to call initialize on datasetBasedTimeScheduleStore
+//      ExecutorThreadPool threadPool = new ExecutorThreadPool(1);
+//      threadPool.initialize();
+//      String schedulerName = DirectSchedulerFactory.DEFAULT_SCHEDULER_NAME;
+//      String schedulerInstanceId = DirectSchedulerFactory.DEFAULT_INSTANCE_ID;
+//
+//      QuartzSchedulerResources qrs = new QuartzSchedulerResources();
+//      JobRunShellFactory jrsf = new StdJobRunShellFactory();
+//
+//      qrs.setName(schedulerName);
+//      qrs.setInstanceId(schedulerInstanceId);
+//      qrs.setJobRunShellFactory(jrsf);
+//      qrs.setThreadPool(threadPool);
+//      qrs.setThreadExecutor(new DefaultThreadExecutor());
+//      qrs.setJobStore(datasetBasedTimeScheduleStore);
+//      qrs.setRunUpdateCheck(false);
+//      QuartzScheduler qs = new QuartzScheduler(qrs, -1, -1);
+//      ClassLoadHelper cch = new CascadingClassLoadHelper();
+//      cch.initialize();
+//      datasetBasedTimeScheduleStore.upgrade();
+//      datasetBasedTimeScheduleStore.initialize(cch, qs.getSchedulerSignaler());
+//    }
+//    return datasetBasedTimeScheduleStore;
+//  }
 }

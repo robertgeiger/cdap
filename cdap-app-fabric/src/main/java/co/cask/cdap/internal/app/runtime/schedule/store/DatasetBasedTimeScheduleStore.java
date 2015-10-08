@@ -19,13 +19,16 @@ package co.cask.cdap.internal.app.runtime.schedule.store;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.data2.dataset2.DatasetManagementException;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
+import co.cask.tephra.TransactionFailureException;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import com.google.inject.Inject;
 import org.apache.commons.lang.SerializationUtils;
 import org.quartz.JobDetail;
@@ -41,6 +44,7 @@ import org.quartz.spi.SchedulerSignaler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +56,7 @@ import java.util.Set;
 public class DatasetBasedTimeScheduleStore extends RAMJobStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(DatasetBasedTimeScheduleStore.class);
+  private static final Gson GSON = new Gson();
   private static final byte[] JOB_KEY = Bytes.toBytes("jobs");
   private static final byte[] TRIGGER_KEY = Bytes.toBytes("trigger");
 
@@ -69,13 +74,17 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
   public void initialize(ClassLoadHelper loadHelper, SchedulerSignaler schedSignaler) {
     super.initialize(loadHelper, schedSignaler);
     try {
-      table = tableUtil.getMetaTable();
-      Preconditions.checkNotNull(table, "Could not get dataset client for data set: %s",
-                                 ScheduleStoreTableUtil.SCHEDULE_STORE_DATASET_NAME);
+      getTable();
       readSchedulesFromPersistentStore();
     } catch (Throwable th) {
       throw Throwables.propagate(th);
     }
+  }
+
+  private void getTable() throws IOException, DatasetManagementException {
+    table = tableUtil.getMetaTable();
+    Preconditions.checkNotNull(table, "Could not get dataset client for data set: %s",
+                               ScheduleStoreTableUtil.SCHEDULE_STORE_DATASET_NAME);
   }
 
   @Override
@@ -175,7 +184,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
         .execute(new TransactionExecutor.Subroutine() {
           @Override
           public void apply() throws Exception {
-            TriggerStatus storedTriggerStatus = readTrigger(triggerKey);
+            TriggerStatusV2 storedTriggerStatus = readTrigger(triggerKey);
             if (storedTriggerStatus != null) {
               // its okay to persist the same trigger back again since during pause/resume
               // operation the trigger does not change. We persist it here with just the new trigger state
@@ -223,7 +232,8 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
     byte[][] values = new byte[1][];
 
     cols[0] = Bytes.toBytes(job.getKey().toString());
-    values[0] = SerializationUtils.serialize(job);
+//    values[0] = SerializationUtils.serialize(job);
+    values[0] = Bytes.toBytes(GSON.toJson(job));
     table.put(JOB_KEY, cols, values);
   }
 
@@ -240,7 +250,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
     table.delete(JOB_KEY, col);
   }
 
-  private TriggerStatus readTrigger(TriggerKey key) {
+  private TriggerStatusV2 readTrigger(TriggerKey key) {
     byte[][] col = new byte[1][];
     col[0] = Bytes.toBytes(key.getName());
     Row result = table.get(TRIGGER_KEY, col);
@@ -249,7 +259,8 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
       bytes = result.get(col[0]);
     }
     if (bytes != null) {
-      return (TriggerStatus) SerializationUtils.deserialize(bytes);
+//      return (TriggerStatus) SerializationUtils.deserialize(bytes);
+      return GSON.fromJson(Bytes.toString(bytes), TriggerStatusV2.class);
     } else {
       return null;
     }
@@ -263,7 +274,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
     byte[][] values = new byte[1][];
 
     cols[0] = Bytes.toBytes(trigger.getKey().getName());
-    values[0] = SerializationUtils.serialize(new TriggerStatus(trigger, state));
+    values[0] = Bytes.toBytes(GSON.toJson(new TriggerStatusV2(trigger, state)));
     table.put(TRIGGER_KEY, cols, values);
   }
 
@@ -271,7 +282,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
   private void readSchedulesFromPersistentStore() throws Exception {
 
     final List<JobDetail> jobs = Lists.newArrayList();
-    final List<TriggerStatus> triggers = Lists.newArrayList();
+    final List<TriggerStatusV2> triggers = Lists.newArrayList();
 
     factory.createExecutor(ImmutableList.of((TransactionAware) table))
       .execute(new TransactionExecutor.Subroutine() {
@@ -280,7 +291,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
           Row result = table.get(JOB_KEY);
           if (!result.isEmpty()) {
             for (byte[] bytes : result.getColumns().values()) {
-              JobDetail jobDetail = (JobDetail) SerializationUtils.deserialize(bytes);
+              JobDetail jobDetail = GSON.fromJson(Bytes.toString(bytes), JobDetail.class);
               LOG.debug("Schedule: Job with key {} found", jobDetail.getKey());
               jobs.add(jobDetail);
             }
@@ -291,7 +302,8 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
           result = table.get(TRIGGER_KEY);
           if (!result.isEmpty()) {
             for (byte[] bytes : result.getColumns().values()) {
-              TriggerStatus trigger = (TriggerStatus) SerializationUtils.deserialize(bytes);
+//              TriggerStatus trigger = (TriggerStatus) SerializationUtils.deserialize(bytes);
+              TriggerStatusV2 trigger = GSON.fromJson(Bytes.toString(bytes), TriggerStatusV2.class);
               if (trigger.state.equals(Trigger.TriggerState.NORMAL) ||
                 trigger.state.equals(Trigger.TriggerState.PAUSED)) {
                 triggers.add(trigger);
@@ -311,7 +323,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
       super.storeJob(job, true);
     }
 
-    for (TriggerStatus trigger : triggers) {
+    for (TriggerStatusV2 trigger : triggers) {
       super.storeTrigger(trigger.trigger, true);
       // if the trigger was paused then pause it back. This is needed because the state of the trigger is not a
       // property associated with the trigger.
@@ -324,7 +336,76 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
   }
 
   /**
+   * Upgrades trigger and their state stored in the Store. It reads them as {@link TriggerStatus} through
+   * deserialization and then stores them back as {@link TriggerStatusV2} through JSON.
+   */
+  public void upgrade() throws InterruptedException, TransactionFailureException, IOException,
+    DatasetManagementException {
+    final List<JobDetail> jobs = Lists.newArrayList();
+    final List<TriggerStatus> triggers = Lists.newArrayList();
+    getTable();
+    // read the old serialized trigger from the store
+    factory.createExecutor(ImmutableList.of((TransactionAware) table))
+      .execute(new TransactionExecutor.Subroutine() {
+        @Override
+        public void apply() throws Exception {
+          Row result = table.get(JOB_KEY);
+          if (!result.isEmpty()) {
+            for (byte[] bytes : result.getColumns().values()) {
+              JobDetail jobDetail = (JobDetail) SerializationUtils.deserialize(bytes);
+              LOG.debug("Schedule: Job with key {} found", jobDetail.getKey());
+              jobs.add(jobDetail);
+            }
+          } else {
+            LOG.debug("Schedule: No Jobs found in Job store");
+          }
+          result = table.get(TRIGGER_KEY);
+          if (!result.isEmpty()) {
+            for (byte[] bytes : result.getColumns().values()) {
+              TriggerStatus trigger = (TriggerStatus) SerializationUtils.deserialize(bytes);
+              if (trigger.state.equals(Trigger.TriggerState.NORMAL) ||
+                trigger.state.equals(Trigger.TriggerState.PAUSED)) {
+                triggers.add(trigger);
+                LOG.debug("Schedule: trigger with key {} added", trigger.trigger.getKey());
+              } else {
+                LOG.debug("Schedule: trigger with key {} and state {} skipped", trigger.trigger.getKey(),
+                          trigger.state.toString());
+              }
+            }
+          } else {
+            LOG.debug("Schedule: No triggers found in job store");
+          }
+        }
+      });
+
+    // store the jobs and triggers in JSON
+    for (JobDetail job : jobs) {
+      persistJob(table, job);
+    }
+    for (TriggerStatus trigger : triggers) {
+      persistTrigger(table, trigger.trigger, trigger.state);
+    }
+  }
+
+  /**
    * Trigger and state.
+   * TriggerStateV2 is added in CDAP 3.3 as a new class to wrap the trigger and its state to store them in the store
+   * in JSON format.
+   */
+  private static class TriggerStatusV2 implements Serializable {
+    private final OperableTrigger trigger;
+    private final Trigger.TriggerState state;
+
+    private TriggerStatusV2(OperableTrigger trigger, Trigger.TriggerState state) {
+      this.trigger = trigger;
+      this.state = state;
+    }
+  }
+
+  /**
+   * Trigger and state.
+   * Legacy TriggerStatus class which was used till CDAP 3.2. It needed to deserialize the existing triggers while
+   * upgrading from 3.2 to 3.3. This class should be removed in the release next to 3.3
    */
   private static class TriggerStatus implements Serializable {
     private OperableTrigger trigger;
