@@ -77,7 +77,7 @@ public class BasicHttpServiceContext extends AbstractContext implements Transact
     this.spec = spec;
     this.instanceId = instanceId;
     this.instanceCount = instanceCount;
-    this.txContext = new TransactionContext(txClient, getDatasetInstantiator().getTransactionAware());
+    this.txContext = newTransactionContext();
     this.userMetrics =
       new ProgramUserMetrics(getMetricCollector(metricsCollectionService, program,
                                                 spec.getName(), runId.getId(), instanceId));
