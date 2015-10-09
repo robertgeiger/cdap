@@ -32,7 +32,6 @@ import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.runtime.Arguments;
 import co.cask.cdap.app.services.AbstractServiceDiscoverer;
 import co.cask.cdap.common.conf.Constants;
-import co.cask.cdap.data.dataset.DatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
 import co.cask.cdap.data2.dataset2.MultiThreadDatasetFactory;
@@ -50,8 +49,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.twill.api.RunId;
 import org.apache.twill.discovery.DiscoveryServiceClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -65,7 +62,6 @@ import javax.annotation.Nullable;
  */
 public abstract class AbstractContext extends AbstractServiceDiscoverer
   implements DatasetContext, RuntimeContext, PluginContext {
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractContext.class);
 
   private final Program program;
   private final RunId runId;
@@ -74,7 +70,6 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
 
   private final MetricsContext programMetrics;
 
-  private final DatasetInstantiator dsInstantiator;
   private final DynamicDatasetFactory datasetFactory;
   private final DiscoveryServiceClient discoveryServiceClient;
   private final PluginInstantiator pluginInstantiator;
@@ -105,11 +100,7 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     this.runtimeArguments = ImmutableMap.copyOf(arguments.asMap());
     this.discoveryServiceClient = discoveryServiceClient;
     this.owners = createOwners(program.getId());
-
     this.programMetrics = metricsContext;
-    this.dsInstantiator = new DatasetInstantiator(program.getId().getNamespace(), dsFramework,
-                                                  program.getClassLoader(), owners,
-                                                  programMetrics);
 
     Map<String, Map<String, String>> staticDatasets = new HashMap<>();
     for (String name : datasets) {
@@ -160,9 +151,8 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     return programMetrics;
   }
 
-  // todo: this may be refactored further: avoid leaking dataset instantiator from context
-  public DatasetInstantiator getDatasetInstantiator() {
-    return dsInstantiator;
+  public DynamicDatasetFactory getDatasetFactory() {
+    return datasetFactory;
   }
 
   @Override
@@ -181,7 +171,11 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
   }
 
   public Iterable<TransactionAware> getInProgressTransactionAwares() {
-    return datasetFactory.getInProgressTransactionAwares();
+    return datasetFactory.getTransactionAwares();
+  }
+
+  public void dismissDatasets() {
+    datasetFactory.invalidate();
   }
 
   public String getNamespaceId() {

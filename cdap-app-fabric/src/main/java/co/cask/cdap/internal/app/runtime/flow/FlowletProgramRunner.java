@@ -220,7 +220,7 @@ public final class FlowletProgramRunner implements ProgramRunner {
 
       // Creates tx related objects
       DataFabricFacade dataFabricFacade =
-        dataFabricFacadeFactory.create(program, flowletContext.getDatasetInstantiator());
+        dataFabricFacadeFactory.create(program, flowletContext.getDatasetFactory());
       if (dataFabricFacade instanceof ProgramContextAware) {
         ((ProgramContextAware) dataFabricFacade).initContext(run, flowletId);
       }

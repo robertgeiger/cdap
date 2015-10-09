@@ -18,7 +18,6 @@ package co.cask.cdap.app.guice;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.common.queue.QueueName;
-import co.cask.cdap.data.dataset.DatasetInstantiator;
 import co.cask.cdap.data2.metadata.lineage.AccessType;
 import co.cask.cdap.data2.metadata.writer.LineageWriter;
 import co.cask.cdap.data2.metadata.writer.ProgramContext;
@@ -73,8 +72,8 @@ public final class DataFabricFacadeModule extends PrivateModule {
                                        QueueClientFactory queueClientFactory,
                                        StreamConsumerFactory streamConsumerFactory,
                                        @Assisted Program program,
-                                       @Assisted DatasetInstantiator instantiator) {
-      super(txSystemClient, txExecutorFactory, queueClientFactory, streamConsumerFactory, program, instantiator);
+                                       @Assisted DatasetContext datasetContext) {
+      super(txSystemClient, txExecutorFactory, queueClientFactory, streamConsumerFactory, program, datasetContext);
     }
   }
 
@@ -93,9 +92,9 @@ public final class DataFabricFacadeModule extends PrivateModule {
                                          StreamConsumerFactory streamConsumerFactory,
                                          LineageWriter lineageWriter,
                                          @Assisted Program program,
-                                         @Assisted DatasetInstantiator instantiator) {
+                                         @Assisted DatasetContext datasetContext) {
       this.delegate = new TransactionDataFabricFacade(txSystemClient, txExecutorFactory, queueClientFactory,
-                                                      streamConsumerFactory, program, instantiator);
+                                                      streamConsumerFactory, program, datasetContext);
       this.lineageWriter = lineageWriter;
     }
 
@@ -110,13 +109,13 @@ public final class DataFabricFacadeModule extends PrivateModule {
     }
 
     @Override
-    public DatasetContext getDataSetContext() {
-      return delegate.getDataSetContext();
+    public DatasetContext getDatasetContext() {
+      return delegate.getDatasetContext();
     }
 
     @Override
-    public TransactionContext createTransactionManager() {
-      return delegate.createTransactionManager();
+    public TransactionContext createTransactionContext() {
+      return delegate.createTransactionContext();
     }
 
     @Override

@@ -303,12 +303,17 @@ final class WorkflowDriver extends AbstractExecutionThreadService {
     TransactionContext transactionContext = workflowContext.newTransactionContext();
     transactionContext.start();
     try {
-      destroy(spec, action);
-    } catch (Throwable e) {
-      LOG.error("Transaction failed to destroy: " + e.getMessage());
-      transactionContext.abort(new TransactionFailureException("Transaction function failure for transaction. ", e));
+      try {
+        destroy(spec, action);
+      } catch (Throwable e) {
+        LOG.error("Transaction failed to destroy: " + e.getMessage());
+        transactionContext.abort(new TransactionFailureException("Transaction function failure for transaction. ", e));
+      }
+      transactionContext.finish();
+    } finally {
+      // after the action is destroyed, we can release its datasets; TODO: would it be better to hold on to them?
+      workflowContext.dismissDatasets();
     }
-    transactionContext.finish();
   }
 
   private void initializeInTransaction(WorkflowAction action, BasicWorkflowContext workflowContext) throws Exception {
@@ -516,6 +521,7 @@ final class WorkflowDriver extends AbstractExecutionThreadService {
       LOG.warn("Exception on WorkflowAction.destroy(): {}", actionSpec, t);
       // Just log, but not propagate
     } finally {
+
       ClassLoaders.setContextClassLoader(oldClassLoader);
     }
   }

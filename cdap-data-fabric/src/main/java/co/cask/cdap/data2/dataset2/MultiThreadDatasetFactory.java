@@ -81,7 +81,15 @@ public class MultiThreadDatasetFactory extends DynamicDatasetFactory {
         });
   }
 
+  @Override
+  public void invalidate() {
+    // note that this only invalidates the datasets for the current thread, whereas close() invalidates all
+    entryForCurrentThread().invalidate();
+  }
+
+  @Override
   public void close() {
+    super.close();
     perThreadMap.invalidateAll();
   }
 
@@ -91,12 +99,24 @@ public class MultiThreadDatasetFactory extends DynamicDatasetFactory {
     return entryForCurrentThread().getDataset(key);
   }
 
+  @Override
   public TransactionContext newTransactionContext() {
     return entryForCurrentThread().newTransactionContext();
   }
 
-  public Iterable<TransactionAware> getInProgressTransactionAwares() {
-    return entryForCurrentThread().getInProgressTransactionAwares();
+  @Override
+  public Iterable<TransactionAware> getTransactionAwares() {
+    return entryForCurrentThread().getTransactionAwares();
+  }
+
+  @Override
+  public void addExtraTransactionAware(TransactionAware txAware) {
+    entryForCurrentThread().addExtraTransactionAware(txAware);
+  }
+
+  @Override
+  public void removeExtraTransactionAware(TransactionAware txAware) {
+    entryForCurrentThread().removeExtraTransactionAware(txAware);
   }
 
   private DynamicDatasetFactory entryForCurrentThread() {

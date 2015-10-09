@@ -136,10 +136,11 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
   /**
    * Return a new transaction context for the current thread. Any transaction-aware datasets obtained via
    * (@link #getDataset()) from the same thread will be added to this transaction context and thus participate
-   * in its transaction. These datasets can also be retrieved using {@link #getInProgressTransactionAwares()}.
+   * in its transaction. These datasets can also be retrieved using {@link #getTransactionAwares()}.
    *
    * @return a new transactiopn context
    */
+  @Override
   public TransactionContext newTransactionContext() {
     txContext = new TransactionContext(txClient);
     // make sure all static transaction-aware datasets participate in the transaction
@@ -147,29 +148,34 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
     for (DatasetCacheKey key : staticDatasetKeys) {
       getDataset(key);
     }
+    for (TransactionAware txAware : extraTxAwares) {
+      txContext.addTransactionAware(txAware);
+    }
     return txContext;
   }
 
-  /**
-   * @return the transaction-aware datasets that participate in the current transaction for the current thread.
-   */
-  public Iterable<TransactionAware> getInProgressTransactionAwares() {
-    return Iterables.transform(txnInProgressDatasets, new Function<DatasetCacheKey, TransactionAware>() {
-      @Nullable
-      @Override
-      public TransactionAware apply(DatasetCacheKey key) {
-        try {
-          return (TransactionAware) datasetCache.get(key);
-        } catch (ExecutionException e) {
-          throw new IllegalStateException("Unexpected exception from dataset cache for dataset key " + key
-                                            + ", which is in current in-progress transaction and " +
-                                            "should thus already be in the cache", e);
-        }
-      }
-    });
+  @Override
+  public Iterable<TransactionAware> getTransactionAwares() {
+    return Iterables.concat(
+      extraTxAwares, Iterables.transform(txnInProgressDatasets,
+                                         new Function<DatasetCacheKey, TransactionAware>() {
+                                           @Nullable
+                                           @Override
+                                           public TransactionAware apply(DatasetCacheKey key) {
+                                             try {
+                                               return (TransactionAware) datasetCache.get(key);
+                                             } catch (ExecutionException e) {
+                                               throw new IllegalStateException(
+                                                 "Unexpected exception from dataset cache for dataset key " +
+                                                   key + ", which is in current in-progress transaction and " +
+                                                   "should thus already be in the cache", e);
+                                             }
+                                           }
+                                         }));
   }
 
-  public void close() {
+  @Override
+  public void invalidate() {
     txnInProgressDatasets.clear();
     try {
       datasetCache.invalidateAll();
@@ -183,5 +189,10 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
     }
   }
 
+  @Override
+  public void close() {
+    super.close();
+    invalidate();
+  }
 }
 

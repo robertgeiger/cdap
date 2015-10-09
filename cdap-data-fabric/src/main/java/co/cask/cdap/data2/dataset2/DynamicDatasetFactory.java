@@ -28,7 +28,10 @@ import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionSystemClient;
 import com.google.common.base.Objects;
+import com.google.common.collect.Sets;
+import com.google.common.io.Closeables;
 
+import java.io.Closeable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +53,7 @@ public abstract class DynamicDatasetFactory implements DatasetContext {
   protected final Map<String, String> runtimeArguments;
   protected final MetricsContext metricsContext;
   protected final Set<DatasetCacheKey> staticDatasetKeys;
+  protected final Set<TransactionAware> extraTxAwares;
 
   /**
    * Create a dynamic dataset factory.
@@ -83,6 +87,7 @@ public abstract class DynamicDatasetFactory implements DatasetContext {
     this.runtimeArguments = runtimeArguments;
     this.metricsContext = metricsContext;
     this.staticDatasetKeys = new HashSet<>();
+    this.extraTxAwares = Sets.newIdentityHashSet();
     if (staticDatasets != null) {
       for (Map.Entry<String, Map<String, String>> entry : staticDatasets.entrySet()) {
         staticDatasetKeys.add(new DatasetCacheKey(entry.getKey(), entry.getValue()));
@@ -115,7 +120,7 @@ public abstract class DynamicDatasetFactory implements DatasetContext {
   /**
    * Return a new transaction context. Any transaction-aware datasets obtained via
    * (@link #getDataset()) will be added to this transaction context and thus participate
-   * in its transaction. These datasets can also be retrieved using {@link #getInProgressTransactionAwares()}.
+   * in its transaction. These datasets can also be retrieved using {@link #getTransactionAwares()}.
    *
    * @return a new transactiopn context
    */
@@ -124,12 +129,41 @@ public abstract class DynamicDatasetFactory implements DatasetContext {
   /**
    * @return the transaction-aware datasets that participate in the current transaction.
    */
-  public abstract Iterable<TransactionAware> getInProgressTransactionAwares();
+  public abstract Iterable<TransactionAware> getTransactionAwares();
 
   /**
-   * Close and dismiss all datasets that were obtained through this factory.
+   * Add an extra transaction aware to the static datasets. This is a transaction aware that
+   * is not instantiated through this factory, but needs to participate in every transaction.
    */
-  public abstract void close();
+  public void addExtraTransactionAware(TransactionAware txAware) {
+    extraTxAwares.add(txAware);
+  }
+
+
+  /**
+   * Remove a transaction-aware that was added via {@link #addExtraTransactionAware(TransactionAware)}.
+   */
+  public void removeExtraTransactionAware(TransactionAware txAware) {
+    extraTxAwares.remove(txAware);
+  }
+
+  /**
+   * Close and dismiss all datasets that were obtained through this factory, and destroy the factory.
+   */
+  public void close() {
+    for (TransactionAware txAware : extraTxAwares) {
+      if (txAware instanceof Closeable) {
+        Closeables.closeQuietly((Closeable) txAware);
+      }
+    }
+  }
+
+  /**
+   * Close and dismiss all datasets that were obtained through this factory. This can be used to ensure
+   * that all resources held by datasets are released, even though the factory may be still be used for
+   * subsequent execution.
+   */
+  public abstract void invalidate();
 
   /**
    * A key used by implementations of {@link DynamicDatasetFactory} to cache Datasets. Includes the dataset name
