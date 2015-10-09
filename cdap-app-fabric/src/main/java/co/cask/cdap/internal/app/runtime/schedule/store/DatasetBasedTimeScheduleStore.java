@@ -389,21 +389,6 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
 
   /**
    * Trigger and state.
-   * TriggerStateV2 is added in CDAP 3.3 as a new class to wrap the trigger and its state to store them in the store
-   * in JSON format.
-   */
-  private static class TriggerStatusV2 implements Serializable {
-    private final OperableTrigger trigger;
-    private final Trigger.TriggerState state;
-
-    private TriggerStatusV2(OperableTrigger trigger, Trigger.TriggerState state) {
-      this.trigger = trigger;
-      this.state = state;
-    }
-  }
-
-  /**
-   * Trigger and state.
    * Legacy TriggerStatus class which was used till CDAP 3.2. It needed to deserialize the existing triggers while
    * upgrading from 3.2 to 3.3. This class should be removed in the release next to 3.3
    */
