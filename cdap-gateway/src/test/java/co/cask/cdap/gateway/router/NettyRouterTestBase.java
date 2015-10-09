@@ -62,10 +62,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -388,6 +391,13 @@ public abstract class NettyRouterTestBase {
     Assert.assertEquals(times, defaultServer1.getNumRequests() + defaultServer2.getNumRequests());
   }
 
+  @Test(expected = SocketException.class)
+  public void testConnectionTimeout() throws Exception {
+    URL url = new URL(resolveURI(Constants.Router.GATEWAY_DISCOVERY_NAME, "/timeout/v1/ping"));
+    HttpURLConnection urlConnection = openURL(url);
+    urlConnection.getResponseCode();
+  }
+
   protected HttpURLConnection openURL(URL url) throws Exception {
     return (HttpURLConnection) url.openConnection();
   }
@@ -577,6 +587,14 @@ public abstract class NettyRouterTestBase {
       @Path("/def/v1/status")
       public void defStatus(HttpRequest request, HttpResponder responder) {
         numRequests.incrementAndGet();
+        responder.sendStatus(HttpResponseStatus.OK);
+      }
+
+      @GET
+      @Path("/timeout/v1/ping")
+      public void hitTimeOut(HttpRequest request, HttpResponder responder) throws InterruptedException {
+        numRequests.incrementAndGet();
+        TimeUnit.SECONDS.sleep(5);
         responder.sendStatus(HttpResponseStatus.OK);
       }
 
