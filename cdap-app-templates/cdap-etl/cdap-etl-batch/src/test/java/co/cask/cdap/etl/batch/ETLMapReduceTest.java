@@ -242,7 +242,7 @@ public class ETLMapReduceTest extends BaseETLBatchTest {
     writeData.close();
 
     Method method = FileSystem.class.getDeclaredMethod("addFileSystemForTesting",
-                                                       new Class[]{URI.class, Configuration.class, FileSystem.class});
+                                                       URI.class, Configuration.class, FileSystem.class);
     method.setAccessible(true);
     method.invoke(FileSystem.class, URI.create("s3n://test/"), conf, fs);
     ETLStage source = new ETLStage("S3", ImmutableMap.<String, String>builder()
