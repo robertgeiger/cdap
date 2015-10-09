@@ -413,36 +413,4 @@ public class UpgradeTool {
     // Usage registry
     UsageRegistry.setupDatasets(datasetFramework);
   }
-
-//  /**
-//   * gets the {@link DatasetBasedTimeScheduleStore}
-//   */
-//  private DatasetBasedTimeScheduleStore getDatasetBasedTimeScheduleStore() throws SchedulerException,
-//    TransactionFailureException, InterruptedException {
-//    if (datasetBasedTimeScheduleStore == null) {
-//      datasetBasedTimeScheduleStore = injector.getInstance(DatasetBasedTimeScheduleStore.class);
-//      // need to call initialize on datasetBasedTimeScheduleStore
-//      ExecutorThreadPool threadPool = new ExecutorThreadPool(1);
-//      threadPool.initialize();
-//      String schedulerName = DirectSchedulerFactory.DEFAULT_SCHEDULER_NAME;
-//      String schedulerInstanceId = DirectSchedulerFactory.DEFAULT_INSTANCE_ID;
-//
-//      QuartzSchedulerResources qrs = new QuartzSchedulerResources();
-//      JobRunShellFactory jrsf = new StdJobRunShellFactory();
-//
-//      qrs.setName(schedulerName);
-//      qrs.setInstanceId(schedulerInstanceId);
-//      qrs.setJobRunShellFactory(jrsf);
-//      qrs.setThreadPool(threadPool);
-//      qrs.setThreadExecutor(new DefaultThreadExecutor());
-//      qrs.setJobStore(datasetBasedTimeScheduleStore);
-//      qrs.setRunUpdateCheck(false);
-//      QuartzScheduler qs = new QuartzScheduler(qrs, -1, -1);
-//      ClassLoadHelper cch = new CascadingClassLoadHelper();
-//      cch.initialize();
-//      datasetBasedTimeScheduleStore.upgrade();
-//      datasetBasedTimeScheduleStore.initialize(cch, qs.getSchedulerSignaler());
-//    }
-//    return datasetBasedTimeScheduleStore;
-//  }
 }

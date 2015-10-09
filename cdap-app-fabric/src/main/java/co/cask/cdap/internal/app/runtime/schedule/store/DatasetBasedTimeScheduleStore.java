@@ -184,7 +184,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
         .execute(new TransactionExecutor.Subroutine() {
           @Override
           public void apply() throws Exception {
-            TriggerStatusV2 storedTriggerStatus = readTrigger(triggerKey);
+            TriggerStatus storedTriggerStatus = readTrigger(triggerKey);
             if (storedTriggerStatus != null) {
               // its okay to persist the same trigger back again since during pause/resume
               // operation the trigger does not change. We persist it here with just the new trigger state
@@ -250,7 +250,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
     table.delete(JOB_KEY, col);
   }
 
-  private TriggerStatusV2 readTrigger(TriggerKey key) {
+  private TriggerStatus readTrigger(TriggerKey key) {
     byte[][] col = new byte[1][];
     col[0] = Bytes.toBytes(key.getName());
     Row result = table.get(TRIGGER_KEY, col);
@@ -260,7 +260,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
     }
     if (bytes != null) {
 //      return (TriggerStatus) SerializationUtils.deserialize(bytes);
-      return GSON.fromJson(Bytes.toString(bytes), TriggerStatusV2.class);
+      return GSON.fromJson(Bytes.toString(bytes), TriggerStatus.class);
     } else {
       return null;
     }
@@ -274,7 +274,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
     byte[][] values = new byte[1][];
 
     cols[0] = Bytes.toBytes(trigger.getKey().getName());
-    values[0] = Bytes.toBytes(GSON.toJson(new TriggerStatusV2(trigger, state)));
+    values[0] = Bytes.toBytes(GSON.toJson(new TriggerStatus(trigger, state)));
     table.put(TRIGGER_KEY, cols, values);
   }
 
@@ -282,7 +282,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
   private void readSchedulesFromPersistentStore() throws Exception {
 
     final List<JobDetail> jobs = Lists.newArrayList();
-    final List<TriggerStatusV2> triggers = Lists.newArrayList();
+    final List<TriggerStatus> triggers = Lists.newArrayList();
 
     factory.createExecutor(ImmutableList.of((TransactionAware) table))
       .execute(new TransactionExecutor.Subroutine() {
@@ -303,7 +303,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
           if (!result.isEmpty()) {
             for (byte[] bytes : result.getColumns().values()) {
 //              TriggerStatus trigger = (TriggerStatus) SerializationUtils.deserialize(bytes);
-              TriggerStatusV2 trigger = GSON.fromJson(Bytes.toString(bytes), TriggerStatusV2.class);
+              TriggerStatus trigger = GSON.fromJson(Bytes.toString(bytes), TriggerStatus.class);
               if (trigger.state.equals(Trigger.TriggerState.NORMAL) ||
                 trigger.state.equals(Trigger.TriggerState.PAUSED)) {
                 triggers.add(trigger);
@@ -323,7 +323,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
       super.storeJob(job, true);
     }
 
-    for (TriggerStatusV2 trigger : triggers) {
+    for (TriggerStatus trigger : triggers) {
       super.storeTrigger(trigger.trigger, true);
       // if the trigger was paused then pause it back. This is needed because the state of the trigger is not a
       // property associated with the trigger.
@@ -337,7 +337,7 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
 
   /**
    * Upgrades trigger and their state stored in the Store. It reads them as {@link TriggerStatus} through
-   * deserialization and then stores them back as {@link TriggerStatusV2} through JSON.
+   * deserialization and then stores them back as {@link TriggerStatus} through JSON.
    */
   public void upgrade() throws InterruptedException, TransactionFailureException, IOException,
     DatasetManagementException {
@@ -393,8 +393,9 @@ public class DatasetBasedTimeScheduleStore extends RAMJobStore {
    * upgrading from 3.2 to 3.3. This class should be removed in the release next to 3.3
    */
   private static class TriggerStatus implements Serializable {
-    private OperableTrigger trigger;
-    private Trigger.TriggerState state;
+    private static final long serialVersionUID = 8129408058145464685L;
+    private final OperableTrigger trigger;
+    private final Trigger.TriggerState state;
 
     private TriggerStatus(OperableTrigger trigger, Trigger.TriggerState state) {
       this.trigger = trigger;
