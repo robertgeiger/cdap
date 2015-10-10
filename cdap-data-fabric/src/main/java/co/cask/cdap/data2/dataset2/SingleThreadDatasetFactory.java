@@ -64,9 +64,9 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
                                     final DatasetFramework datasetFramework,
                                     final ClassLoader classLoader,
                                     final Id.Namespace namespace,
-                                    final @Nullable List<? extends Id> owners,
+                                    @Nullable final List<? extends Id> owners,
                                     Map<String, String> runtimeArguments,
-                                    final @Nullable MetricsContext metricsContext,
+                                    @Nullable final MetricsContext metricsContext,
                                     @Nullable Map<String, Map<String, String>> staticDatasets) {
     super(txClient, datasetFramework, classLoader, namespace, owners, runtimeArguments, metricsContext, staticDatasets);
     this.datasetLoader = new CacheLoader<DatasetCacheKey, Dataset>() {
