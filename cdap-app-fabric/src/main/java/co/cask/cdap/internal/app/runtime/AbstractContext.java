@@ -31,10 +31,11 @@ import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.runtime.Arguments;
 import co.cask.cdap.app.services.AbstractServiceDiscoverer;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
-import co.cask.cdap.data2.dataset2.MultiThreadDatasetFactory;
-import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
+import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
+import co.cask.cdap.data2.dataset2.MultiThreadDatasetCache;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetCache;
 import co.cask.cdap.internal.app.program.ProgramTypeMetricTag;
 import co.cask.cdap.internal.app.runtime.plugin.PluginInstantiator;
 import co.cask.cdap.proto.Id;
@@ -69,7 +70,7 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
 
   private final MetricsContext programMetrics;
 
-  private final DynamicDatasetFactory datasetFactory;
+  private final DynamicDatasetCache datasetFactory;
   private final DiscoveryServiceClient discoveryServiceClient;
   private final PluginInstantiator pluginInstantiator;
 
@@ -105,13 +106,13 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     for (String name : datasets) {
       staticDatasets.put(name, runtimeArguments);
     }
+    SystemDatasetInstantiator instantiator =
+      new SystemDatasetInstantiator(dsFramework, program.getClassLoader(), owners);
     this.datasetFactory = multiThreaded
-      ? new MultiThreadDatasetFactory(txClient, dsFramework, program.getClassLoader(),
-                                      Id.Namespace.from(namespaceId), owners, runtimeArguments,
-                                      programMetrics, staticDatasets)
-      : new SingleThreadDatasetFactory(txClient, dsFramework, program.getClassLoader(),
-                                       Id.Namespace.from(namespaceId), owners, runtimeArguments,
-                                       programMetrics, staticDatasets);
+      ? new MultiThreadDatasetCache(instantiator, txClient, Id.Namespace.from(namespaceId),
+                                    owners, runtimeArguments, programMetrics, staticDatasets)
+      : new SingleThreadDatasetCache(instantiator, txClient, Id.Namespace.from(namespaceId),
+                                     owners, runtimeArguments, programMetrics, staticDatasets);
     this.pluginInstantiator = pluginInstantiator;
   }
 
@@ -150,7 +151,7 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     return programMetrics;
   }
 
-  public DynamicDatasetFactory getDatasetFactory() {
+  public DynamicDatasetCache getDatasetFactory() {
     return datasetFactory;
   }
 

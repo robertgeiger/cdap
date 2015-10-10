@@ -40,9 +40,10 @@ import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.io.Locations;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
-import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
+import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetCache;
 import co.cask.cdap.data2.transaction.Transactions;
 import co.cask.cdap.internal.AppFabricTestHelper;
 import co.cask.cdap.internal.DefaultId;
@@ -109,7 +110,7 @@ public class MapReduceProgramRunnerTest {
 
   private static TransactionManager txService;
   private static DatasetFramework dsFramework;
-  private static DynamicDatasetFactory datasetFactory;
+  private static DynamicDatasetCache datasetFactory;
   private static MetricStore metricStore;
 
   @ClassRule
@@ -137,10 +138,10 @@ public class MapReduceProgramRunnerTest {
     txService = injector.getInstance(TransactionManager.class);
     txExecutorFactory = injector.getInstance(TransactionExecutorFactory.class);
     dsFramework = injector.getInstance(DatasetFramework.class);
-    datasetFactory = new SingleThreadDatasetFactory(injector.getInstance(TransactionSystemClient.class), dsFramework,
-                                                    MapReduceProgramRunnerTest.class.getClassLoader(),
-                                                    DefaultId.NAMESPACE, null, DatasetDefinition.NO_ARGUMENTS,
-                                                    null, null);
+    datasetFactory = new SingleThreadDatasetCache(
+      new SystemDatasetInstantiator(dsFramework, MapReduceProgramRunnerTest.class.getClassLoader(), null),
+      injector.getInstance(TransactionSystemClient.class),
+      DefaultId.NAMESPACE, null, DatasetDefinition.NO_ARGUMENTS, null, null);
     metricStore = injector.getInstance(MetricStore.class);
 
     txService.startAndWait();

@@ -23,9 +23,10 @@ import co.cask.cdap.api.spark.SparkContext;
 import co.cask.cdap.api.stream.StreamEventDecoder;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.program.Program;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
-import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
+import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetCache;
 import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionSystemClient;
 import org.apache.twill.api.RunId;
@@ -41,7 +42,7 @@ import javax.annotation.Nullable;
 public final class ClientSparkContext extends AbstractSparkContext {
 
   private final TransactionContext transactionContext;
-  private final DynamicDatasetFactory datasetContext;
+  private final DynamicDatasetCache datasetCache;
 
   public ClientSparkContext(Program program, RunId runId, long logicalStartTime, Map<String, String> runtimeArguments,
                             TransactionSystemClient txClient, DatasetFramework datasetFramework,
@@ -54,10 +55,10 @@ public final class ClientSparkContext extends AbstractSparkContext {
           createMetricsContext(metricsCollectionService, program.getId(), runId),
           createLoggingContext(program.getId(), runId), workflowToken);
 
-    this.datasetContext = new SingleThreadDatasetFactory(txClient, datasetFramework, program.getClassLoader(),
-                                                         program.getId().getNamespace(), getOwners(),
-                                                         runtimeArguments, getMetricsContext(), null);
-    this.transactionContext = datasetContext.newTransactionContext();
+    this.datasetCache = new SingleThreadDatasetCache(
+      new SystemDatasetInstantiator(datasetFramework, program.getClassLoader(), getOwners()),
+      txClient, program.getId().getNamespace(), getOwners(), runtimeArguments, getMetricsContext(), null);
+    this.transactionContext = datasetCache.newTransactionContext();
   }
 
   @Override
@@ -84,12 +85,12 @@ public final class ClientSparkContext extends AbstractSparkContext {
 
   @Override
   public synchronized <T extends Dataset> T getDataset(String name, Map<String, String> arguments) {
-    return datasetContext.getDataset(name, arguments);
+    return datasetCache.getDataset(name, arguments);
   }
 
   @Override
   public synchronized void close() {
-    datasetContext.close();
+    datasetCache.close();
   }
 
   /**

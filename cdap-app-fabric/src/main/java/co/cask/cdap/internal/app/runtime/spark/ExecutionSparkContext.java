@@ -37,11 +37,12 @@ import co.cask.cdap.api.spark.SparkSpecification;
 import co.cask.cdap.api.stream.StreamEventDecoder;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.common.logging.LoggingContext;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data.stream.StreamInputFormat;
 import co.cask.cdap.data.stream.StreamUtils;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
-import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
+import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetCache;
 import co.cask.cdap.data2.metadata.lineage.AccessType;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
@@ -89,7 +90,7 @@ public class ExecutionSparkContext extends AbstractSparkContext {
   private final Configuration hConf;
   private final Transaction transaction;
   private final StreamAdmin streamAdmin;
-  private final DynamicDatasetFactory datasetFactory;
+  private final DynamicDatasetCache datasetFactory;
   private boolean stopped;
   private SparkFacade sparkFacade;
 
@@ -124,9 +125,9 @@ public class ExecutionSparkContext extends AbstractSparkContext {
     this.hConf = hConf;
     this.transaction = transaction;
     this.streamAdmin = streamAdmin;
-    this.datasetFactory = new SingleThreadDatasetFactory(txClient, datasetFramework, programClassLoader,
-                                                         programId.getNamespace(), getOwners(), runtimeArguments,
-                                                         getMetricsContext(), null);
+    this.datasetFactory = new SingleThreadDatasetCache(
+      new SystemDatasetInstantiator(datasetFramework, programClassLoader, getOwners()),
+      txClient, programId.getNamespace(), getOwners(), runtimeArguments, getMetricsContext(), null);
   }
 
   @Override

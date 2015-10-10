@@ -19,6 +19,7 @@ package co.cask.cdap.data2.dataset2;
 import co.cask.cdap.api.data.DatasetInstantiationException;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metrics.MetricsContext;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
@@ -37,46 +38,45 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
- * Implementation of {@link DynamicDatasetFactory} that performs all operations on a per-thread basis.
+ * Implementation of {@link DynamicDatasetCache} that performs all operations on a per-thread basis.
  * That is, every thread is guaranteed to receive its own distinct copy of every dataset; every thread
  * has its own transaction context, etc.
  */
-public class MultiThreadDatasetFactory extends DynamicDatasetFactory {
+public class MultiThreadDatasetCache extends DynamicDatasetCache {
 
   // maintains a single threaded factory for each thread.
-  private final LoadingCache<Long, SingleThreadDatasetFactory> perThreadMap;
+  private final LoadingCache<Long, SingleThreadDatasetCache> perThreadMap;
 
   /**
-   * See {@link DynamicDatasetFactory).
+   * See {@link DynamicDatasetCache ).
    */
-  public MultiThreadDatasetFactory(final TransactionSystemClient txClient,
-                                   final DatasetFramework datasetFramework,
-                                   final ClassLoader classLoader,
-                                   final Id.Namespace namespace,
-                                   final List<? extends Id> owners,
-                                   final Map<String, String> runtimeArguments,
-                                   final MetricsContext metricsContext,
-                                   @Nullable final Map<String, Map<String, String>> staticDatasets) {
-    super(txClient, datasetFramework, classLoader, namespace, owners, runtimeArguments, metricsContext, staticDatasets);
+  public MultiThreadDatasetCache(final SystemDatasetInstantiator instantiator,
+                                 final TransactionSystemClient txClient,
+                                 final Id.Namespace namespace,
+                                 final List<? extends Id> owners,
+                                 final Map<String, String> runtimeArguments,
+                                 final MetricsContext metricsContext,
+                                 @Nullable final Map<String, Map<String, String>> staticDatasets) {
+    super(instantiator, txClient, namespace, owners, runtimeArguments, metricsContext, staticDatasets);
     this.perThreadMap = CacheBuilder.newBuilder()
       .softValues()
-      .removalListener(new RemovalListener<Long, DynamicDatasetFactory>() {
+      .removalListener(new RemovalListener<Long, DynamicDatasetCache>() {
         @Override
         @ParametersAreNonnullByDefault
-        public void onRemoval(RemovalNotification<Long, DynamicDatasetFactory> notification) {
-          DynamicDatasetFactory factory = notification.getValue();
+        public void onRemoval(RemovalNotification<Long, DynamicDatasetCache> notification) {
+          DynamicDatasetCache factory = notification.getValue();
           if (factory != null) {
             factory.close();
           }
         }
       })
       .build(
-        new CacheLoader<Long, SingleThreadDatasetFactory>() {
+        new CacheLoader<Long, SingleThreadDatasetCache>() {
           @Override
           @ParametersAreNonnullByDefault
-          public SingleThreadDatasetFactory load(Long threadId) throws Exception {
-            return new SingleThreadDatasetFactory(txClient, datasetFramework, classLoader, namespace,
-                                                  owners, runtimeArguments, metricsContext, staticDatasets);
+          public SingleThreadDatasetCache load(Long threadId) throws Exception {
+            return new SingleThreadDatasetCache(instantiator, txClient, namespace, owners,
+                                                runtimeArguments, metricsContext, staticDatasets);
           }
         });
   }
@@ -119,7 +119,7 @@ public class MultiThreadDatasetFactory extends DynamicDatasetFactory {
     entryForCurrentThread().removeExtraTransactionAware(txAware);
   }
 
-  private DynamicDatasetFactory entryForCurrentThread() {
+  private DynamicDatasetCache entryForCurrentThread() {
     try {
       return perThreadMap.get(Thread.currentThread().getId());
     } catch (ExecutionException e) {

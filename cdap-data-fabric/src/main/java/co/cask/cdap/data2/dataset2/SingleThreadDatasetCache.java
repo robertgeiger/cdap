@@ -22,6 +22,7 @@ import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.dataset.metrics.MeteredDataset;
 import co.cask.cdap.api.metrics.MetricsContext;
 import co.cask.cdap.common.conf.Constants;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
@@ -48,9 +49,9 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * into a started {@link TransactionContext}. Datasets acquired from this context are distinct from any
  * Datasets instantiated outside this class.
  */
-public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
+public class SingleThreadDatasetCache extends DynamicDatasetCache {
 
-  private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SingleThreadDatasetFactory.class);
+  private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SingleThreadDatasetCache.class);
 
   private final LoadingCache<DatasetCacheKey, Dataset> datasetCache;
   private final CacheLoader<DatasetCacheKey, Dataset> datasetLoader;
@@ -58,23 +59,22 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
   private TransactionContext txContext = null;
 
   /**
-   * See {@link DynamicDatasetFactory).
+   * See {@link DynamicDatasetCache}.
    */
-  public SingleThreadDatasetFactory(final TransactionSystemClient txClient,
-                                    final DatasetFramework datasetFramework,
-                                    final ClassLoader classLoader,
-                                    final Id.Namespace namespace,
-                                    @Nullable final List<? extends Id> owners,
-                                    Map<String, String> runtimeArguments,
-                                    @Nullable final MetricsContext metricsContext,
-                                    @Nullable Map<String, Map<String, String>> staticDatasets) {
-    super(txClient, datasetFramework, classLoader, namespace, owners, runtimeArguments, metricsContext, staticDatasets);
+  public SingleThreadDatasetCache(final SystemDatasetInstantiator instantiator,
+                                  final TransactionSystemClient txClient,
+                                  final Id.Namespace namespace,
+                                  @Nullable final List<? extends Id> owners,
+                                  Map<String, String> runtimeArguments,
+                                  @Nullable final MetricsContext metricsContext,
+                                  @Nullable Map<String, Map<String, String>> staticDatasets) {
+    super(instantiator, txClient, namespace, owners, runtimeArguments, metricsContext, staticDatasets);
     this.datasetLoader = new CacheLoader<DatasetCacheKey, Dataset>() {
       @Override
       @ParametersAreNonnullByDefault
       public Dataset load(DatasetCacheKey key) throws Exception {
-        Dataset dataset = datasetFramework.getDataset(Id.DatasetInstance.from(namespace, key.getName()),
-                                                      key.getArguments(), classLoader, owners);
+        Dataset dataset = instantiator.getDataset(
+          Id.DatasetInstance.from(namespace, key.getName()), key.getArguments());
         if (dataset instanceof MeteredDataset && metricsContext != null) {
           ((MeteredDataset) dataset).setMetricsCollector(
             metricsContext.childContext(Constants.Metrics.Tag.DATASET, key.getName()));

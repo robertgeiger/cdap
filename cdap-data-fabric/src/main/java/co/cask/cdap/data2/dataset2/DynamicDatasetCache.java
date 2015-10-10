@@ -23,6 +23,7 @@ import co.cask.cdap.api.data.DatasetInstantiationException;
 import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.dataset.DatasetDefinition;
 import co.cask.cdap.api.metrics.MetricsContext;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
@@ -44,11 +45,10 @@ import javax.annotation.Nullable;
  * into a started {@link TransactionContext}. Datasets acquired from this context are
  * distinct from any Datasets instantiated outside this class.
  */
-public abstract class DynamicDatasetFactory implements DatasetContext, Supplier<TransactionContext> {
+public abstract class DynamicDatasetCache implements DatasetContext, Supplier<TransactionContext> {
 
+  protected final SystemDatasetInstantiator instantiator;
   protected final TransactionSystemClient txClient;
-  protected final DatasetFramework datasetFramework;
-  protected final ClassLoader classLoader;
   protected final Id.Namespace namespace;
   protected final List<? extends Id> owners;
   protected final Map<String, String> runtimeArguments;
@@ -60,8 +60,6 @@ public abstract class DynamicDatasetFactory implements DatasetContext, Supplier<
    * Create a dynamic dataset factory.
    *
    * @param txClient the transaction system client to use for new transaction contexts
-   * @param datasetFramework the dataset framework for creating dataset instances
-   * @param classLoader the classloader to use when creating dataset instances
    * @param namespace the {@link Id.Namespace} in which all datasets are instantiated
    * @param owners the {@link Id}s which own this context
    * @param runtimeArguments all runtime arguments that are available to datasets in the context. Runtime arguments
@@ -72,17 +70,15 @@ public abstract class DynamicDatasetFactory implements DatasetContext, Supplier<
    *                        instantiated immediately, and they will participate in every transaction started
    *                        through {@link #newTransactionContext()}.
    */
-  public DynamicDatasetFactory(TransactionSystemClient txClient,
-                               DatasetFramework datasetFramework,
-                               ClassLoader classLoader,
-                               Id.Namespace namespace,
-                               @Nullable List<? extends Id> owners,
-                               Map<String, String> runtimeArguments,
-                               @Nullable MetricsContext metricsContext,
-                               @Nullable Map<String, Map<String, String>> staticDatasets) {
+  public DynamicDatasetCache(SystemDatasetInstantiator instantiator,
+                             TransactionSystemClient txClient,
+                             Id.Namespace namespace,
+                             @Nullable List<? extends Id> owners,
+                             Map<String, String> runtimeArguments,
+                             @Nullable MetricsContext metricsContext,
+                             @Nullable Map<String, Map<String, String>> staticDatasets) {
+    this.instantiator = instantiator;
     this.txClient = txClient;
-    this.datasetFramework = datasetFramework;
-    this.classLoader = classLoader;
     this.namespace = namespace;
     this.owners = owners;
     this.runtimeArguments = runtimeArguments;
@@ -169,6 +165,7 @@ public abstract class DynamicDatasetFactory implements DatasetContext, Supplier<
         Closeables.closeQuietly((Closeable) txAware);
       }
     }
+    Closeables.closeQuietly(instantiator);
   }
 
   /**
@@ -179,7 +176,7 @@ public abstract class DynamicDatasetFactory implements DatasetContext, Supplier<
   public abstract void invalidate();
 
   /**
-   * A key used by implementations of {@link DynamicDatasetFactory} to cache Datasets. Includes the dataset name
+   * A key used by implementations of {@link DynamicDatasetCache} to cache Datasets. Includes the dataset name
    * and it's arguments.
    */
   public static final class DatasetCacheKey {

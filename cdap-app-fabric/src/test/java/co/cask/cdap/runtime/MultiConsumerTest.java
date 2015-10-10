@@ -22,9 +22,10 @@ import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.runtime.ProgramController;
 import co.cask.cdap.app.runtime.ProgramRunner;
 import co.cask.cdap.common.app.RunIds;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
-import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
+import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetCache;
 import co.cask.cdap.internal.AppFabricTestHelper;
 import co.cask.cdap.internal.DefaultId;
 import co.cask.cdap.internal.app.deploy.pipeline.ApplicationWithPrograms;
@@ -90,11 +91,12 @@ public class MultiConsumerTest {
 
     DatasetFramework datasetFramework = AppFabricTestHelper.getInjector().getInstance(DatasetFramework.class);
 
-    DynamicDatasetFactory datasetFactory = new SingleThreadDatasetFactory(
-      AppFabricTestHelper.getInjector().getInstance(TransactionSystemClient.class), datasetFramework,
-      getClass().getClassLoader(), DefaultId.NAMESPACE, null, DatasetDefinition.NO_ARGUMENTS, null, null);
+    DynamicDatasetCache datasetCache = new SingleThreadDatasetCache(
+      new SystemDatasetInstantiator(datasetFramework, getClass().getClassLoader(), null),
+      AppFabricTestHelper.getInjector().getInstance(TransactionSystemClient.class),
+      DefaultId.NAMESPACE, null, DatasetDefinition.NO_ARGUMENTS, null, null);
 
-    final KeyValueTable accumulated = datasetFactory.getDataset("accumulated");
+    final KeyValueTable accumulated = datasetCache.getDataset("accumulated");
     TransactionExecutorFactory txExecutorFactory =
       AppFabricTestHelper.getInjector().getInstance(TransactionExecutorFactory.class);
 
@@ -102,7 +104,7 @@ public class MultiConsumerTest {
     int trial = 0;
     while (trial < 60) {
       try {
-        txExecutorFactory.createExecutor(datasetFactory.getTransactionAwares())
+        txExecutorFactory.createExecutor(datasetCache.getTransactionAwares())
           .execute(new TransactionExecutor.Subroutine() {
             @Override
             public void apply() throws Exception {

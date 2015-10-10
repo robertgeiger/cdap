@@ -17,9 +17,10 @@
 package co.cask.cdap.notifications.service;
 
 import co.cask.cdap.api.TxRunnable;
+import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
-import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
-import co.cask.cdap.data2.dataset2.MultiThreadDatasetFactory;
+import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
+import co.cask.cdap.data2.dataset2.MultiThreadDatasetCache;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionFailureException;
@@ -33,15 +34,15 @@ import org.slf4j.LoggerFactory;
 public final class BasicNotificationContext implements NotificationContext {
   private static final Logger LOG = LoggerFactory.getLogger(BasicNotificationContext.class);
 
-  private final DynamicDatasetFactory datasetContext;
+  private final DynamicDatasetCache datasetContext;
 
   public BasicNotificationContext(Id.Namespace namespaceId, DatasetFramework dsFramework,
                                   TransactionSystemClient txSystemClient) {
     // TODO this dataset context needs a metrics context [CDAP-3114]
     // TODO this context is only used in system code. When we expose it to user code, we need to set the class loader,
     //      the owners, the runtime arguments and the metrics context.
-    this.datasetContext = new MultiThreadDatasetFactory(txSystemClient, dsFramework, null,
-                                                        namespaceId, null, null, null, null);
+    this.datasetContext = new MultiThreadDatasetCache(new SystemDatasetInstantiator(dsFramework, null, null),
+                                                      txSystemClient, namespaceId, null, null, null, null);
   }
 
   @Override

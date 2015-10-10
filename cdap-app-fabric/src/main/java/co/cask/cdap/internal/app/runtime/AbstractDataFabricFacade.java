@@ -19,8 +19,7 @@ package co.cask.cdap.internal.app.runtime;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.common.queue.QueueName;
-import co.cask.cdap.data.dataset.DatasetInstantiator;
-import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
+import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
 import co.cask.cdap.data2.queue.ConsumerConfig;
 import co.cask.cdap.data2.queue.QueueClientFactory;
 import co.cask.cdap.data2.queue.QueueConsumer;
@@ -34,7 +33,6 @@ import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionExecutor;
-import co.cask.tephra.TransactionSystemClient;
 
 import java.io.IOException;
 
@@ -43,41 +41,36 @@ import java.io.IOException;
  */
 public abstract class AbstractDataFabricFacade implements DataFabricFacade {
 
-  private final DatasetContext datasetContext;
+  private final DynamicDatasetCache datasetCache;
   private final QueueClientFactory queueClientFactory;
   private final StreamConsumerFactory streamConsumerFactory;
   private final TransactionExecutorFactory txExecutorFactory;
-  private final TransactionSystemClient txSystemClient;
   private final Id.Program programId;
 
-  public AbstractDataFabricFacade(TransactionSystemClient txSystemClient, TransactionExecutorFactory txExecutorFactory,
-                                  QueueClientFactory queueClientFactory, StreamConsumerFactory streamConsumerFactory,
-                                  Program program, DatasetContext datasetContext) {
-    this.txSystemClient = txSystemClient;
+  public AbstractDataFabricFacade(TransactionExecutorFactory txExecutorFactory,
+                                  QueueClientFactory queueClientFactory,
+                                  StreamConsumerFactory streamConsumerFactory,
+                                  Program program, DynamicDatasetCache datasetCache) {
     this.queueClientFactory = queueClientFactory;
     this.streamConsumerFactory = streamConsumerFactory;
     this.txExecutorFactory = txExecutorFactory;
-    this.datasetContext = datasetContext;
+    this.datasetCache = datasetCache;
     this.programId = program.getId();
   }
 
   @Override
   public DatasetContext getDatasetContext() {
-    return datasetContext;
+    return datasetCache;
   }
 
   @Override
   public TransactionContext createTransactionContext() {
-    return datasetContext instanceof DatasetInstantiator
-      ? new TransactionContext(txSystemClient, ((DatasetInstantiator) datasetContext).getTransactionAware())
-      : ((DynamicDatasetFactory) datasetContext).newTransactionContext();
+    return datasetCache.newTransactionContext();
   }
 
   @Override
   public TransactionExecutor createTransactionExecutor() {
-    return datasetContext instanceof DynamicDatasetFactory
-      ? txExecutorFactory.createExecutor((DynamicDatasetFactory) datasetContext)
-      : txExecutorFactory.createExecutor(((DatasetInstantiator) datasetContext).getTransactionAware());
+    return txExecutorFactory.createExecutor(datasetCache);
   }
 
   @Override
@@ -87,15 +80,11 @@ public abstract class AbstractDataFabricFacade implements DataFabricFacade {
 
   @Override
   public QueueConsumer createConsumer(QueueName queueName,
-                                       ConsumerConfig consumerConfig, int numGroups) throws IOException {
+                                      ConsumerConfig consumerConfig, int numGroups) throws IOException {
     QueueConsumer consumer = queueClientFactory.createConsumer(queueName, consumerConfig, numGroups);
     if (consumer instanceof TransactionAware) {
-      consumer = new CloseableQueueConsumer(datasetContext, consumer);
-      if (datasetContext instanceof DynamicDatasetFactory) {
-        ((DynamicDatasetFactory) datasetContext).addExtraTransactionAware((TransactionAware) consumer);
-      } else {
-        ((DatasetInstantiator) datasetContext).addTransactionAware((TransactionAware) consumer);
-      }
+      consumer = new CloseableQueueConsumer(datasetCache, consumer);
+      datasetCache.addExtraTransactionAware((TransactionAware) consumer);
     }
     return consumer;
   }
@@ -104,11 +93,7 @@ public abstract class AbstractDataFabricFacade implements DataFabricFacade {
   public QueueProducer createProducer(QueueName queueName, QueueMetrics queueMetrics) throws IOException {
     QueueProducer producer = queueClientFactory.createProducer(queueName, queueMetrics);
     if (producer instanceof TransactionAware) {
-      if (datasetContext instanceof DynamicDatasetFactory) {
-        ((DynamicDatasetFactory) datasetContext).addExtraTransactionAware((TransactionAware) producer);
-      } else {
-        ((DatasetInstantiator) datasetContext).addTransactionAware((TransactionAware) producer);
-      }
+      datasetCache.addExtraTransactionAware((TransactionAware) producer);
     }
     return producer;
   }
@@ -118,21 +103,13 @@ public abstract class AbstractDataFabricFacade implements DataFabricFacade {
     String namespace = String.format("%s.%s", programId.getApplicationId(), programId.getId());
     final StreamConsumer consumer = streamConsumerFactory.create(streamName, namespace, consumerConfig);
 
-    if (datasetContext instanceof DynamicDatasetFactory) {
-      ((DynamicDatasetFactory) datasetContext).addExtraTransactionAware(consumer);
-    } else {
-      ((DatasetInstantiator) datasetContext).addTransactionAware(consumer);
-    }
+    datasetCache.addExtraTransactionAware(consumer);
 
     return new ForwardingStreamConsumer(consumer) {
       @Override
       public void close() throws IOException {
         super.close();
-        if (datasetContext instanceof DynamicDatasetFactory) {
-          ((DynamicDatasetFactory) datasetContext).removeExtraTransactionAware(consumer);
-        } else {
-          ((DatasetInstantiator) datasetContext).removeTransactionAware(consumer);
-        }
+          datasetCache.removeExtraTransactionAware(consumer);
       }
     };
   }
