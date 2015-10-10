@@ -95,9 +95,9 @@ public class ProgramRunId extends ElementId implements NamespacedId, ParentedId<
   public static ProgramRunId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
     return new ProgramRunId(
-      safeNext(iterator, "namespace"), safeNext(iterator, "category"),
-      ProgramType.valueOfPrettyName(safeNext(iterator, "type")),
-      safeNext(iterator, "program"), safeNextAndEnd(iterator, "run"));
+      next(iterator, "namespace"), next(iterator, "category"),
+      ProgramType.valueOfPrettyName(next(iterator, "type")),
+      next(iterator, "program"), nextAndEnd(iterator, "run"));
   }
 
   @Override

@@ -80,8 +80,8 @@ public class NamespacedArtifactId extends ElementId implements NamespacedId, Par
   public static NamespacedArtifactId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
     return new NamespacedArtifactId(
-      safeNext(iterator, "namespace"), safeNext(iterator, "artifact"),
-      safeNextAndEnd(iterator, "version"));
+      next(iterator, "namespace"), next(iterator, "artifact"),
+      remaining(iterator, "version"));
   }
 
   @Override

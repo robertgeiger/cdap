@@ -76,7 +76,7 @@ public class ApplicationId extends ElementId implements NamespacedId, ParentedId
   @SuppressWarnings("unused")
   public static ApplicationId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
-    return new ApplicationId(safeNext(iterator, "namespace"), safeNextAndEnd(iterator, "application"));
+    return new ApplicationId(next(iterator, "namespace"), nextAndEnd(iterator, "application"));
   }
 
   @Override

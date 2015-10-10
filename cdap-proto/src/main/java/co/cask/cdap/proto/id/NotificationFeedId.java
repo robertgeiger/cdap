@@ -81,8 +81,8 @@ public class NotificationFeedId extends ElementId implements NamespacedId, Paren
   public static NotificationFeedId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
     return new NotificationFeedId(
-      safeNext(iterator, "namespace"), safeNext(iterator, "category"),
-      safeNextAndEnd(iterator, "feed"));
+      next(iterator, "namespace"), next(iterator, "category"),
+      nextAndEnd(iterator, "feed"));
   }
 
   @Override

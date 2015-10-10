@@ -88,8 +88,8 @@ public class FlowletId extends ElementId implements NamespacedId, ParentedId<Pro
   public static FlowletId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
     return new FlowletId(
-      safeNext(iterator, "namespace"), safeNext(iterator, "application"),
-      safeNext(iterator, "flow"), safeNextAndEnd(iterator, "flowlet"));
+      next(iterator, "namespace"), next(iterator, "application"),
+      next(iterator, "flow"), nextAndEnd(iterator, "flowlet"));
   }
 
   @Override

@@ -60,7 +60,7 @@ public class QueryId extends ElementId {
   @SuppressWarnings("unused")
   public static QueryId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
-    return new QueryId(safeNextAndEnd(iterator, "handle"));
+    return new QueryId(nextAndEnd(iterator, "handle"));
   }
 
   @Override

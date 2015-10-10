@@ -80,8 +80,8 @@ public class ScheduleId extends ElementId implements NamespacedId, ParentedId<Ap
   public static ScheduleId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
     return new ScheduleId(
-      safeNext(iterator, "namespace"), safeNext(iterator, "application"),
-      safeNextAndEnd(iterator, "schedule"));
+      next(iterator, "namespace"), next(iterator, "application"),
+      nextAndEnd(iterator, "schedule"));
   }
 
   @Override

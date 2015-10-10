@@ -67,9 +67,9 @@ public class FlowletQueueId extends ElementId implements NamespacedId, ParentedI
   public static FlowletQueueId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
     return new FlowletQueueId(
-      safeNext(iterator, "namespace"), safeNext(iterator, "application"),
-      safeNext(iterator, "flow"), safeNext(iterator, "flowlet"),
-      safeNextAndEnd(iterator, "queue"));
+      next(iterator, "namespace"), next(iterator, "application"),
+      next(iterator, "flow"), next(iterator, "flowlet"),
+      nextAndEnd(iterator, "queue"));
   }
 
   @Override

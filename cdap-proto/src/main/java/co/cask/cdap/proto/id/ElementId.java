@@ -17,8 +17,10 @@ package co.cask.cdap.proto.id;
 
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.element.ElementType;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -57,6 +59,9 @@ import java.util.Objects;
 @SuppressWarnings("unchecked")
 public abstract class ElementId implements IdCompatible {
 
+  private static final String IDSTRING_TYPE_SEPARATOR = ":";
+  private static final String IDSTRING_PART_SEPARATOR = ".";
+
   private final ElementType elementType;
 
   protected ElementId(ElementType elementType) {
@@ -76,8 +81,10 @@ public abstract class ElementId implements IdCompatible {
   }
 
   protected static <T extends ElementId> T fromString(String string, Class<T> idClass) {
-    String[] typeAndId = string.split(":", 2);
-    Preconditions.checkArgument(typeAndId.length == 2, "Expected separator ':' to be in the string");
+    String[] typeAndId = string.split(IDSTRING_TYPE_SEPARATOR, 2);
+    Preconditions.checkArgument(
+      typeAndId.length == 2,
+      "Expected type separator '%s' to be in the ID string: %s", IDSTRING_TYPE_SEPARATOR, string);
 
     String typeString = typeAndId[0];
     ElementType type = ElementType.valueOf(typeString.toUpperCase());
@@ -88,18 +95,26 @@ public abstract class ElementId implements IdCompatible {
       idClass.getName(), type.getIdClass().getName());
 
     String idString = typeAndId[1];
-    return type.fromIdParts(Splitter.on(":").split(idString));
+    try {
+      return type.fromIdParts(Splitter.on(IDSTRING_PART_SEPARATOR).split(idString));
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+        String.format("Invalid ID for type '%s': %s", idClass.getName(), string), e);
+    }
   }
 
   @Override
   public final String toString() {
-    StringBuilder builder = new StringBuilder();
-    builder.append(elementType.name().toLowerCase()).append(':');
-    for (String part : toIdParts()) {
-      builder.append(part).append(':');
+    StringBuilder result = new StringBuilder();
+    result.append(elementType.name().toLowerCase()).append(IDSTRING_TYPE_SEPARATOR);
+    Iterable<String> idParts = toIdParts();
+    for (String part : idParts) {
+      result.append(part).append(IDSTRING_PART_SEPARATOR);
     }
-    builder.deleteCharAt(builder.length() - 1);
-    return builder.toString();
+    if (!Iterables.isEmpty(idParts)) {
+      result.deleteCharAt(result.length() - 1);
+    }
+    return result.toString();
   }
 
   @Override
@@ -119,14 +134,33 @@ public abstract class ElementId implements IdCompatible {
     return Objects.hash(elementType);
   }
 
-  protected static String safeNext(Iterator<String> iterator, String fieldName) {
+  protected static String next(Iterator<String> iterator, String fieldName) {
     Preconditions.checkArgument(iterator.hasNext(), "Missing field: %s", fieldName);
     return iterator.next();
   }
 
-  protected static String safeNextAndEnd(Iterator<String> iterator, String fieldName) {
-    String result = safeNext(iterator, fieldName);
-    Preconditions.checkArgument(!iterator.hasNext(), "Expected end");
+  protected static String nextAndEnd(Iterator<String> iterator, String fieldName) {
+    String result = next(iterator, fieldName);
+    if (iterator.hasNext()) {
+      throw new IllegalArgumentException(
+        String.format("Expected end after field '%s' but got: %s", fieldName, remaining(iterator)));
+    }
     return result;
+  }
+
+  protected static String remaining(Iterator<String> iterator, String fieldName) {
+    Preconditions.checkArgument(iterator.hasNext(), "Missing field: %s", fieldName);
+    StringBuilder result = new StringBuilder();
+    while (iterator.hasNext()) {
+      result.append(iterator.next()).append(IDSTRING_PART_SEPARATOR);
+    }
+    if (result.length() != 0) {
+      result.deleteCharAt(result.length() - 1);
+    }
+    return result.toString();
+  }
+
+  private static String remaining(Iterator<String> iterator) {
+    return Joiner.on(IDSTRING_PART_SEPARATOR).join(iterator);
   }
 }

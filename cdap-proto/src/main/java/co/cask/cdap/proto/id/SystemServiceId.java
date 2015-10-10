@@ -60,7 +60,7 @@ public class SystemServiceId extends ElementId {
   @SuppressWarnings("unused")
   public static SystemServiceId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
-    return new SystemServiceId(safeNextAndEnd(iterator, "service"));
+    return new SystemServiceId(nextAndEnd(iterator, "service"));
   }
 
   @Override

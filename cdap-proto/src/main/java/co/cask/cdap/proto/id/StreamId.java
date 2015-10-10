@@ -71,7 +71,7 @@ public class StreamId extends ElementId implements NamespacedId, ParentedId<Name
   @SuppressWarnings("unused")
   public static StreamId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
-    return new StreamId(safeNext(iterator, "namespace"), safeNextAndEnd(iterator, "stream"));
+    return new StreamId(next(iterator, "namespace"), nextAndEnd(iterator, "stream"));
   }
 
   @Override

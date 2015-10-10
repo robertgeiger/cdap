@@ -83,7 +83,7 @@ public class NamespaceId extends ElementId {
   @SuppressWarnings("unused")
   public static NamespaceId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
-    return new NamespaceId(safeNextAndEnd(iterator, "namespace"));
+    return new NamespaceId(nextAndEnd(iterator, "namespace"));
   }
 
   @Override

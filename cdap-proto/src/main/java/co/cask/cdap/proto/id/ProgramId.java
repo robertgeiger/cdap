@@ -98,9 +98,9 @@ public class ProgramId extends ElementId implements NamespacedId, ParentedId<App
   public static ProgramId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
     return new ProgramId(
-      safeNext(iterator, "namespace"), safeNext(iterator, "category"),
-      ProgramType.valueOfPrettyName(safeNext(iterator, "type")),
-      safeNextAndEnd(iterator, "program"));
+      next(iterator, "namespace"), next(iterator, "category"),
+      ProgramType.valueOfPrettyName(next(iterator, "type")),
+      nextAndEnd(iterator, "program"));
   }
 
   @Override

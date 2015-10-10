@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -99,6 +100,24 @@ public class ElementIdTest {
     Assert.assertEquals(
       "doTestToFromOldId failed for class " + id.getClass().getName(),
       id, id.toId().toElementId());
+  }
+
+  @Test
+  public void testInvalidId() {
+    try {
+      ApplicationId.fromString("application:ns1");
+      Assert.fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
+
+  @Test
+  @Ignore
+  public void testPrintToString() {
+    for (ElementId id : ids) {
+      System.out.println(id.toString());
+    }
   }
 
 }

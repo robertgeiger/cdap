@@ -71,7 +71,7 @@ public class DatasetId extends ElementId implements NamespacedId, ParentedId<Nam
   @SuppressWarnings("unused")
   public static DatasetId fromIdParts(Iterable<String> idString) {
     Iterator<String> iterator = idString.iterator();
-    return new DatasetId(safeNext(iterator, "namespace"), safeNextAndEnd(iterator, "dataset"));
+    return new DatasetId(next(iterator, "namespace"), nextAndEnd(iterator, "dataset"));
   }
 
   @Override
