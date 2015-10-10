@@ -35,6 +35,7 @@ import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
 import co.cask.cdap.data2.dataset2.SingleThreadDatasetCache;
+import co.cask.cdap.data2.transaction.TransactionExecutorFactory;
 import co.cask.cdap.internal.AppFabricTestHelper;
 import co.cask.cdap.internal.DefaultId;
 import co.cask.cdap.internal.TempFolder;
@@ -48,7 +49,6 @@ import co.cask.cdap.proto.DatasetSpecificationSummary;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.test.SlowTests;
 import co.cask.tephra.TransactionExecutor;
-import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionManager;
 import co.cask.tephra.TransactionSystemClient;
 import co.cask.tephra.TxConstants;
@@ -156,7 +156,7 @@ public class WorkerProgramRunnerTest {
     ProgramController controller = startProgram(app, AppWithWorker.TableWriter.class);
 
     // validate worker wrote the "initialize" and "run" rows
-    final TransactionExecutor executor = txExecutorFactory.createExecutor(datasetFactory.getTransactionAwares());
+    final TransactionExecutor executor = txExecutorFactory.createExecutor(datasetFactory);
 
     // wait at most 5 seconds until the "RUN" row is set (indicates the worker has started running)
     Tasks.waitFor(AppWithWorker.RUN, new Callable<String>() {
