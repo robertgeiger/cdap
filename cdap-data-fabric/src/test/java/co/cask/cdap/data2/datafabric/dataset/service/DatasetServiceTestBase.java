@@ -32,6 +32,7 @@ import co.cask.cdap.common.namespace.NamespacedLocationFactory;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
 import co.cask.cdap.data.runtime.SystemDatasetRuntimeModule;
+import co.cask.cdap.data2.datafabric.dataset.DatasetCreator;
 import co.cask.cdap.data2.datafabric.dataset.DatasetMetaTableUtil;
 import co.cask.cdap.data2.datafabric.dataset.RemoteDatasetFramework;
 import co.cask.cdap.data2.datafabric.dataset.instance.DatasetInstanceManager;
@@ -155,7 +156,7 @@ public abstract class DatasetServiceTestBase {
 
     locationFactory = injector.getInstance(LocationFactory.class);
     NamespacedLocationFactory namespacedLocationFactory = injector.getInstance(NamespacedLocationFactory.class);
-    dsFramework = new RemoteDatasetFramework(discoveryService, registryFactory);
+    dsFramework = new RemoteDatasetFramework(discoveryService, new DatasetCreator(registryFactory));
     SystemDatasetInstantiatorFactory datasetInstantiatorFactory =
       new SystemDatasetInstantiatorFactory(locationFactory, dsFramework, cConf);
 
