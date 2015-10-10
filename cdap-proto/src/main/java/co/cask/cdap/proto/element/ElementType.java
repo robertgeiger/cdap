@@ -44,6 +44,7 @@ import java.util.Map;
 /**
  * Represents a type of CDAP element. E.g. namespace, application, datasets, streams.
  */
+// TODO: remove duplication with ElementType in cdap-cli
 @SuppressWarnings("unchecked")
 public enum ElementType {
 
@@ -68,21 +69,16 @@ public enum ElementType {
   SYSTEM_SERVICE(SystemServiceId.class, Id.SystemService.class);
 
   private static final Map<Class<? extends ElementId>, ElementType> byIdClass;
-  static {
-    ImmutableMap.Builder<Class<? extends ElementId>, ElementType> builder = ImmutableMap.builder();
-    for (ElementType type : ElementType.values()) {
-      builder.put(type.getIdClass(), type);
-    }
-    byIdClass = builder.build();
-  }
-
   private static final Map<Class<? extends Id>, ElementType> byOldIdClass;
   static {
-    ImmutableMap.Builder<Class<? extends Id>, ElementType> builder = ImmutableMap.builder();
+    ImmutableMap.Builder<Class<? extends ElementId>, ElementType> builder = ImmutableMap.builder();
+    ImmutableMap.Builder<Class<? extends Id>, ElementType> builderOld = ImmutableMap.builder();
     for (ElementType type : ElementType.values()) {
-      builder.put(type.getOldIdClass(), type);
+      builder.put(type.getIdClass(), type);
+      builderOld.put(type.getOldIdClass(), type);
     }
-    byOldIdClass = builder.build();
+    byIdClass = builder.build();
+    byOldIdClass = builderOld.build();
   }
 
   private final Class<? extends ElementId> idClass;
