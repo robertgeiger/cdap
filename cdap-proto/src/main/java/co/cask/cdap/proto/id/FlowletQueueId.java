@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a flowlet queue.
  */
 public class FlowletQueueId extends ElementId implements NamespacedId, ParentedId<FlowletId> {
   private final String namespace;

@@ -25,6 +25,34 @@ import java.util.Objects;
 
 /**
  * Uniquely identifies a particular instance of an element.
+ *
+ * <p>
+ *   When adding a new type of {@link ElementId}, the following must be done:
+ *   <ol>
+ *     <li>
+ *       Implement interfaces
+ *       <ol>
+ *         <li>{@link NamespacedId} if the new ID belongs to a namespace</li>
+ *         <li>{@link ParentedId} if the new ID has a parent ID</li>
+ *       </ol>
+ *     </li>
+ *     <li>
+ *       Add methods
+ *       <ol>
+ *         <li>{@code equals()} and {@code hashCode()}, using the implementations in {@link ElementId}</li>
+ *         <li>{@code fromString(String string)}, delegating to {@link ElementId#fromString(String, Class)}</li>
+ *       </ol>
+ *     </li>
+ *     <li>
+ *       Create a corresponding child class of the old {@link Id}
+ *       (once {@link Id} is removed, this is no longer needed)
+ *     </li>
+ *     <li>
+ *       Add a new entry to {@link ElementType}, associating the {@link ElementType}
+ *       with both the new {@link ElementId} and old {@link Id}
+ *     </li>
+ *   </ol>
+ * </p>
  */
 @SuppressWarnings("unchecked")
 public abstract class ElementId implements IdCompatible {

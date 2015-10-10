@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a program.
  */
 public class ProgramId extends ElementId implements NamespacedId, ParentedId<ApplicationId> {
   private final String namespace;

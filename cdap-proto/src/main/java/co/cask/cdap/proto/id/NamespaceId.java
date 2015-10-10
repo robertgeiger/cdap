@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a namespace.
  */
 public class NamespaceId extends ElementId {
   private final String namespace;

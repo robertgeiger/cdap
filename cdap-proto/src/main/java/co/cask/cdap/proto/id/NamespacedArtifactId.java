@@ -23,8 +23,9 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * TODO: handle duplication with ArtifactId
+ * Uniquely identifies an artifact.
  */
+// TODO: handle duplication with ArtifactId
 public class NamespacedArtifactId extends ElementId implements NamespacedId, ParentedId<NamespaceId> {
   private final String namespace;
   private final String artifact;

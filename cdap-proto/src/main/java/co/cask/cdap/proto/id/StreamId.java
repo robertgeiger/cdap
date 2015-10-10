@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a stream.
  */
 public class StreamId extends ElementId implements NamespacedId, ParentedId<NamespaceId> {
   private final String namespace;

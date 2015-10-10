@@ -17,6 +17,8 @@
 package co.cask.cdap.proto.id;
 
 /**
+ * An {@link ElementId} which has a parent {@link ElementId}.
+ *
  * @param <T> the type of parent
  */
 public interface ParentedId<T extends ElementId> {

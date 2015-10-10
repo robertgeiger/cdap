@@ -20,10 +20,12 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.element.ElementType;
 import co.cask.cdap.proto.id.ElementId;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
 
@@ -31,7 +33,7 @@ import java.lang.reflect.Type;
  * Class for serialize/deserialize Id object to/from json through {@link com.google.gson.Gson Gson}.
  * Uses {@link ElementId} as the actual object to be serialized and deserialized.
  */
-public final class IdTypeAdapter extends AbstractSpecificationCodec<Id> {
+public final class IdTypeAdapter implements JsonSerializer<Id>, JsonDeserializer<Id> {
 
   @Override
   public Id deserialize(JsonElement json, Type typeOfT,

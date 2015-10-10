@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a program run.
  */
 public class ProgramRunId extends ElementId implements NamespacedId, ParentedId<ProgramId> {
   private final String namespace;

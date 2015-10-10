@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a system service.
  */
 public class SystemServiceId extends ElementId {
 

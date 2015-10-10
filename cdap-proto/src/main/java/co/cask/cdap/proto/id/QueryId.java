@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a query handle.
  */
 public class QueryId extends ElementId {
 

@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a dataset type.
  */
 public class DatasetTypeId extends ElementId implements NamespacedId, ParentedId<NamespaceId> {
   private final String namespace;

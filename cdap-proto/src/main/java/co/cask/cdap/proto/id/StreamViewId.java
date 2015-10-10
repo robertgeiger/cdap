@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- *
+ * Uniquely identifies a stream view.
  */
 public class StreamViewId extends ElementId implements NamespacedId, ParentedId<StreamId> {
   private final String namespace;

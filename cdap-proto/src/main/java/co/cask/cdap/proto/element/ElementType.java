@@ -42,7 +42,7 @@ import java.lang.invoke.MethodType;
 import java.util.Map;
 
 /**
- *
+ * Represents a type of CDAP element. E.g. namespace, application, datasets, streams.
  */
 @SuppressWarnings("unchecked")
 public enum ElementType {

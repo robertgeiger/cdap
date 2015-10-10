@@ -24,8 +24,9 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * TODO: toString() must be namespace.category.feed for backwards compatibility with Id.NotificationFeed
+ * Uniquely identifies a notification feed.
  */
+// TODO: toString() must be namespace.category.feed for backwards compatibility with Id.NotificationFeed
 public class NotificationFeedId extends ElementId implements NamespacedId, ParentedId<NamespaceId> {
   private final String namespace;
   private final String category;

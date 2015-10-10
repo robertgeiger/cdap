@@ -16,7 +16,7 @@
 package co.cask.cdap.proto.id;
 
 /**
- *
+ * Helper methods for constructing {@link ElementId}s.
  */
 public class Ids {
 
