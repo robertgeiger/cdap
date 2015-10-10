@@ -19,6 +19,7 @@ package co.cask.cdap.internal.app.runtime.batch;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.common.RuntimeArguments;
 import co.cask.cdap.api.common.Scope;
+import co.cask.cdap.api.dataset.DatasetDefinition;
 import co.cask.cdap.api.dataset.lib.FileSet;
 import co.cask.cdap.api.dataset.lib.FileSetArguments;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -39,8 +40,10 @@ import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.io.Locations;
-import co.cask.cdap.data.dataset.DatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
+import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
+import co.cask.cdap.data2.transaction.Transactions;
 import co.cask.cdap.internal.AppFabricTestHelper;
 import co.cask.cdap.internal.DefaultId;
 import co.cask.cdap.internal.app.deploy.pipeline.ApplicationWithPrograms;
@@ -52,10 +55,12 @@ import co.cask.cdap.internal.app.runtime.SimpleProgramOptions;
 import co.cask.cdap.proto.DatasetSpecificationSummary;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.test.XSlowTests;
+import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionFailureException;
 import co.cask.tephra.TransactionManager;
+import co.cask.tephra.TransactionSystemClient;
 import co.cask.tephra.TxConstants;
 import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
@@ -104,7 +109,7 @@ public class MapReduceProgramRunnerTest {
 
   private static TransactionManager txService;
   private static DatasetFramework dsFramework;
-  private static DatasetInstantiator datasetInstantiator;
+  private static DynamicDatasetFactory datasetFactory;
   private static MetricStore metricStore;
 
   @ClassRule
@@ -132,9 +137,10 @@ public class MapReduceProgramRunnerTest {
     txService = injector.getInstance(TransactionManager.class);
     txExecutorFactory = injector.getInstance(TransactionExecutorFactory.class);
     dsFramework = injector.getInstance(DatasetFramework.class);
-    datasetInstantiator = new DatasetInstantiator(DefaultId.NAMESPACE, dsFramework,
-                                                  MapReduceProgramRunnerTest.class.getClassLoader(),
-                                                  null, null);
+    datasetFactory = new SingleThreadDatasetFactory(injector.getInstance(TransactionSystemClient.class), dsFramework,
+                                                    MapReduceProgramRunnerTest.class.getClassLoader(),
+                                                    DefaultId.NAMESPACE, null, DatasetDefinition.NO_ARGUMENTS,
+                                                    null, null);
     metricStore = injector.getInstance(MetricStore.class);
 
     txService.startAndWait();
@@ -283,7 +289,7 @@ public class MapReduceProgramRunnerTest {
 
     // write a handful of numbers to a file; compute their sum, too.
     final long[] values = { 15L, 17L, 7L, 3L };
-    final FileSet input = datasetInstantiator.getDataset(inputDatasetName, inputArgs);
+    final FileSet input = datasetFactory.getDataset(inputDatasetName, inputArgs);
     long sum = 0L, count = 1;
     for (Location inputLocation : input.getInputLocations()) {
       final PrintWriter writer = new PrintWriter(inputLocation.getOutputStream());
@@ -301,7 +307,7 @@ public class MapReduceProgramRunnerTest {
     // output location in file system is a directory that contains a part file, a _SUCCESS file, and checksums
     // (.<filename>.crc) for these files. Find the actual part file. Its name begins with "part". In this case,
     // there should be only one part file (with this small data, we have a single reducer).
-    final FileSet results = datasetInstantiator.getDataset(outputDatasetName, outputArgs);
+    final FileSet results = datasetFactory.getDataset(outputDatasetName, outputArgs);
     Location resultLocation = results.getOutputLocation();
     if (resultLocation.isDirectory()) {
       for (Location child : resultLocation.list()) {
@@ -330,12 +336,12 @@ public class MapReduceProgramRunnerTest {
     final ApplicationWithPrograms app =
       AppFabricTestHelper.deployApplicationWithManager(AppWithMapReduceUsingObjectStore.class, TEMP_FOLDER_SUPPLIER);
 
-    final ObjectStore<String> input = datasetInstantiator.getDataset("keys");
+    final ObjectStore<String> input = datasetFactory.getDataset("keys");
 
     final String testString = "persisted data";
 
     //Populate some input
-    txExecutorFactory.createExecutor(datasetInstantiator.getTransactionAware()).execute(
+    Transactions.createTransactionExecutor(txExecutorFactory, (TransactionAware) input).execute(
       new TransactionExecutor.Subroutine() {
         @Override
         public void apply() {
@@ -346,9 +352,9 @@ public class MapReduceProgramRunnerTest {
 
     runProgram(app, AppWithMapReduceUsingObjectStore.ComputeCounts.class, false);
 
-    final KeyValueTable output = datasetInstantiator.getDataset("count");
+    final KeyValueTable output = datasetFactory.getDataset("count");
     //read output and verify result
-    txExecutorFactory.createExecutor(datasetInstantiator.getTransactionAware()).execute(
+    Transactions.createTransactionExecutor(txExecutorFactory, output).execute(
       new TransactionExecutor.Subroutine() {
         @Override
         public void apply() {
@@ -372,10 +378,10 @@ public class MapReduceProgramRunnerTest {
     final String inputPath = createInput();
     final java.io.File outputDir = new java.io.File(tmpFolder.newFolder(), "output");
 
-    final KeyValueTable jobConfigTable = datasetInstantiator.getDataset("jobConfig");
+    final KeyValueTable jobConfigTable = datasetFactory.getDataset("jobConfig");
 
     // write config into dataset
-    txExecutorFactory.createExecutor(datasetInstantiator.getTransactionAware()).execute(
+    Transactions.createTransactionExecutor(txExecutorFactory, jobConfigTable).execute(
       new TransactionExecutor.Subroutine() {
         @Override
         public void apply() {
@@ -421,14 +427,14 @@ public class MapReduceProgramRunnerTest {
                                                                                          TEMP_FOLDER_SUPPLIER);
 
     // we need to do a "get" on all datasets we use so that they are in dataSetInstantiator.getTransactionAware()
-    final TimeseriesTable table = datasetInstantiator.getDataset("timeSeries");
-    final KeyValueTable beforeSubmitTable = datasetInstantiator.getDataset("beforeSubmit");
-    final KeyValueTable onFinishTable = datasetInstantiator.getDataset("onFinish");
-    final Table counters = datasetInstantiator.getDataset("counters");
-    final Table countersFromContext = datasetInstantiator.getDataset("countersFromContext");
+    final TimeseriesTable table = datasetFactory.getDataset("timeSeries");
+    final KeyValueTable beforeSubmitTable = datasetFactory.getDataset("beforeSubmit");
+    final KeyValueTable onFinishTable = datasetFactory.getDataset("onFinish");
+    final Table counters = datasetFactory.getDataset("counters");
+    final Table countersFromContext = datasetFactory.getDataset("countersFromContext");
 
     // 1) fill test data
-    fillTestInputData(txExecutorFactory, datasetInstantiator, table, false);
+    fillTestInputData(txExecutorFactory, table, false);
 
     // 2) run job
     final long start = System.currentTimeMillis();
@@ -436,7 +442,7 @@ public class MapReduceProgramRunnerTest {
     final long stop = System.currentTimeMillis();
 
     // 3) verify results
-    txExecutorFactory.createExecutor(datasetInstantiator.getTransactionAware()).execute(
+    Transactions.createTransactionExecutor(txExecutorFactory, datasetFactory.getTransactionAwares()).execute(
       new TransactionExecutor.Subroutine() {
         @Override
         public void apply() {
@@ -495,14 +501,14 @@ public class MapReduceProgramRunnerTest {
                                                                                          TEMP_FOLDER_SUPPLIER);
 
     // we need to do a "get" on all datasets we use so that they are in dataSetInstantiator.getTransactionAware()
-    final TimeseriesTable table = datasetInstantiator.getDataset("timeSeries");
-    final KeyValueTable beforeSubmitTable = datasetInstantiator.getDataset("beforeSubmit");
-    final KeyValueTable onFinishTable = datasetInstantiator.getDataset("onFinish");
-    final Table counters = datasetInstantiator.getDataset("counters");
-    final Table countersFromContext = datasetInstantiator.getDataset("countersFromContext");
+    final TimeseriesTable table = datasetFactory.getDataset("timeSeries");
+    final KeyValueTable beforeSubmitTable = datasetFactory.getDataset("beforeSubmit");
+    final KeyValueTable onFinishTable = datasetFactory.getDataset("onFinish");
+    final Table counters = datasetFactory.getDataset("counters");
+    final Table countersFromContext = datasetFactory.getDataset("countersFromContext");
 
     // 1) fill test data
-    fillTestInputData(txExecutorFactory, datasetInstantiator, table, true);
+    fillTestInputData(txExecutorFactory, table, true);
 
     // 2) run job
     final long start = System.currentTimeMillis();
@@ -510,7 +516,7 @@ public class MapReduceProgramRunnerTest {
     final long stop = System.currentTimeMillis();
 
     // 3) verify results
-    txExecutorFactory.createExecutor(datasetInstantiator.getTransactionAware()).execute(
+    Transactions.createTransactionExecutor(txExecutorFactory, datasetFactory.getTransactionAwares()).execute(
       new TransactionExecutor.Subroutine() {
         @Override
         public void apply() {
@@ -527,14 +533,13 @@ public class MapReduceProgramRunnerTest {
           Assert.assertEquals(0, countersFromContext.get(new Get("mapper")).getLong("records", 0));
           Assert.assertEquals(0, countersFromContext.get(new Get("reducer")).getLong("records", 0));
         }
-    });
+      });
   }
 
   private void fillTestInputData(TransactionExecutorFactory txExecutorFactory,
-                                 DatasetInstantiator datasetInstantiator,
                                  final TimeseriesTable table,
                                  final boolean withBadData) throws TransactionFailureException, InterruptedException {
-    TransactionExecutor executor = txExecutorFactory.createExecutor(datasetInstantiator.getTransactionAware());
+    TransactionExecutor executor = Transactions.createTransactionExecutor(txExecutorFactory, table);
     executor.execute(new TransactionExecutor.Subroutine() {
       @Override
       public void apply() {
@@ -625,13 +630,10 @@ public class MapReduceProgramRunnerTest {
 
     java.io.File inputFile = new java.io.File(inputDir.getPath() + "/words.txt");
     inputFile.deleteOnExit();
-    BufferedWriter writer = new BufferedWriter(new FileWriter(inputFile));
-    try {
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(inputFile))) {
       writer.write("this text has");
       writer.newLine();
       writer.write("two words text inside");
-    } finally {
-      writer.close();
     }
 
     return inputDir.getPath();

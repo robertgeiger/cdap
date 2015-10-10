@@ -53,26 +53,36 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
   private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SingleThreadDatasetFactory.class);
 
   private final LoadingCache<DatasetCacheKey, Dataset> datasetCache;
+  private final CacheLoader<DatasetCacheKey, Dataset> datasetLoader;
   private final Set<DatasetCacheKey> txnInProgressDatasets = new HashSet<>();
   private TransactionContext txContext = null;
 
   /**
    * See {@link DynamicDatasetFactory).
    */
-  public SingleThreadDatasetFactory(TransactionSystemClient txClient,
-                                    DatasetFramework datasetFramework,
-                                    ClassLoader classLoader,
-                                    Id.Namespace namespace,
-                                    @Nullable List<? extends Id> owners,
+  public SingleThreadDatasetFactory(final TransactionSystemClient txClient,
+                                    final DatasetFramework datasetFramework,
+                                    final ClassLoader classLoader,
+                                    final Id.Namespace namespace,
+                                    final @Nullable List<? extends Id> owners,
                                     Map<String, String> runtimeArguments,
-                                    @Nullable MetricsContext metricsContext,
+                                    final @Nullable MetricsContext metricsContext,
                                     @Nullable Map<String, Map<String, String>> staticDatasets) {
     super(txClient, datasetFramework, classLoader, namespace, owners, runtimeArguments, metricsContext, staticDatasets);
-    this.datasetCache = initializeDatasetCache();
-  }
-
-  private LoadingCache<DatasetCacheKey, Dataset> initializeDatasetCache() {
-    return CacheBuilder.newBuilder().removalListener(
+    this.datasetLoader = new CacheLoader<DatasetCacheKey, Dataset>() {
+      @Override
+      @ParametersAreNonnullByDefault
+      public Dataset load(DatasetCacheKey key) throws Exception {
+        Dataset dataset = datasetFramework.getDataset(Id.DatasetInstance.from(namespace, key.getName()),
+                                                      key.getArguments(), classLoader, owners);
+        if (dataset instanceof MeteredDataset && metricsContext != null) {
+          ((MeteredDataset) dataset).setMetricsCollector(
+            metricsContext.childContext(Constants.Metrics.Tag.DATASET, key.getName()));
+        }
+        return dataset;
+      }
+    };
+    this.datasetCache = CacheBuilder.newBuilder().removalListener(
       new RemovalListener<DatasetCacheKey, Dataset>() {
         @Override
         @ParametersAreNonnullByDefault
@@ -86,31 +96,27 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
           }
         }
       })
-      .build(new CacheLoader<DatasetCacheKey, Dataset>() {
-        @Override
-        @ParametersAreNonnullByDefault
-        public Dataset load(DatasetCacheKey key) throws Exception {
-          Dataset dataset = datasetFramework.getDataset(Id.DatasetInstance.from(namespace, key.getName()),
-                                                        key.getArguments(), classLoader, owners);
-          if (dataset instanceof MeteredDataset && metricsContext != null) {
-            ((MeteredDataset) dataset).setMetricsCollector(
-              metricsContext.childContext(Constants.Metrics.Tag.DATASET, key.getName()));
-          }
-          return dataset;
-        }
-      });
+      .build(datasetLoader);
   }
 
   @Override
-  public synchronized <T extends Dataset> T getDataset(DatasetCacheKey key)
+  public synchronized <T extends Dataset> T getDataset(DatasetCacheKey key, boolean bypass)
     throws DatasetInstantiationException {
 
     Dataset dataset;
     try {
-      dataset = datasetCache.get(key);
-    } catch (ExecutionException e) {
+      if (bypass) {
+        dataset = datasetLoader.load(key);
+      } else {
+        try {
+          dataset = datasetCache.get(key);
+        } catch (ExecutionException e) {
+          throw e.getCause();
+        }
+      }
+    } catch (Throwable t) {
       throw new DatasetInstantiationException(
-        String.format("Could not instantiate dataset '%s'", key.getName()), e.getCause());
+        String.format("Could not instantiate dataset '%s'", key.getName()), t);
     }
     // make sure the dataset exists and is of the right type
     if (dataset == null) {
@@ -121,7 +127,7 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
       T typedDataset = (T) dataset;
 
       // any transaction aware that is new to the current tx is added to the current tx context (if there is one).
-      if (dataset instanceof TransactionAware && txnInProgressDatasets.add(key) && txContext != null) {
+      if (!bypass && dataset instanceof TransactionAware && txnInProgressDatasets.add(key) && txContext != null) {
         txContext.addTransactionAware((TransactionAware) dataset);
       }
       return typedDataset;
@@ -146,7 +152,7 @@ public class SingleThreadDatasetFactory extends DynamicDatasetFactory {
     // make sure all static transaction-aware datasets participate in the transaction
     txnInProgressDatasets.clear();
     for (DatasetCacheKey key : staticDatasetKeys) {
-      getDataset(key);
+      getDataset(key, false);
     }
     for (TransactionAware txAware : extraTxAwares) {
       txContext.addTransactionAware(txAware);

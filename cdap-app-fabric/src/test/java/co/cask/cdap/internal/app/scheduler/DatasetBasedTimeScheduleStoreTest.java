@@ -37,6 +37,7 @@ import co.cask.cdap.metrics.guice.MetricsClientRuntimeModule;
 import co.cask.cdap.test.SlowTests;
 import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionManager;
+import co.cask.tephra.TransactionSystemClient;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.junit.AfterClass;
@@ -74,6 +75,7 @@ public class DatasetBasedTimeScheduleStoreTest {
   private static TransactionExecutorFactory factory;
   private static DatasetFramework dsFramework;
   private static TransactionManager txService;
+  private static TransactionSystemClient txClient;
   private static DatasetOpExecutor dsOpsService;
   private static DatasetService dsService;
   private static final String DUMMY_SCHEDULER_NAME = "dummyScheduler";
@@ -93,6 +95,7 @@ public class DatasetBasedTimeScheduleStoreTest {
                                     new NamespaceClientRuntimeModule().getInMemoryModules());
     txService = injector.getInstance(TransactionManager.class);
     txService.startAndWait();
+    txClient = injector.getInstance(TransactionSystemClient.class);
     dsOpsService = injector.getInstance(DatasetOpExecutor.class);
     dsOpsService.startAndWait();
     dsService = injector.getInstance(DatasetService.class);

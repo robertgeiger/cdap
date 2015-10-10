@@ -25,6 +25,7 @@ import co.cask.cdap.data2.queue.ConsumerConfig;
 import co.cask.cdap.data2.queue.QueueClientFactory;
 import co.cask.cdap.data2.queue.QueueConsumer;
 import co.cask.cdap.data2.queue.QueueProducer;
+import co.cask.cdap.data2.transaction.TransactionExecutorFactory;
 import co.cask.cdap.data2.transaction.queue.QueueMetrics;
 import co.cask.cdap.data2.transaction.stream.ForwardingStreamConsumer;
 import co.cask.cdap.data2.transaction.stream.StreamConsumer;
@@ -33,7 +34,6 @@ import co.cask.cdap.proto.Id;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionExecutor;
-import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionSystemClient;
 
 import java.io.IOException;
@@ -75,10 +75,9 @@ public abstract class AbstractDataFabricFacade implements DataFabricFacade {
 
   @Override
   public TransactionExecutor createTransactionExecutor() {
-    return txExecutorFactory.createExecutor(
-      datasetContext instanceof DatasetInstantiator
-        ? ((DatasetInstantiator) datasetContext).getTransactionAware()
-        : ((DynamicDatasetFactory) datasetContext).getTransactionAwares());
+    return datasetContext instanceof DynamicDatasetFactory
+      ? txExecutorFactory.createExecutor((DynamicDatasetFactory) datasetContext)
+      : txExecutorFactory.createExecutor(((DatasetInstantiator) datasetContext).getTransactionAware());
   }
 
   @Override

@@ -37,10 +37,11 @@ import co.cask.cdap.api.spark.SparkSpecification;
 import co.cask.cdap.api.stream.StreamEventDecoder;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.common.logging.LoggingContext;
-import co.cask.cdap.data.dataset.DatasetInstantiator;
 import co.cask.cdap.data.stream.StreamInputFormat;
 import co.cask.cdap.data.stream.StreamUtils;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
+import co.cask.cdap.data2.dataset2.DynamicDatasetFactory;
+import co.cask.cdap.data2.dataset2.SingleThreadDatasetFactory;
 import co.cask.cdap.data2.metadata.lineage.AccessType;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.data2.transaction.stream.StreamConfig;
@@ -50,6 +51,7 @@ import co.cask.cdap.internal.app.runtime.spark.dataset.SparkDatasetOutputFormat;
 import co.cask.cdap.proto.Id;
 import co.cask.tephra.Transaction;
 import co.cask.tephra.TransactionAware;
+import co.cask.tephra.TransactionSystemClient;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSortedMap;
@@ -87,7 +89,7 @@ public class ExecutionSparkContext extends AbstractSparkContext {
   private final Configuration hConf;
   private final Transaction transaction;
   private final StreamAdmin streamAdmin;
-  private final DatasetInstantiator datasetInstantiator;
+  private final DynamicDatasetFactory datasetFactory;
   private boolean stopped;
   private SparkFacade sparkFacade;
 
@@ -96,11 +98,12 @@ public class ExecutionSparkContext extends AbstractSparkContext {
                                ClassLoader programClassLoader, long logicalStartTime,
                                Map<String, String> runtimeArguments,
                                Transaction transaction, DatasetFramework datasetFramework,
+                               TransactionSystemClient txClient,
                                DiscoveryServiceClient discoveryServiceClient,
                                MetricsCollectionService metricsCollectionService,
                                Configuration hConf, StreamAdmin streamAdmin, @Nullable WorkflowToken workflowToken) {
     this(appSpec, specification, programId, runId, programClassLoader, logicalStartTime, runtimeArguments,
-         transaction, datasetFramework, discoveryServiceClient,
+         transaction, datasetFramework, txClient, discoveryServiceClient,
          createMetricsContext(metricsCollectionService, programId, runId),
          createLoggingContext(programId, runId), hConf, streamAdmin, workflowToken);
   }
@@ -110,6 +113,7 @@ public class ExecutionSparkContext extends AbstractSparkContext {
                                ClassLoader programClassLoader, long logicalStartTime,
                                Map<String, String> runtimeArguments,
                                Transaction transaction, DatasetFramework datasetFramework,
+                               TransactionSystemClient txClient,
                                DiscoveryServiceClient discoveryServiceClient, MetricsContext metricsContext,
                                LoggingContext loggingContext, Configuration hConf, StreamAdmin streamAdmin,
                                WorkflowToken workflowToken) {
@@ -120,8 +124,9 @@ public class ExecutionSparkContext extends AbstractSparkContext {
     this.hConf = hConf;
     this.transaction = transaction;
     this.streamAdmin = streamAdmin;
-    this.datasetInstantiator = new DatasetInstantiator(programId.getNamespace(), datasetFramework,
-                                                       programClassLoader, getOwners(), getMetricsContext());
+    this.datasetFactory = new SingleThreadDatasetFactory(txClient, datasetFramework, programClassLoader,
+                                                         programId.getNamespace(), getOwners(), runtimeArguments,
+                                                         getMetricsContext(), null);
   }
 
   @Override
@@ -477,14 +482,12 @@ public class ExecutionSparkContext extends AbstractSparkContext {
    * Creates a new instance of dataset.
    */
   private <T extends Dataset> T instantiateDataset(String datasetName, Map<String, String> arguments) {
-    T dataset = datasetInstantiator.getDataset(datasetName, arguments);
+    // bypass = true, so that the dataset is not added to the factory's cache etc.
+    T dataset = datasetFactory.getDataset(datasetName, arguments, true);
 
     // Provide the current long running transaction to the given dataset.
-    // Remove it from the transaction aware list from the dataset instantiator, since we won't use it in this context
-    // Need to remove it to avoid memory leak.
     if (dataset instanceof TransactionAware) {
       ((TransactionAware) dataset).startTx(transaction);
-      datasetInstantiator.removeTransactionAware((TransactionAware) dataset);
     }
     return dataset;
   }

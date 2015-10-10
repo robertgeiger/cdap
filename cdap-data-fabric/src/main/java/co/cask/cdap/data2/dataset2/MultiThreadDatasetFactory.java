@@ -94,9 +94,9 @@ public class MultiThreadDatasetFactory extends DynamicDatasetFactory {
   }
 
   @Override
-  public synchronized <T extends Dataset> T getDataset(DatasetCacheKey key)
+  public synchronized <T extends Dataset> T getDataset(DatasetCacheKey key, boolean bypass)
     throws DatasetInstantiationException {
-    return entryForCurrentThread().getDataset(key);
+    return entryForCurrentThread().getDataset(key, bypass);
   }
 
   @Override

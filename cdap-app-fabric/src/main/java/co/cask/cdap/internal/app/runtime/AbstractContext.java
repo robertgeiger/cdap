@@ -22,7 +22,6 @@ import co.cask.cdap.api.common.RuntimeArguments;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.data.DatasetInstantiationException;
 import co.cask.cdap.api.dataset.Dataset;
-import co.cask.cdap.api.dataset.DatasetDefinition;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.metrics.MetricsContext;
 import co.cask.cdap.api.plugin.Plugin;
@@ -104,7 +103,7 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
 
     Map<String, Map<String, String>> staticDatasets = new HashMap<>();
     for (String name : datasets) {
-      staticDatasets.put(name, DatasetDefinition.NO_ARGUMENTS);
+      staticDatasets.put(name, runtimeArguments);
     }
     this.datasetFactory = multiThreaded
       ? new MultiThreadDatasetFactory(txClient, dsFramework, program.getClassLoader(),

@@ -28,6 +28,7 @@ import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionSystemClient;
 import com.google.common.base.Objects;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
 
@@ -43,7 +44,7 @@ import javax.annotation.Nullable;
  * into a started {@link TransactionContext}. Datasets acquired from this context are
  * distinct from any Datasets instantiated outside this class.
  */
-public abstract class DynamicDatasetFactory implements DatasetContext {
+public abstract class DynamicDatasetFactory implements DatasetContext, Supplier<TransactionContext> {
 
   protected final TransactionSystemClient txClient;
   protected final DatasetFramework datasetFramework;
@@ -104,17 +105,24 @@ public abstract class DynamicDatasetFactory implements DatasetContext {
   @Override
   public final <T extends Dataset> T getDataset(String name, Map<String, String> arguments)
     throws DatasetInstantiationException {
+    return getDataset(name, arguments, false);
+  }
+
+  public final <T extends Dataset> T getDataset(String name, Map<String, String> arguments, boolean bypass)
+    throws DatasetInstantiationException {
     // apply actual runtime arguments on top of the context's runtime arguments for this dataset
     Map<String, String> dsArguments =
       RuntimeArguments.extractScope(Scope.DATASET, name, runtimeArguments);
     dsArguments.putAll(arguments);
-    return getDataset(new DatasetCacheKey(name, dsArguments));
+    return getDataset(new DatasetCacheKey(name, dsArguments), bypass);
   }
 
   /**
-   * To be implemented by subclasses
+   * To be implemented by subclasses.
+   *
+   * @param bypass if true, bypass the dataset cache, and do not add this to the transaction.
    */
-  protected abstract <T extends Dataset> T getDataset(DatasetCacheKey key)
+  protected abstract <T extends Dataset> T getDataset(DatasetCacheKey key, boolean bypass)
     throws DatasetInstantiationException;
 
   /**
@@ -125,6 +133,11 @@ public abstract class DynamicDatasetFactory implements DatasetContext {
    * @return a new transactiopn context
    */
   public abstract TransactionContext newTransactionContext();
+
+  @Override
+  public TransactionContext get() {
+    return newTransactionContext();
+  }
 
   /**
    * @return the transaction-aware datasets that participate in the current transaction.
