@@ -105,4 +105,8 @@ public class FlowletQueueId extends ElementId implements NamespacedId, ParentedI
     return new Id.Flow.Flowlet.Queue(
       Id.Flow.Flowlet.from(Id.Application.from(namespace, application), flow, flowlet), queue);
   }
+
+  public static FlowletQueueId fromString(String string) {
+    return ElementId.fromString(string, FlowletQueueId.class);
+  }
 }

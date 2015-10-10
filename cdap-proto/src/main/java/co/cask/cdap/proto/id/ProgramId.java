@@ -107,4 +107,8 @@ public class ProgramId extends ElementId implements NamespacedId, ParentedId<App
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, application, type.getPrettyName().toLowerCase(), program);
   }
+
+  public static ProgramId fromString(String string) {
+    return ElementId.fromString(string, ProgramId.class);
+  }
 }

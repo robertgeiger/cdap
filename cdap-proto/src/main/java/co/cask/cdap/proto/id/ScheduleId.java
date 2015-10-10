@@ -88,4 +88,8 @@ public class ScheduleId extends ElementId implements NamespacedId, ParentedId<Ap
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, application, schedule);
   }
+
+  public static ScheduleId fromString(String string) {
+    return ElementId.fromString(string, ScheduleId.class);
+  }
 }

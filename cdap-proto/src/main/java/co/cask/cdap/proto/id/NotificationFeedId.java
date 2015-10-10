@@ -89,4 +89,8 @@ public class NotificationFeedId extends ElementId implements NamespacedId, Paren
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, category, feed);
   }
+
+  public static NotificationFeedId fromString(String string) {
+    return ElementId.fromString(string, NotificationFeedId.class);
+  }
 }

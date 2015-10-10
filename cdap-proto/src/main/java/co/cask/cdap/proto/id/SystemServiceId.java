@@ -67,4 +67,8 @@ public class SystemServiceId extends ElementId {
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(service);
   }
+
+  public static SystemServiceId fromString(String string) {
+    return ElementId.fromString(string, SystemServiceId.class);
+  }
 }

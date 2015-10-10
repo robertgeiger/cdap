@@ -75,7 +75,7 @@ public abstract class ElementId implements IdCompatible {
     return (T) id.toId();
   }
 
-  public static <T extends ElementId> T fromString(String string, Class<T> idClass) {
+  protected static <T extends ElementId> T fromString(String string, Class<T> idClass) {
     String[] typeAndId = string.split(":", 2);
     Preconditions.checkArgument(typeAndId.length == 2, "Expected separator ':' to be in the string");
 

@@ -83,4 +83,8 @@ public class ApplicationId extends ElementId implements NamespacedId, ParentedId
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, application);
   }
+
+  public static ApplicationId fromString(String string) {
+    return ElementId.fromString(string, ApplicationId.class);
+  }
 }

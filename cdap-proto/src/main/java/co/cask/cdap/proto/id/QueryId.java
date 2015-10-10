@@ -67,4 +67,8 @@ public class QueryId extends ElementId {
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(handle);
   }
+
+  public static QueryId fromString(String string) {
+    return ElementId.fromString(string, QueryId.class);
+  }
 }

@@ -104,4 +104,8 @@ public class ProgramRunId extends ElementId implements NamespacedId, ParentedId<
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, application, type.getPrettyName().toLowerCase(), program, run);
   }
+
+  public static ProgramRunId fromString(String string) {
+    return ElementId.fromString(string, ProgramRunId.class);
+  }
 }

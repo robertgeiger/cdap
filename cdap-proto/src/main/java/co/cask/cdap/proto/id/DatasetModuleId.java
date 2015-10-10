@@ -78,4 +78,8 @@ public class DatasetModuleId extends ElementId implements NamespacedId, Parented
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, module);
   }
+
+  public static DatasetModuleId fromString(String string) {
+    return ElementId.fromString(string, DatasetModuleId.class);
+  }
 }

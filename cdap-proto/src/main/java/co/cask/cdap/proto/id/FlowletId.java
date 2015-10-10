@@ -101,4 +101,8 @@ public class FlowletId extends ElementId implements NamespacedId, ParentedId<Pro
   public Id toId() {
     return Id.Flow.Flowlet.from(Id.Application.from(namespace, application), flow, flowlet);
   }
+
+  public static FlowletId fromString(String string) {
+    return ElementId.fromString(string, FlowletId.class);
+  }
 }

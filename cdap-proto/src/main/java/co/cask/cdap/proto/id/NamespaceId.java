@@ -90,4 +90,8 @@ public class NamespaceId extends ElementId {
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace);
   }
+
+  public static NamespaceId fromString(String string) {
+    return ElementId.fromString(string, NamespaceId.class);
+  }
 }

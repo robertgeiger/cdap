@@ -88,4 +88,8 @@ public class NamespacedArtifactId extends ElementId implements NamespacedId, Par
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, artifact, version);
   }
+
+  public static NamespacedArtifactId fromString(String string) {
+    return ElementId.fromString(string, NamespacedArtifactId.class);
+  }
 }

@@ -78,4 +78,8 @@ public class DatasetTypeId extends ElementId implements NamespacedId, ParentedId
   public Id toId() {
     return Id.DatasetType.from(namespace, type);
   }
+
+  public static DatasetTypeId fromString(String string) {
+    return ElementId.fromString(string, DatasetTypeId.class);
+  }
 }

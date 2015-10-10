@@ -78,4 +78,8 @@ public class StreamId extends ElementId implements NamespacedId, ParentedId<Name
   protected Iterable<String> toIdParts() {
     return ImmutableList.of(namespace, stream);
   }
+
+  public static StreamId fromString(String string) {
+    return ElementId.fromString(string, StreamId.class);
+  }
 }
