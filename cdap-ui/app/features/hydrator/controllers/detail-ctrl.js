@@ -56,6 +56,32 @@ angular.module(PKG.name + '.feature.hydrator')
       }
     ];
 
+    function checkCron(cron) {
+      var pattern = /^[0-9\*\s]*$/g;
+      var parse = cron.split('');
+      for (var i = 0; i < parse.length; i++) {
+        if (!parse[i].match(pattern)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (HydratorDetail.programType === 'WORKFLOWS') {
+      $scope.schedule = HydratorDetail.schedule;
+      $scope.isBasic = checkCron($scope.schedule);
+      $scope.tabs.push({
+        title: 'Schedule',
+        template: '/assets/features/hydrator/templates/tabs/schedule.html'
+      });
+    } else {
+      $scope.instances = HydratorDetail.instances;
+      $scope.tabs.push({
+        title: 'Instance',
+        template: '/assets/features/hydrator/templates/tabs/instance.html'
+      });
+    }
+
     $scope.activeTab = $scope.tabs[0];
     $scope.selectTab = function(tab) {
       $scope.activeTab = tab;
@@ -256,6 +282,5 @@ angular.module(PKG.name + '.feature.hydrator')
         stream.type = 'Stream';
         return stream;
       }));
-
 
   });
