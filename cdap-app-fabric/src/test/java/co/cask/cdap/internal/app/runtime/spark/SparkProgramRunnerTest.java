@@ -48,6 +48,7 @@ import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
 import co.cask.cdap.data2.dataset2.SingleThreadDatasetCache;
+import co.cask.cdap.data2.transaction.TransactionExecutorFactory;
 import co.cask.cdap.internal.AppFabricTestHelper;
 import co.cask.cdap.internal.DefaultId;
 import co.cask.cdap.internal.TempFolder;
@@ -61,7 +62,6 @@ import co.cask.cdap.proto.DatasetSpecificationSummary;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.test.XSlowTests;
 import co.cask.tephra.TransactionExecutor;
-import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionFailureException;
 import co.cask.tephra.TransactionManager;
 import co.cask.tephra.TransactionSystemClient;
@@ -538,7 +538,7 @@ public class SparkProgramRunnerTest {
   private void prepareInputData() throws TransactionFailureException, InterruptedException {
 
     //Populate some input
-    txExecutorFactory.createExecutor(datasetFactory.getTransactionAwares()).execute(
+    txExecutorFactory.createExecutor(datasetFactory).execute(
       new TransactionExecutor.Subroutine() {
         @Override
         public void apply() {
