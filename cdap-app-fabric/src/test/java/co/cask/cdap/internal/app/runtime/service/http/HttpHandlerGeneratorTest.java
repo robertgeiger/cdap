@@ -418,7 +418,7 @@ public class HttpHandlerGeneratorTest {
     }
 
     @Override
-    public TransactionContext getTransactionContext() {
+    public TransactionContext newTransactionContext() {
       return new TransactionContext(null, ImmutableList.<TransactionAware>of()) {
 
         @Override
