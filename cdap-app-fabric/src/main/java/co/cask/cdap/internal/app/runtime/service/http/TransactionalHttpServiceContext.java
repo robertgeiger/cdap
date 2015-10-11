@@ -26,8 +26,8 @@ public interface TransactionalHttpServiceContext extends HttpServiceContext {
 
   /**
    * Get a {@link TransactionContext} for a HttpServiceHandler.
-   * @return
+   * @return a new transaction context
    */
-  TransactionContext getTransactionContext();
+  TransactionContext newTransactionContext();
 
 }

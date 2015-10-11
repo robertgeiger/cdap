@@ -812,8 +812,6 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
     Assert.assertEquals(AppWithServices.DATASET_TEST_VALUE_STOP_2, decodedResult);
   }
 
-  // TODO fix this test case
-  @Ignore
   @Test
   public void testTransactionHandlerService() throws Exception {
     ApplicationManager applicationManager = deployApplication(testSpace, AppWithServices.class);

@@ -28,7 +28,6 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.internal.app.runtime.AbstractContext;
 import co.cask.cdap.internal.app.runtime.plugin.PluginInstantiator;
-import co.cask.tephra.TransactionContext;
 import co.cask.tephra.TransactionSystemClient;
 import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
@@ -46,7 +45,6 @@ import javax.annotation.Nullable;
 public class BasicHttpServiceContext extends AbstractContext implements TransactionalHttpServiceContext {
 
   private final HttpServiceHandlerSpecification spec;
-  private final TransactionContext txContext;
   private final Metrics userMetrics;
   private final int instanceId;
   private final AtomicInteger instanceCount;
@@ -73,11 +71,10 @@ public class BasicHttpServiceContext extends AbstractContext implements Transact
                                  TransactionSystemClient txClient, @Nullable PluginInstantiator pluginInstantiator) {
     super(program, runId, runtimeArgs, spec.getDatasets(),
           getMetricCollector(metricsCollectionService, program, spec.getName(), runId.getId(), instanceId),
-          dsFramework, txClient, discoveryServiceClient, true, pluginInstantiator);
+          dsFramework, txClient, discoveryServiceClient, false, pluginInstantiator);
     this.spec = spec;
     this.instanceId = instanceId;
     this.instanceCount = instanceCount;
-    this.txContext = newTransactionContext();
     this.userMetrics =
       new ProgramUserMetrics(getMetricCollector(metricsCollectionService, program,
                                                 spec.getName(), runId.getId(), instanceId));
@@ -116,11 +113,6 @@ public class BasicHttpServiceContext extends AbstractContext implements Transact
   @Override
   public Map<String, Plugin> getPlugins() {
     return plugins;
-  }
-
-  @Override
-  public TransactionContext getTransactionContext() {
-    return txContext;
   }
 
   private static MetricsContext getMetricCollector(MetricsCollectionService service,
